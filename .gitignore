@@ -1,0 +1,45 @@
+# macOS
+.DS_Store
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+
+# Editor/IDE
+.vscode/
+.idea/
+
+# Build / cache / output
+dist/
+build/
+.cache/
+
+# Python
+__pycache__/
+*.pyc
+
+# Coverage
+coverage/
+
+# Temporary
+*.tmp
+Thumbs.db
+
+# Local assets/cache for images/optimizations (optional)
+assets/optimized/
+
+# Basecoat CLI / local copies if used
+js/basecoat/
+
+# Keep .copilot/ committed unless it contains secrets - do NOT ignore by default
+# .copilot/

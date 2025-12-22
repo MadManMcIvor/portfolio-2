@@ -1,0 +1,40 @@
+/* Theme variables: light by default; dark theme is applied when `.dark` is present on the <html> element */
+:root{
+  --bg:#fcfdff;
+  --card-bg:#ffffff;
+  --text:#0b1220;
+  --muted:#566370;
+  --accent:#6b7280;
+}
+
+/* Dark theme overrides */
+.dark{
+  --bg:#0b0f12;
+  --card-bg:#0f1416;
+  --text:#e6eef8;
+  --muted:#9fb0c1;
+  --accent:#94a3b8;
+}
+
+body{background:var(--bg);color:var(--text);transition:background-color .2s ease,color .2s ease}
+.card{background:var(--card-bg)}
+.btn.btn-primary{background:var(--accent);color:#031021}
+
+/* Theme toggle: light-mode specific visual tweaks to improve contrast */
+:not(.dark) .btn.btn-icon-outline{
+  background: rgba(10,16,20,0.06);
+  border-color: rgba(10,16,20,0.08);
+  color: var(--text);
+}
+:not(.dark) .btn.btn-icon-outline .theme-icon{color:var(--text);opacity:0.95}
+:not(.dark) .btn.btn-icon-outline:hover{background:rgba(10,16,20,0.08)}
+
+/* Dark mode visual for the toggle (ensure it remains subtle) */
+.dark .btn.btn-icon-outline{
+  background: rgba(255,255,255,0.02);
+  border-color: rgba(255,255,255,0.06);
+}
+.dark .btn.btn-icon-outline .theme-icon{color:var(--muted)}
+
+/* subtle focus outlines */
+:focus{outline:2px solid rgba(148,163,184,0.12);outline-offset:2px}

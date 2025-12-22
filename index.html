@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Alex McIvor — Software Engineer</title>
+    <!-- Basecoat (official CDN) -->
+    <!-- Theme initialization (prevents flash of wrong theme) -->
+    <script>
+      (function(){
+        try {
+          const stored = localStorage.getItem('themeMode');
+          if (stored ? stored === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.classList.add('dark');
+          }
+        } catch (_) {}
+        const apply = dark => {
+          document.documentElement.classList.toggle('dark', dark);
+          try { localStorage.setItem('themeMode', dark ? 'dark' : 'light'); } catch(_) {}
+        };
+        document.addEventListener('basecoat:theme', (event) => {
+          const mode = event.detail && event.detail.mode;
+          apply(mode === 'dark' ? true : mode === 'light' ? false : !document.documentElement.classList.contains('dark'));
+        });
+      })();
+    </script>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/basecoat-css@0.3.9/dist/basecoat.cdn.min.css">
+
+    <!-- Local styles (loaded after Basecoat so we can override styles as needed) -->
+    <link rel="stylesheet" href="/css/base.css" />
+    <link rel="stylesheet" href="/css/theme.css" />
+
+    <!-- Basecoat JS (optional but required for components that need JS) -->
+    <script src="https://cdn.jsdelivr.net/npm/basecoat-css@0.3.9/dist/js/all.min.js" defer></script>
+  </head>
+  <body>
+    <header class="site-header">
+      <nav class="nav container" role="navigation" aria-label="Main">
+        <div class="nav-left" style="display:flex;align-items:center;gap:16px">
+          <a href="#hero" class="site-title">Alex McIvor</a>
+          <a href="#projects" class="nav-link">Projects</a>
+          <a href="#contact" class="nav-link">Contact</a>
+        </div>
+        <div class="nav-actions">
+          <button id="theme-toggle" type="button" aria-label="Toggle dark mode" data-tooltip="Toggle dark mode" data-side="bottom" class="btn btn-icon-outline size-8" title="Toggle dark mode">
+            <!-- Sun (light) -->
+            <span class="theme-icon theme-icon-sun" aria-hidden="true">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path></svg>
+            </span>
+            <!-- Moon (dark) -->
+            <span class="theme-icon theme-icon-moon" aria-hidden="true">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+            </span>
+          </button>
+        </div>
+      </nav>
+    </header>
+
+    <main>
+      <section id="hero" class="hero container" aria-labelledby="hero-heading">
+        <div class="hero-inner" style="display:grid;grid-template-columns:1fr 260px;gap:28px;align-items:center">
+          <div>
+            <h2 id="hero-heading">Alex McIvor — Software Engineer</h2>
+            <p class="lead">I design and build minimal, pragmatic user experiences using plain HTML, CSS, and Vanilla JS. I favour speed, clarity, and long-term maintainability.</p>
+            <div class="hero-actions">
+              <a href="#projects" class="btn btn-primary">View projects</a>
+              <a href="#contact" class="btn btn-outline">Contact</a>
+            </div>
+          </div>
+          <div class="hero-art" aria-hidden="true">
+            <img src="/assets/screenshots/hero_section.png" alt="Hero screenshot" style="width:100%;border-radius:12px;box-shadow:rgba(0,0,0,0.4) 0 6px 18px" />
+          </div>
+        </div>
+      </section>
+
+      <section id="projects" class="projects container" aria-labelledby="projects-heading">
+        <h3 id="projects-heading">Projects</h3>
+        <div id="projects-grid" class="grid" role="list"></div>
+      </section>
+
+      <section id="contact" class="contact container" aria-labelledby="contact-heading">
+        <h3 id="contact-heading">Contact</h3>
+        <p>If you'd like to reach out, use the form below — this composes an email client message for now.</p>
+        <form id="contact-form" class="contact-form" aria-label="Contact form">
+          <div class="field">
+            <label class="label" for="c-name">Name</label>
+            <input id="c-name" class="input" name="name" required />
+          </div>
+          <div class="field">
+            <label class="label" for="c-email">Email</label>
+            <input id="c-email" class="input" name="email" type="email" required />
+          </div>
+          <div class="field">
+            <label class="label" for="c-message">Message</label>
+            <textarea id="c-message" class="input" name="message" rows="4" required></textarea>
+          </div>
+          <div class="actions">
+            <button type="submit" class="btn btn-primary">Send</button>
+          </div>
+        </form>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container footer-inner">
+        <p>© Alex McIvor</p>
+        <p class="socials">
+          <a id="github-link" href="#">GitHub</a>
+          <span>•</span>
+          <a id="linkedin-link" href="#">LinkedIn</a>
+        </p>
+      </div>
+    </footer>
+
+    <script type="module" src="/js/main.js"></script>
+  </body>
+</html>

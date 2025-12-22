@@ -29,6 +29,13 @@ section, .hero{scroll-margin-top:calc(var(--header-height) + 12px)}
 .nav-link{color:var(--muted);text-decoration:none;padding:8px;border-radius:8px}
 .nav-link:hover{color:var(--text);background:rgba(255,255,255,0.02)}
 
+/* Nav socials and divider */
+.nav-actions{display:flex;align-items:center;gap:12px}
+.socials{display:flex;align-items:center;gap:8px}
+.social-link{display:inline-flex;align-items:center;justify-content:center;padding:8px;border-radius:8px;color:var(--muted);transition:color .12s ease,background .12s ease}
+.social-link:hover{color:var(--text);background:rgba(255,255,255,0.02)}
+.nav-sep{width:1px;height:30px;background:rgba(255,255,255,0.04);display:inline-block;border-radius:2px;margin:0 8px}
+
 /* ensure page content sits below the fixed header */
 body{padding-top:var(--header-height)}
 
@@ -56,6 +63,15 @@ body{padding-top:var(--header-height)}
 @media (max-width:900px){
   .section{padding:56px 0;min-height:auto}
 }
+
+/* Contact CTA */
+.contact .lead{max-width:58ch;margin:0 auto;color:var(--muted)}
+.btn.btn-cta{padding:14px 28px;border-radius:12px;font-size:1.05rem;box-shadow:0 6px 20px rgba(0,0,0,0.2);display:inline-flex;align-items:center;gap:8px}
+.muted-note{color:var(--muted)}
+
+/* Small icon tweaks */
+.icon-mail{display:inline-block;flex:0 0 auto}
+.btn.btn-cta svg{color:currentColor}
 
 /* Theme toggle icon visibility using simple CSS (no build step required) */
 .theme-icon{display:inline-block;line-height:0}

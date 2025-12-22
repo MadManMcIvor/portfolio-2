@@ -50,8 +50,9 @@ document.addEventListener('DOMContentLoaded', ()=>{
   onScroll();
 
   const form = document.getElementById('contact-form');
-  form.addEventListener('submit', (e)=>{
-    e.preventDefault();
+  if (form) {
+    form.addEventListener('submit', (e)=>{
+      e.preventDefault();
     const f = new FormData(form);
     const name = f.get('name');
     const email = f.get('email');
@@ -61,5 +62,6 @@ document.addEventListener('DOMContentLoaded', ()=>{
     const subject = encodeURIComponent('Portfolio contact from ' + name);
     const body = encodeURIComponent(`From: ${name} <${email}>\n\n${message}`);
     window.location.href = `mailto:${to}?subject=${subject}&body=${body}`;
-  });
+    });
+  }
 });

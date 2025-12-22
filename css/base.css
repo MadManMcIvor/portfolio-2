@@ -113,7 +113,7 @@ img[role="button"]:focus-visible{outline:3px solid rgba(148,163,184,0.22);outlin
 .card h4{margin:0;font-size:1rem}
 
 /* Skills grid */
-.skills-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:28px;margin-top:18px}
+.skills-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:28px;margin-top:18px}
 .skills-col h4{margin:0 0 8px;font-size:1rem}
 .skills-col ul{list-style:none;padding:0;margin:0;color:var(--muted)}
 .skills-col li{padding:6px 0}

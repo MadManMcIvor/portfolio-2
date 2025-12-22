@@ -17,21 +17,37 @@ document.addEventListener('DOMContentLoaded', ()=>{
     if(!target) return;
     e.preventDefault();
 
-    // Compute header height (reads CSS var) and convert to pixels
-    const raw = getComputedStyle(document.documentElement).getPropertyValue('--header-height') || '72px';
-    const headerHeight = parseInt(raw, 10) || 72;
+    // Use native scrollIntoView and rely on CSS scroll-padding-top to offset for the sticky header
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-    // Smooth scroll to target while offsetting for the sticky header
-    const top = window.scrollY + target.getBoundingClientRect().top - (headerHeight + 8);
-    window.scrollTo({ top, behavior: 'smooth' });
-
-    // Accessible focus handling after the smooth scroll (delayed to allow animation)
+    // Make element focusable temporarily and focus without scrolling to avoid the jump/pop issue
     target.setAttribute('tabindex','-1');
-    setTimeout(()=>{
-      target.focus();
-      setTimeout(()=> target.removeAttribute('tabindex'), 1000);
-    }, 420);
+    try {
+      target.focus({ preventScroll: true });
+    } catch (err) {
+      // fallback for older browsers that don't support preventScroll
+      setTimeout(()=> target.focus(), 500);
+    }
+    setTimeout(()=> target.removeAttribute('tabindex'), 1000);
   });
+
+  // Header: add scrolled class once user scrolls past the hero to give it a stronger background
+  const header = document.querySelector('.site-header');
+  const hero = document.getElementById('hero');
+  let _scheduled = false;
+  function onScroll(){
+    if(_scheduled) return;
+    _scheduled = true;
+    requestAnimationFrame(()=>{
+      const y = window.scrollY || window.pageYOffset;
+      const threshold = hero ? Math.max(hero.getBoundingClientRect().bottom - 80, 80) : 80;
+      if(y > threshold){ header.classList.add('scrolled'); }
+      else { header.classList.remove('scrolled'); }
+      _scheduled = false;
+    });
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
 
   const form = document.getElementById('contact-form');
   form.addEventListener('submit', (e)=>{

@@ -5,6 +5,15 @@
   --text:#0b1220;
   --muted:#566370;
   --accent:#6b7280;
+
+  /* Section backgrounds for alternating bands (primary / secondary) */
+  --bg-primary: var(--bg);
+  --bg-secondary: #eef5f5; /* slightly darker, more distinct */
+
+  /* Header scrolled appearance (light theme) */
+  --header-scrolled-bg: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,255,255,0.92));
+  --header-scrolled-border: rgba(0,0,0,0.06);
+  --header-scrolled-shadow: 0 6px 20px rgba(0,0,0,0.06);
 }
 
 /* Dark theme overrides */
@@ -14,6 +23,14 @@
   --text:#e6eef8;
   --muted:#9fb0c1;
   --accent:#94a3b8;
+  /* Section backgrounds (dark variants) - alternating bands */
+  --bg-primary: var(--bg);
+  --bg-secondary: #101418; /* slightly lighter/different than primary */
+
+  /* Header scrolled appearance (dark theme) */
+  --header-scrolled-bg: linear-gradient(180deg, rgba(2,6,10,0.95), rgba(2,6,10,0.88));
+  --header-scrolled-border: rgba(255,255,255,0.06);
+  --header-scrolled-shadow: 0 6px 20px rgba(0,0,0,0.25);
 }
 
 body{background:var(--bg);color:var(--text);transition:background-color .2s ease,color .2s ease}

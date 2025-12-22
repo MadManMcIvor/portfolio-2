@@ -10,7 +10,9 @@
       (function(){
         try {
           const stored = localStorage.getItem('themeMode');
-          if (stored ? stored === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches) {
+          const dataTheme = document.documentElement.getAttribute('data-theme');
+          // Prefer explicit stored setting, then data-theme attribute, then OS preference
+          if (stored ? stored === 'dark' : (dataTheme === 'dark' ? true : matchMedia('(prefers-color-scheme: dark)').matches)) {
             document.documentElement.classList.add('dark');
           }
         } catch (_) {}
@@ -40,6 +42,7 @@
         <div class="nav-left" style="display:flex;align-items:center;gap:16px">
           <a href="#hero" class="site-title">Alex McIvor</a>
           <a href="#projects" class="nav-link">Projects</a>
+          <a href="#skills" class="nav-link">Skills</a>
           <a href="#contact" class="nav-link">Contact</a>
         </div>
         <div class="nav-actions">
@@ -58,47 +61,97 @@
     </header>
 
     <main>
-      <section id="hero" class="hero container" aria-labelledby="hero-heading">
-        <div class="hero-inner" style="display:grid;grid-template-columns:1fr 260px;gap:28px;align-items:center">
-          <div>
-            <h2 id="hero-heading">Alex McIvor — Software Engineer</h2>
-            <p class="lead">I design and build minimal, pragmatic user experiences using plain HTML, CSS, and Vanilla JS. I favour speed, clarity, and long-term maintainability.</p>
-            <div class="hero-actions">
-              <a href="#projects" class="btn btn-primary">View projects</a>
-              <a href="#contact" class="btn btn-outline">Contact</a>
+      <section id="hero" class="section section--primary" aria-labelledby="hero-heading">
+        <div class="container hero" style="padding-top:12px">
+          <div class="hero-inner" style="display:grid;grid-template-columns:1fr 360px;gap:48px;align-items:center">
+            <div>
+              <h2 id="hero-heading">Alex McIvor — Software Engineer</h2>
+              <p class="lead">I design and build minimal, pragmatic user experiences using plain HTML, CSS, and Vanilla JS. I favour speed, clarity, and long-term maintainability.</p>
+              <div class="hero-actions">
+                <a href="#projects" class="btn btn-primary">View projects</a>
+                <a href="#skills" class="btn btn-outline">Skills</a>
+              </div>
             </div>
-          </div>
-          <div class="hero-art" aria-hidden="true">
-            <img src="/assets/screenshots/hero_section.png" alt="Hero screenshot" style="width:100%;border-radius:12px;box-shadow:rgba(0,0,0,0.4) 0 6px 18px" />
+            <div class="hero-art" aria-hidden="true">
+              <img src="/assets/screenshots/hero_section.png" alt="Hero screenshot" style="width:100%;border-radius:12px;box-shadow:rgba(0,0,0,0.4) 0 6px 18px" />
+            </div>
           </div>
         </div>
       </section>
 
-      <section id="projects" class="projects container" aria-labelledby="projects-heading">
-        <h3 id="projects-heading">Projects</h3>
-        <div id="projects-grid" class="grid" role="list"></div>
+      <section id="projects" class="section section--secondary" aria-labelledby="projects-heading">
+        <div class="container projects">
+          <h3 id="projects-heading">Projects</h3>
+          <div id="projects-grid" class="grid" role="list"></div>
+        </div>
       </section>
 
-      <section id="contact" class="contact container" aria-labelledby="contact-heading">
-        <h3 id="contact-heading">Contact</h3>
-        <p>If you'd like to reach out, use the form below — this composes an email client message for now.</p>
-        <form id="contact-form" class="contact-form" aria-label="Contact form">
-          <div class="field">
-            <label class="label" for="c-name">Name</label>
-            <input id="c-name" class="input" name="name" required />
+      <section id="skills" class="section section--primary" aria-labelledby="skills-heading">
+        <div class="container skills">
+          <h3 id="skills-heading">Skills</h3>
+          <div class="skills-grid">
+            <div class="skills-col">
+              <h4>Languages</h4>
+              <ul>
+                <li>TypeScript</li>
+                <li>JavaScript</li>
+                <li>Python</li>
+                <li>Go</li>
+              </ul>
+            </div>
+            <div class="skills-col">
+              <h4>Frontend</h4>
+              <ul>
+                <li>React</li>
+                <li>Next.js</li>
+                <li>Vanilla JS</li>
+                <li>Tailwind CSS</li>
+              </ul>
+            </div>
+            <div class="skills-col">
+              <h4>Backend</h4>
+              <ul>
+                <li>Node.js</li>
+                <li>Express</li>
+                <li>PostgreSQL</li>
+                <li>Redis</li>
+              </ul>
+            </div>
+            <div class="skills-col">
+              <h4>Tools</h4>
+              <ul>
+                <li>Git</li>
+                <li>Docker</li>
+                <li>AWS</li>
+                <li>Vercel</li>
+              </ul>
+            </div>
           </div>
-          <div class="field">
-            <label class="label" for="c-email">Email</label>
-            <input id="c-email" class="input" name="email" type="email" required />
-          </div>
-          <div class="field">
-            <label class="label" for="c-message">Message</label>
-            <textarea id="c-message" class="input" name="message" rows="4" required></textarea>
-          </div>
-          <div class="actions">
-            <button type="submit" class="btn btn-primary">Send</button>
-          </div>
-        </form>
+        </div>
+      </section> 
+
+      <section id="contact" class="section section--secondary" aria-labelledby="contact-heading">
+        <div class="container contact">
+          <h3 id="contact-heading">Contact</h3>
+          <p>If you'd like to reach out, use the form below — this composes an email client message for now.</p>
+          <form id="contact-form" class="contact-form" aria-label="Contact form">
+            <div class="field">
+              <label class="label" for="c-name">Name</label>
+              <input id="c-name" class="input" name="name" required />
+            </div>
+            <div class="field">
+              <label class="label" for="c-email">Email</label>
+              <input id="c-email" class="input" name="email" type="email" required />
+            </div>
+            <div class="field">
+              <label class="label" for="c-message">Message</label>
+              <textarea id="c-message" class="input" name="message" rows="4" required></textarea>
+            </div>
+            <div class="actions">
+              <button type="submit" class="btn btn-primary">Send</button>
+            </div>
+          </form>
+        </div>
       </section>
     </main>
 

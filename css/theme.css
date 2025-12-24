@@ -3,7 +3,7 @@
   --bg:#fcfdff;
   --card-bg:#ffffff;
   --text:#0b1220;
-  --muted:#566370;
+  --muted:#5a6b78;
   --accent:#6b7280;
 
   /* Section backgrounds for alternating bands (primary / secondary) */
@@ -21,7 +21,7 @@
   --bg:#0b0f12;
   --card-bg:#0f1416;
   --text:#e6eef8;
-  --muted:#9fb0c1;
+  --muted:#a3b5c4;
   --accent:#94a3b8;
   /* Section backgrounds (dark variants) - alternating bands */
   --bg-primary: var(--bg);
@@ -35,7 +35,8 @@
 
 body{background:var(--bg);color:var(--text);transition:background-color .2s ease,color .2s ease}
 .card{background:var(--card-bg)}
-.btn.btn-primary{background:var(--accent);color:#031021}
+.btn.btn-primary{background:#5a6d7d;color:#ffffff}
+.dark .btn.btn-primary{background:#94a3b8;color:#0b0f12}
 
 /* Theme toggle: light-mode specific visual tweaks to improve contrast */
 :not(.dark) .btn.btn-icon-outline{

@@ -46,7 +46,7 @@ export function initModal() {
     }
   }
 
-  function open({src, alt = '', title = ''}, trigger){
+  function open({src, alt = '', title = '', content = ''}, trigger){
     previouslyFocused = document.activeElement;
     body.innerHTML = '';
 
@@ -64,12 +64,21 @@ export function initModal() {
       modalInner.setAttribute('aria-labelledby', h.id);
     }
 
-    const img = document.createElement('img');
-    img.src = src;
-    img.alt = alt || title;
-    img.style.maxWidth = '90vw';
-    img.style.maxHeight = '70vh';
-    body.append(img);
+    if(src) {
+      const img = document.createElement('img');
+      img.src = src;
+      img.alt = alt || title;
+      img.style.maxWidth = '90vw';
+      img.style.maxHeight = '70vh';
+      body.append(img);
+    }
+
+    if(content) {
+      const p = document.createElement('p');
+      p.className = 'modal-content';
+      p.textContent = content;
+      body.append(p);
+    }
 
     modal.style.display = 'block';
     modal.setAttribute('aria-hidden', 'false');
@@ -119,6 +128,7 @@ const css = `
 .app-modal .modal-title{margin:0 0 12px;font-size:1.05rem}
 .app-modal .modal-close{position:absolute;right:10px;top:8px;background:transparent;border:0;color:var(--text);font-size:16px}
 .app-modal img{display:block;border-radius:8px;max-width:100%;height:auto}
+.app-modal .modal-content{margin:0;line-height:1.6}
 `;
 const style = document.createElement('style');
 style.textContent = css;

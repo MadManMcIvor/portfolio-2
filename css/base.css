@@ -134,3 +134,14 @@ img[role="button"]:focus-visible{outline:3px solid rgba(148,163,184,0.22);outlin
 .field input,.field textarea{padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:var(--text)}
 .footer-inner{display:flex;align-items:center;justify-content:space-between;padding:20px 0;color:var(--muted)}
 @media (max-width:520px){.grid{grid-template-columns:repeat(1,1fr)}.footer-inner{flex-direction:column;gap:10px}}
+
+/* Curio cabinet table styling */
+.curio-table{width:100%;border-collapse:collapse;margin-top:18px}
+.curio-table th{text-align:left;padding:16px 12px;font-weight:600;font-size:0.95rem;border-bottom:1px solid rgba(255,255,255,0.06);color:var(--text)}
+.curio-table td{padding:16px 12px;border-bottom:1px solid rgba(255,255,255,0.03)}
+.curio-table tr:hover{background:rgba(255,255,255,0.01)}
+.curio-link{color:var(--accent);text-decoration:none;font-weight:500;transition:color .12s ease}
+.curio-link:hover,.curio-link:focus{color:var(--text);text-decoration:underline}
+.curio-link:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+.curio-thoughts-btn{padding:8px 14px;font-size:0.9rem;border-radius:6px;color:var(--text);border-color:rgba(255,255,255,0.12);background:rgba(255,255,255,0.04);transition:all .12s ease}
+.curio-thoughts-btn:hover,.curio-thoughts-btn:focus{color:var(--text);background:rgba(255,255,255,0.08);border-color:rgba(255,255,255,0.16)}

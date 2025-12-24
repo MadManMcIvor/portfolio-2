@@ -1,11 +1,13 @@
 import { initThemeToggle } from './components/themeToggle.js';
 import { initProjectCards } from './components/projectCards.js';
 import { initModal } from './components/modal.js';
+import { initCurioCabinet } from './components/curioCabinet.js';
 
 document.addEventListener('DOMContentLoaded', ()=>{
   const modal = initModal();
   initThemeToggle();
   initProjectCards({modal});
+  initCurioCabinet({modal});
 
   // Smooth scroll for in-page links and accessible focus handling
   document.addEventListener('click', (e)=>{

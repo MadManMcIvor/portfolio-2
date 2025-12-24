@@ -2,12 +2,20 @@ import { initThemeToggle } from './components/themeToggle.js';
 import { initProjectCards } from './components/projectCards.js';
 import { initModal } from './components/modal.js';
 import { initCurioCabinet } from './components/curioCabinet.js';
+import { initHero } from './components/hero.js';
+import { initSkills } from './components/skills.js';
+import { initContact } from './components/contact.js';
+import { initFooter } from './components/footer.js';
 
 document.addEventListener('DOMContentLoaded', ()=>{
   const modal = initModal();
   initThemeToggle();
+  initHero();
   initProjectCards({modal});
+  initSkills();
   initCurioCabinet({modal});
+  initContact();
+  initFooter();
 
   // Smooth scroll for in-page links and accessible focus handling
   document.addEventListener('click', (e)=>{

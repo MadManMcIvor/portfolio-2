@@ -78,17 +78,9 @@
     </header>
 
     <main>
-      <section id="hero" class="section section--primary" aria-labelledby="hero-heading">
+      <section id="hero" class="section section--primary" data-section="hero" aria-labelledby="hero-heading">
         <div class="container hero" style="padding-top:12px">
           <div class="hero-inner" style="display:grid;grid-template-columns:1fr 360px;gap:48px;align-items:center">
-            <div>
-              <h2 id="hero-heading">Alex McIvor — Software Engineer</h2>
-              <p class="lead">I design and build minimal, pragmatic user experiences using plain HTML, CSS, and Vanilla JS. I favour speed, clarity, and long-term maintainability.</p>
-              <div class="hero-actions">
-                <a href="#projects" class="btn btn-primary">View projects</a>
-                <a href="#skills" class="btn btn-outline">Skills</a>
-              </div>
-            </div>
           </div>
         </div>
       </section>
@@ -100,59 +92,10 @@
         </div>
       </section>
 
-      <section id="skills" class="section section--primary" aria-labelledby="skills-heading">
+      <section id="skills" class="section section--primary" data-section="skills" aria-labelledby="skills-heading">
         <div class="container skills">
           <h3 id="skills-heading">Skills</h3>
-          <div class="skills-grid">
-            <div class="skills-col">
-              <h4>Languages</h4>
-              <ul>
-                <li>TypeScript</li>
-                <li>JavaScript</li>
-                <li>Python</li>
-                <li>Java</li>
-                <li>Go</li>
-              </ul>
-            </div>
-            <div class="skills-col">
-              <h4>Frontend</h4>
-              <ul>
-                <li>Vue</li>
-                <li>React</li>
-                <li>Vanilla JS</li>
-                <li>Tailwind CSS</li>
-              </ul>
-            </div>
-            <div class="skills-col">
-              <h4>Backend</h4>
-              <ul>
-                <li>Node.js</li>
-                <li>Express</li>
-                <li>Echo</li>
-                <li>Django</li>
-                <li>FastAPI</li>
-                <li>Micronaut</li>
-              </ul>
-            </div>
-            <div class="skills-col">
-              <h4>Database</h4>
-              <ul>
-                <li>PostgreSQL</li>
-                <li>SQLite</li>
-                <li>DynamoDB</li>
-              </ul>
-            </div>
-            <div class="skills-col">
-              <h4>Tools</h4>
-              <ul>
-                <li>Git</li>
-                <li>Docker</li>
-                <li>AWS</li>
-                <li>Linux</li>
-                <li>Copilot</li>
-              </ul>
-            </div>
-          </div>
+          <div class="skills-grid"></div>
         </div>
       </section> 
 
@@ -164,15 +107,15 @@
         </div>
       </section>
 
-      <section id="contact" class="section section--primary" aria-labelledby="contact-heading">
+      <section id="contact" class="section section--primary" data-section="contact" aria-labelledby="contact-heading">
         <div class="container contact" style="text-align:center;max-width:760px;margin-left:auto;margin-right:auto">
-          <h3 id="contact-heading">Get in Touch</h3>
-          <p class="lead">I'm currently open to new opportunities. Whether you have a question or just want to say hi, I'll do my best to get back to you.</p>
+          <h3 id="contact-heading"></h3>
+          <p class="lead"></p>
 
           <p style="margin-top:28px">
-            <a id="contact-cta" class="btn btn-primary btn-cta" href="mailto:mcivor444@gmail.com?subject=Hello%20Alex%20McIvor" role="button" aria-label="Send email to Alex McIvor">
+            <a id="contact-cta" class="btn btn-primary btn-cta" role="button" aria-label="Send email to Alex McIvor">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-mail-icon lucide-mail"><path d="m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg>
-              <span style="margin-left:10px">Say Hello</span>
+              <span style="margin-left:10px"></span>
             </a>
           </p>
 
@@ -182,8 +125,6 @@
 
     <footer class="site-footer">
       <div class="container footer-inner">
-        <p>© Alex McIvor</p>
-        <p class="muted-note">Built with Basecoat CSS</p>
       </div>
     </footer>
 

@@ -21,7 +21,7 @@ body{
 /* Header overlays content — avoid pushing content down so the hero sits flush under the header */
 /* Use scroll-padding & scroll-margin to ensure anchored sections appear below the sticky header */
 html{scroll-padding-top:calc(var(--header-height) + 8px)}
-section, .hero{scroll-margin-top:calc(var(--header-height) + 12px)}
+section, .hero{scroll-margin-top:calc(var(--header-height) - 50px)}
 /* Keep header fixed to the viewport so it doesn't become constrained by parent containers or overlays */
 .site-header{position:fixed;left:0;right:0;top:0;z-index:10000;background:linear-gradient(180deg,rgba(0,0,0,0.28),transparent);backdrop-filter:blur(6px);border-bottom:1px solid rgba(255,255,255,0.04);transition:background .18s ease,box-shadow .18s ease,border-color .18s ease}
  .site-header.scrolled{box-shadow:var(--header-scrolled-shadow);background:var(--header-scrolled-bg);border-bottom-color:var(--header-scrolled-border)}

@@ -154,7 +154,10 @@ export function initCurioCabinet({ containerSelector = '#curio-table', modal }) 
     modal.open({
       src: null,
       title: item.title,
-      content: item.thoughts
+      content: {
+        description: item.description,
+        thoughts: item.thoughts
+      }
     });
   });
 }

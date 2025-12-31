@@ -74,10 +74,37 @@ export function initModal() {
     }
 
     if(content) {
-      const p = document.createElement('p');
-      p.className = 'modal-content';
-      p.textContent = content;
-      body.append(p);
+      // Handle both string content and structured item objects
+      if (typeof content === 'string') {
+        const p = document.createElement('p');
+        p.className = 'modal-content';
+        p.textContent = content;
+        body.append(p);
+      } else if (typeof content === 'object' && content !== null) {
+        // Structured content with description and thoughts
+        if (content.description) {
+          const descSection = document.createElement('div');
+          descSection.className = 'modal-section';
+          const descLabel = document.createElement('strong');
+          descLabel.textContent = 'Description:';
+          const descText = document.createElement('p');
+          descText.className = 'modal-content';
+          descText.textContent = content.description;
+          descSection.append(descLabel, descText);
+          body.append(descSection);
+        }
+        if (content.thoughts) {
+          const thoughtsSection = document.createElement('div');
+          thoughtsSection.className = 'modal-section';
+          const thoughtsLabel = document.createElement('strong');
+          thoughtsLabel.textContent = 'Thoughts:';
+          const thoughtsText = document.createElement('p');
+          thoughtsText.className = 'modal-content';
+          thoughtsText.textContent = content.thoughts || '(No thoughts yet)';
+          thoughtsSection.append(thoughtsLabel, thoughtsText);
+          body.append(thoughtsSection);
+        }
+      }
     }
 
     modal.style.display = 'block';
@@ -123,12 +150,15 @@ export function initModal() {
 const css = `
 .app-modal{position:fixed;inset:0;display:none;z-index:6000}
 .app-modal .modal-backdrop{position:fixed;inset:0;background:rgba(2,6,10,0.6);display:flex;align-items:center;justify-content:center}
-.app-modal .modal-inner{background:var(--card-bg);padding:18px;border-radius:12px;border:1px solid rgba(255,255,255,0.03);max-width:92vw;position:relative}
+.app-modal .modal-inner{background:var(--card-bg);padding:18px;border-radius:12px;border:1px solid rgba(255,255,255,0.03);max-width:600px;position:relative}
 .app-modal .modal-inner:focus{outline:2px solid var(--primary);outline-offset:4px}
 .app-modal .modal-title{margin:0 0 12px;font-size:1.05rem}
 .app-modal .modal-close{position:absolute;right:10px;top:8px;background:transparent;border:0;color:var(--text);font-size:16px}
 .app-modal img{display:block;border-radius:8px;max-width:100%;height:auto}
 .app-modal .modal-content{margin:0;line-height:1.6}
+.app-modal .modal-section{margin-bottom:16px}
+.app-modal .modal-section strong{display:block;margin-bottom:8px;font-weight:600;color:var(--text)}
+.app-modal .modal-section p{margin:0;line-height:1.6;color:var(--muted)}
 `;
 const style = document.createElement('style');
 style.textContent = css;

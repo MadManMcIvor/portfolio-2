@@ -1,29 +1,20 @@
 export const projects = [
   {
-    id: 'lovable-ui',
-    title: 'Lovable UI Mockups',
-    desc: 'A small collection of UI experiments inspired by Lovable mockups.',
-    tech: ['HTML','CSS','Vanilla JS'],
-    github: '#',
-    live: '#',
-    img: '/assets/screenshots/projects.png'
+    id: 'Abigail',
+    title: 'Abigail',
+    desc: 'A unifying web app connecting Pearson assessment authoring, delivery, and management tools empowered with AI',
+    tech: ['Vue','Go','Postgres','AI'],
   },
   {
-    id: 'obsidian-theme',
-    title: 'Obsidian Palette Demo',
-    desc: 'Theme/controls demonstrating a dark, obsidian-inspired palette.',
-    tech: ['CSS','Accessibility'],
-    github: '#',
-    live: '#',
-    img: '/assets/screenshots/hero_section.png'
+    id: 'WriteUp!',
+    title: 'WriteUp!',
+    desc: 'AI-powered writing assessment prep platform helping students improve their writing skills through practice and feedback.',
+    tech: ['Vue','NodeJs','DynamoDB','AI'],
   },
   {
-    id: 'layout-cards',
-    title: 'Card Layouts',
-    desc: 'Responsive card grid showcasing screenshots and concise project info.',
-    tech: ['Responsive CSS','Design Systems'],
-    github: '#',
-    live: '#',
-    img: '/assets/screenshots/typesettings.png'
+    id: 'PASS',
+    title: 'PASS',
+    desc: 'Pearson Assessment Scoring System - An API based scalable, secure platform for managing and scoring large-scale assessments.',
+    tech: ['Java','Postgres','Microservices'],
   }
 ];

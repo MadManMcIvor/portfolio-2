@@ -56,12 +56,15 @@ body{padding-top:var(--header-height)}
 }
 
 /* Sections: larger vertical rhythm and alternating subtle backgrounds */
-.section{padding:96px 0;min-height:68vh;display:block}
-.section .container{padding-top:8px;padding-bottom:8px}
+.section{padding:80px 0;display:block}
+.section .container{padding-top:16px;padding-bottom:16px}
 .section--primary{background:var(--bg-primary)}
 .section--secondary{background:var(--bg-secondary)}
 @media (max-width:900px){
-  .section{padding:56px 0;min-height:auto}
+  .section{padding:56px 0}
+}
+@media (max-width:520px){
+  .section{padding:48px 0}
 }
 
 /* Contact CTA */

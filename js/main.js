@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
   const modal = initModal();
   initThemeToggle();
   initHero();
-  initProjectCards({modal});
+  initProjectCards();
   initSkills();
   initCurioCabinet({modal});
   initContact();
@@ -59,19 +59,5 @@ document.addEventListener('DOMContentLoaded', ()=>{
   window.addEventListener('scroll', onScroll, { passive: true });
   onScroll();
 
-  const form = document.getElementById('contact-form');
-  if (form) {
-    form.addEventListener('submit', (e)=>{
-      e.preventDefault();
-    const f = new FormData(form);
-    const name = f.get('name');
-    const email = f.get('email');
-    const message = f.get('message');
-    // compose mailto
-    const to = 'you@example.com'; // replace with your email
-    const subject = encodeURIComponent('Portfolio contact from ' + name);
-    const body = encodeURIComponent(`From: ${name} <${email}>\n\n${message}`);
-    window.location.href = `mailto:${to}?subject=${subject}&body=${body}`;
-    });
-  }
+
 });

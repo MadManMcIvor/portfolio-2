@@ -139,15 +139,8 @@ export function initModal() {
   backdrop.addEventListener('click', (e) => { if(e.target.dataset.close !== undefined) close(); });
   closeBtn.addEventListener('click', close);
 
-  // hide initially
-  modal.style.display = 'none';
-  modal.setAttribute('aria-hidden', 'true');
-
-  return {open, close};
-}
-
-/* Minimal styling for modal — inlined here for convenience */
-const css = `
+  // Inject modal styles (scoped to init so importing the module has no side effects)
+  const css = `
 .app-modal{position:fixed;inset:0;display:none;z-index:6000}
 .app-modal .modal-backdrop{position:fixed;inset:0;background:rgba(2,6,10,0.6);display:flex;align-items:center;justify-content:center}
 .app-modal .modal-inner{background:var(--card-bg);padding:18px;border-radius:12px;border:1px solid rgba(255,255,255,0.03);max-width:600px;position:relative}
@@ -160,6 +153,13 @@ const css = `
 .app-modal .modal-section strong{display:block;margin-bottom:8px;font-weight:600;color:var(--text)}
 .app-modal .modal-section p{margin:0;line-height:1.6;color:var(--muted)}
 `;
-const style = document.createElement('style');
-style.textContent = css;
-document.head.append(style);
+  const styleEl = document.createElement('style');
+  styleEl.textContent = css;
+  document.head.append(styleEl);
+
+  // hide initially
+  modal.style.display = 'none';
+  modal.setAttribute('aria-hidden', 'true');
+
+  return {open, close};
+}

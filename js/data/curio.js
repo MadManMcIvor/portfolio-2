@@ -67,7 +67,7 @@ export const curioItems = [
     title: 'SQLite',
     type: 'Technology',
     description: 'An underrated database. Single-file deployment, zero configuration, excellent for projects of all sizes.',
-    thoughts: 'SQLite amazes me. An in-process database that is so reliable and performant. It\'s one of of the most deployed pieces of software in the world. It\'s much more powerful than people think. My current thought process is that unless you have a specific need for a client-server database, SQLite should be your default choice. (then you should choose Postgres if you do need client-server database)', 
+    thoughts: 'SQLite amazes me. An in-process database that is so reliable and performant. It\'s one of the most deployed pieces of software in the world. It\'s much more powerful than people think. My current thought process is that unless you have a specific need for a client-server database, SQLite should be your default choice. (then you should choose Postgres if you do need client-server database)', 
     date: new Date('2025-12-31'),
     url: 'https://www.sqlite.org/'
   },
@@ -76,7 +76,7 @@ export const curioItems = [
     title: 'DuckDB',
     type: 'Technology',
     description: 'Columnar SQL database optimized for analytical queries. Incredibly fast for data exploration.',
-    thoughts: 'A new contender in the database space. I love it\'s focus on analytical workloads and improved SQL syntax. I haven\'t had too much reason to put it to use other than analyzing CSVs and JSON quickly, but if I had a known dataset, this is definitely my choice for data exploration and analysis.', 
+    thoughts: 'A new contender in the database space. I love its focus on analytical workloads and improved SQL syntax. I haven\'t had too much reason to put it to use other than analyzing CSVs and JSON quickly, but if I had a known dataset, this is definitely my choice for data exploration and analysis.', 
     date: new Date('2025-12-31'),
     url: 'https://duckdb.org/'
   },

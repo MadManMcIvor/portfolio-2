@@ -1,6 +1,6 @@
 import { projects } from '../data/projects.js';
 
-export function initProjectCards({containerSelector = '#projects-grid', modal}){
+export function initProjectCards({containerSelector = '#projects-grid'} = {}){
   const container = document.querySelector(containerSelector);
   if(!container) return;
 
@@ -11,7 +11,8 @@ export function initProjectCards({containerSelector = '#projects-grid', modal}){
         <p>${p.desc}</p>
       </header>
       <section>
-        <div class="badges" aria-hidden="true">${p.tech.map(t=>`<span class="badge">${t}</span>`).join('')}</div>
+        <div class="badges">${p.tech.map(t=>`<span class="badge">${t}</span>`).join('')}</div>
+        <span class="sr-only">Technologies: ${p.tech.join(', ')}</span>
       </section>
     </div>`
   )).join('');

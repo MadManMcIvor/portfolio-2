@@ -1,4 +1,4 @@
 export const footer = {
-  copyright: '© Alex McIvor',
+  copyright: `© ${new Date().getFullYear()} Alex McIvor`,
   credit: 'Built with Basecoat CSS'
 };

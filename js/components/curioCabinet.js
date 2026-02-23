@@ -7,11 +7,12 @@ export function initCurioCabinet({ containerSelector = '#curio-table', modal }) 
   const container = document.querySelector(containerSelector);
   if (!container) return;
 
-  // Sort items by date (newest first)
-  const sortedItems = [...curioItems].sort((a, b) => b.date - a.date);
+  const items = curioItems;
 
-  // Calculate total pages
-  const totalPages = Math.ceil(sortedItems.length / ITEMS_PER_PAGE);
+  // Calculate total pages (first page shows INITIAL_DISPLAY, subsequent pages show ITEMS_PER_PAGE)
+  const totalPages = items.length <= INITIAL_DISPLAY
+    ? 1
+    : 1 + Math.ceil((items.length - INITIAL_DISPLAY) / ITEMS_PER_PAGE);
   let currentPage = 1;
 
   // Wrapper for table and pagination
@@ -33,14 +34,15 @@ export function initCurioCabinet({ containerSelector = '#curio-table', modal }) 
     let itemsToShow;
     if (page === 1) {
       // First page shows up to INITIAL_DISPLAY items
-      itemsToShow = sortedItems.slice(0, INITIAL_DISPLAY);
+      itemsToShow = items.slice(0, INITIAL_DISPLAY);
     } else {
       // Subsequent pages show ITEMS_PER_PAGE items
       const startIndex = INITIAL_DISPLAY + (page - 2) * ITEMS_PER_PAGE;
-      itemsToShow = sortedItems.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+      itemsToShow = items.slice(startIndex, startIndex + ITEMS_PER_PAGE);
     }
 
     table.innerHTML = `
+      <caption class="sr-only">Technologies, articles, and tools that Alex finds interesting</caption>
       <thead>
         <tr>
           <th>What?</th>
@@ -83,7 +85,6 @@ export function initCurioCabinet({ containerSelector = '#curio-table', modal }) 
         currentPage--;
         renderTable(currentPage);
         renderPagination();
-        scrollToTop();
       }
     });
     prevLi.appendChild(prevBtn);
@@ -103,7 +104,6 @@ export function initCurioCabinet({ containerSelector = '#curio-table', modal }) 
         currentPage = i;
         renderTable(currentPage);
         renderPagination();
-        scrollToTop();
       });
       li.appendChild(btn);
       ul.appendChild(li);
@@ -120,7 +120,6 @@ export function initCurioCabinet({ containerSelector = '#curio-table', modal }) 
         currentPage++;
         renderTable(currentPage);
         renderPagination();
-        scrollToTop();
       }
     });
     nextLi.appendChild(nextBtn);
@@ -128,10 +127,6 @@ export function initCurioCabinet({ containerSelector = '#curio-table', modal }) 
 
     nav.appendChild(ul);
     paginationContainer.appendChild(nav);
-  }
-
-  function scrollToTop() {
-    // Don't scroll to avoid moving pagination off screen
   }
 
   // Initial render

@@ -8,7 +8,7 @@ export function initContact() {
   if (!container) return;
 
   // Update heading
-  const heading = container.querySelector('h3');
+  const heading = container.querySelector('h2');
   if (heading) {
     heading.textContent = contact.heading;
   }

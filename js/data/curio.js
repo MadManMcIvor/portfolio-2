@@ -49,7 +49,7 @@ export const curioItems = [
     title: 'Basecoat',
     type: 'UI Framework',
     description: 'Minimal CSS component library with excellent accessibility. Lightweight, customizable, and doesn\'t force you into a framework.',
-    thoughts: 'This portfolio site was built using Basecoat! I love the simplicity of it. As much as I\'m a fan of React/Vue/etc. you often don\'t need a full framework for smaller projects. Basecoat provides just enough structure and styling to build clean, accessible UIs without the bloat of larger frameworks.',
+    thoughts: 'An earlier version of this portfolio was built on Basecoat, and I still love the simplicity of it. As much as I\'m a fan of React/Vue/etc. you often don\'t need a full framework for smaller projects. Basecoat provides just enough structure and styling to build clean, accessible UIs without the bloat of larger frameworks.',
     date: new Date('2025-12-31'),
     url: 'https://basecoatui.com/'
   },

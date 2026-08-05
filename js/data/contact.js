@@ -1,9 +1,9 @@
 export const contact = {
-  heading: 'Get in Touch',
-  description: 'I\'m currently open to new opportunities. Whether you have a question or just want to say hi, I\'ll do my best to get back to you.',
+  heading: 'Get in touch',
+  description: 'I\'m always up for talking shop — interesting problems, good engineering, or anything from the curio cabinet above. If something here caught your attention, my inbox is open.',
   email: 'mcivor444@gmail.com',
   cta: {
-    text: 'Say Hello',
+    text: 'Say hello',
     href: 'mailto:mcivor444@gmail.com?subject=Hello%20Alex%20McIvor'
   },
   socials: [

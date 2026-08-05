@@ -7,7 +7,7 @@ export function initProjectCards({containerSelector = '#projects-grid'} = {}){
   container.innerHTML = projects.map(p => (
     `<div class="card" role="listitem" data-id="${p.id}">
       <header>
-        <h4>${p.title}</h4>
+        <h3>${p.title}</h3>
         <p>${p.desc}</p>
       </header>
       <section>

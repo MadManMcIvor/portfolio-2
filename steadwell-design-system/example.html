@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Cream &amp; Ink</title>
+    <link rel="stylesheet" href="tokens.css" />
+    <script src="theme-toggle.js"></script>
+    <style>
+      .wrap {
+        max-width: 36rem;
+        margin: 0 auto;
+        padding: var(--space-6) var(--space-5) var(--space-7);
+      }
+      .top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--space-3);
+      }
+      .eyebrow {
+        margin: 0;
+        font-size: var(--text-small);
+        font-weight: 500;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--ink-faint);
+      }
+      .toggle {
+        display: inline-flex;
+        gap: 1px;
+        padding: 2px;
+        background: var(--paper-sunken);
+        border: 1px solid var(--paper-line);
+        border-radius: var(--radius-pill);
+      }
+      .toggle button {
+        padding: var(--space-1) var(--space-3);
+        border: 0;
+        border-radius: var(--radius-pill);
+        background: transparent;
+        font: inherit;
+        font-size: var(--text-small);
+        color: var(--ink-faint);
+        cursor: pointer;
+      }
+      .toggle button[aria-pressed='true'] {
+        background: var(--paper-raised);
+        color: var(--ink);
+        box-shadow: var(--shadow-card);
+      }
+      .lede {
+        max-width: 30rem;
+        font-size: var(--text-body);
+        color: var(--ink-muted);
+      }
+      .section-title {
+        margin: var(--space-7) 0 var(--space-4);
+        padding-bottom: var(--space-3);
+        border-bottom: 1px solid var(--paper-line);
+        font-size: var(--text-small);
+        font-weight: 500;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--ink-faint);
+      }
+      .card {
+        padding: var(--space-4);
+        margin-bottom: var(--space-3);
+        background: var(--paper-raised);
+        border: 1px solid var(--paper-line);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow-card);
+      }
+      .card h3 {
+        margin: 0;
+        font-size: var(--text-heading);
+        font-weight: 600;
+      }
+      .card p {
+        margin: var(--space-2) 0 0;
+        font-size: var(--text-sub);
+        color: var(--ink-muted);
+      }
+      .aside {
+        margin: var(--space-3) 0 0;
+        font-family: var(--font-serif);
+        font-size: var(--text-sub);
+        font-style: italic;
+        color: var(--ink-faint);
+      }
+      .chip {
+        padding: 0.15rem var(--space-2);
+        border-radius: var(--radius-pill);
+        font-size: 0.6875rem;
+        font-weight: 500;
+      }
+      .chip.clay {
+        background: var(--clay-tint);
+        color: var(--clay-strong);
+      }
+      .chip.sage {
+        background: var(--sage-tint);
+        color: var(--sage-strong);
+      }
+      .head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: var(--space-3);
+      }
+      .swatches {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(7rem, 1fr));
+        gap: var(--space-3);
+      }
+      .sw i {
+        display: block;
+        height: 3rem;
+        border: 1px solid var(--paper-line);
+        border-radius: var(--radius-sm);
+      }
+      .sw span {
+        display: block;
+        margin-top: var(--space-1);
+        font-size: var(--text-small);
+        color: var(--ink-faint);
+      }
+      .foot {
+        margin-top: var(--space-7);
+        padding-top: var(--space-5);
+        border-top: 1px solid var(--paper-line);
+        font-family: var(--font-serif);
+        font-style: italic;
+        font-size: var(--text-sub);
+        text-align: center;
+        color: var(--ink-faint);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="top">
+        <p class="eyebrow">Design system</p>
+        <div class="toggle" id="toggle">
+          <button aria-pressed="true" onclick="pick('light')">Light</button>
+          <button aria-pressed="false" onclick="pick('dark')">Dark</button>
+          <button aria-pressed="false" onclick="pick('system')">System</button>
+        </div>
+      </div>
+
+      <h1>Cream &amp; Ink</h1>
+      <p class="lede">
+        Warm paper, warm near-black, one earthen accent. Built to feel like a well-made
+        notebook rather than a dashboard.
+      </p>
+
+      <h2 class="section-title">Cards</h2>
+
+      <div class="card">
+        <div class="head">
+          <h3>Something worth a look</h3>
+          <span class="chip clay">Attention</span>
+        </div>
+        <p>Clay marks what matters. It is warm and earthen, and deliberately never red.</p>
+        <p class="aside">The serif appears here, and almost nowhere else.</p>
+      </div>
+
+      <div class="card">
+        <div class="head">
+          <h3>Something handled</h3>
+          <span class="chip sage">Settled</span>
+        </div>
+        <p>
+          Sage means resolved. Muted on purpose — a brighter green would turn completion
+          into a reward.
+        </p>
+      </div>
+
+      <h2 class="section-title">Palette</h2>
+      <div class="swatches">
+        <div class="sw">
+          <i style="background: var(--paper)"></i><span>paper</span>
+        </div>
+        <div class="sw">
+          <i style="background: var(--paper-raised)"></i><span>paper-raised</span>
+        </div>
+        <div class="sw">
+          <i style="background: var(--paper-sunken)"></i><span>paper-sunken</span>
+        </div>
+        <div class="sw"><i style="background: var(--ink)"></i><span>ink</span></div>
+        <div class="sw">
+          <i style="background: var(--ink-muted)"></i><span>ink-muted</span>
+        </div>
+        <div class="sw"><i style="background: var(--clay)"></i><span>clay</span></div>
+        <div class="sw"><i style="background: var(--sage)"></i><span>sage</span></div>
+      </div>
+
+      <h2 class="section-title">Prose</h2>
+      <p>
+        Body copy sits at 17px with relaxed leading. Links like
+        <a href="#">this one</a> take the clay accent. Inline <code>code</code> sits on
+        sunken paper.
+      </p>
+      <pre><code>.card {
+  background: var(--paper-raised);
+  border: 1px solid var(--paper-line);
+  border-radius: var(--radius);
+}</code></pre>
+
+      <p class="foot">Space and restraint do most of the work.</p>
+    </div>
+
+    <script>
+      function pick(choice) {
+        setTheme(choice)
+        const labels = ['light', 'dark', 'system']
+        document.querySelectorAll('#toggle button').forEach((b, i) => {
+          b.setAttribute('aria-pressed', String(labels[i] === choice))
+        })
+      }
+    </script>
+  </body>
+</html>

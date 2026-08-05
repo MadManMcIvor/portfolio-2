@@ -24,10 +24,8 @@ export function initCurioCabinet({ containerSelector = '#curio-table', modal }) 
   table.className = 'curio-table';
   table.setAttribute('data-curio-table', 'true');
 
-  // Pagination component (Basecoat)
   const paginationContainer = document.createElement('div');
   paginationContainer.className = 'curio-pagination';
-  paginationContainer.setAttribute('style', 'margin-top: 24px; margin-bottom: 32px; display: flex; justify-content: flex-end;');
 
   function renderTable(page) {
     // Determine which items to show

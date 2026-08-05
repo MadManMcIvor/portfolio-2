@@ -1,75 +1,70 @@
 <!doctype html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="light">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Alex McIvor — Software Engineer</title>
-    <!-- Basecoat (official CDN) -->
-    <!-- Theme initialization (prevents flash of wrong theme) -->
+    <meta name="description" content="Alex McIvor is a software engineer who designs and ships full stack, pragmatic software with an emphasis on long-term maintainability and clean architecture." />
+
+    <!-- Theme: light by default, applied before first paint to avoid a flash.
+         See steadwell-design-system/theme-toggle.js for the source of this pattern. -->
     <script>
-      (function(){
-        try {
-          const stored = localStorage.getItem('themeMode');
-          const dataTheme = document.documentElement.getAttribute('data-theme');
-          // Prefer explicit stored setting, then data-theme attribute, then OS preference
-          if (stored ? stored === 'dark' : (dataTheme === 'dark' ? true : matchMedia('(prefers-color-scheme: dark)').matches)) {
-            document.documentElement.classList.add('dark');
+      (function () {
+        var KEY = 'theme';
+        var DEFAULT = 'light';
+        function apply(choice) {
+          document.documentElement.setAttribute('data-theme', choice);
+        }
+        function stored() {
+          try {
+            var v = localStorage.getItem(KEY);
+            return v === 'light' || v === 'dark' ? v : null;
+          } catch (e) {
+            return null;
           }
-        } catch (_) {}
-        const apply = dark => {
-          document.documentElement.classList.toggle('dark', dark);
-          try { localStorage.setItem('themeMode', dark ? 'dark' : 'light'); } catch(_) {}
+        }
+        apply(stored() || DEFAULT);
+        window.setTheme = function (choice) {
+          apply(choice);
+          try {
+            localStorage.setItem(KEY, choice);
+          } catch (e) {}
         };
-        document.addEventListener('basecoat:theme', (event) => {
-          const mode = event.detail && event.detail.mode;
-          apply(mode === 'dark' ? true : mode === 'light' ? false : !document.documentElement.classList.contains('dark'));
-        });
       })();
     </script>
 
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/basecoat-css@0.3.9/dist/basecoat.cdn.min.css">
-
-    <!-- Local styles (loaded after Basecoat so we can override styles as needed) -->
+    <link rel="stylesheet" href="./css/tokens.css" />
     <link rel="stylesheet" href="./css/base.css" />
-    <link rel="stylesheet" href="./css/theme.css" />
-
-    <!-- Basecoat JS (optional but required for components that need JS) -->
-    <script src="https://cdn.jsdelivr.net/npm/basecoat-css@0.3.9/dist/js/all.min.js" defer></script>
   </head>
   <body>
     <header class="site-header">
       <nav class="nav container" role="navigation" aria-label="Main">
-        <div class="nav-left" style="display:flex;align-items:center;gap:16px">
+        <div class="nav-left">
           <a href="#hero" class="site-title">Alex McIvor</a>
-          <a href="#projects" class="nav-link">Selected Work</a>
+          <a href="#projects" class="nav-link">Selected work</a>
           <a href="#skills" class="nav-link">Skills</a>
-          <a href="#curio" class="nav-link">Curio Cabinet</a>
+          <a href="#curio" class="nav-link">Curio cabinet</a>
           <a href="#contact" class="nav-link">Contact</a>
         </div>
         <div class="nav-actions">
           <div class="socials" aria-label="Social links">
             <a id="github-link" class="social-link" href="https://github.com/MadManMcIvor" aria-label="GitHub (opens in a new tab)" target="_blank" rel="noopener noreferrer">
-              <!-- Lucide: GitHub (user-supplied) -->
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-github-icon lucide-github" aria-hidden="true"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/></svg>
             </a>
             <a id="linkedin-link" class="social-link" href="https://www.linkedin.com/in/alex-mcivor-swe/" aria-label="LinkedIn (opens in a new tab)" target="_blank" rel="noopener noreferrer">
-              <!-- Lucide: LinkedIn (user-supplied) -->
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-linkedin-icon lucide-linkedin" aria-hidden="true"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect width="4" height="12" x="2" y="9"/><circle cx="4" cy="4" r="2"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect width="4" height="12" x="2" y="9"/><circle cx="4" cy="4" r="2"/></svg>
             </a>
             <a id="email-link" class="social-link" href="mailto:mcivor444@gmail.com" aria-label="Send email">
-              <!-- Lucide: Mail (user-supplied) -->
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-mail-icon lucide-mail" aria-hidden="true"><path d="m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg>
             </a>
           </div>
 
           <span class="nav-sep" aria-hidden="true" role="presentation"></span>
 
-          <button id="theme-toggle" type="button" aria-label="Toggle dark mode" data-tooltip="Toggle dark mode" data-side="bottom" class="btn btn-icon-outline size-8" title="Toggle dark mode">
-            <!-- Sun (light) -->
+          <button id="theme-toggle" type="button" aria-label="Toggle dark mode" class="btn btn-icon" title="Toggle dark mode">
             <span class="theme-icon theme-icon-sun" aria-hidden="true">
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path></svg>
             </span>
-            <!-- Moon (dark) -->
             <span class="theme-icon theme-icon-moon" aria-hidden="true">
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
             </span>
@@ -79,47 +74,46 @@
     </header>
 
     <main>
-      <section id="hero" class="section section--primary" data-section="hero" aria-labelledby="hero-heading">
-        <div class="container hero" style="padding-top:12px">
-          <div class="hero-inner" style="display:grid;grid-template-columns:1fr 320px;gap:40px;align-items:center">
-          </div>
+      <section id="hero" class="section hero" data-section="hero" aria-labelledby="hero-heading">
+        <div class="container hero-inner">
         </div>
       </section>
 
       <section id="projects" class="section section--secondary" aria-labelledby="projects-heading">
         <div class="container projects">
-          <h3 id="projects-heading">Selected Work</h3>
+          <h2 id="projects-heading" class="section-title">Selected work</h2>
           <div id="projects-grid" class="grid" role="list"></div>
         </div>
       </section>
 
-      <section id="skills" class="section section--primary" data-section="skills" aria-labelledby="skills-heading">
+      <section id="skills" class="section" data-section="skills" aria-labelledby="skills-heading">
         <div class="container skills">
-          <h3 id="skills-heading">Skills</h3>
+          <h2 id="skills-heading" class="section-title">Skills</h2>
           <div class="skills-grid"></div>
         </div>
-      </section> 
+      </section>
 
       <section id="curio" class="section section--secondary" aria-labelledby="curio-heading">
         <div class="container curio">
-          <h3 id="curio-heading">Curio Cabinet</h3>
+          <h2 id="curio-heading" class="section-title">Curio cabinet</h2>
           <p class="lead">A collection of technologies and articles that I find cool, interesting, or otherwise noteworthy.</p>
           <div id="curio-table"></div>
         </div>
       </section>
 
-      <section id="contact" class="section section--primary" data-section="contact" aria-labelledby="contact-heading">
-        <div class="container contact" style="text-align:center;max-width:760px;margin-left:auto;margin-right:auto">
-          <h3 id="contact-heading"></h3>
-          <p class="lead"></p>
+      <section id="contact" class="section" data-section="contact" aria-labelledby="contact-heading">
+        <div class="container">
+          <div class="contact">
+            <h2 id="contact-heading" class="section-title"></h2>
+            <p class="lead"></p>
 
-          <p style="margin-top:28px">
-            <a id="contact-cta" class="btn btn-primary btn-cta" role="button" aria-label="Send email to Alex McIvor">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-mail-icon lucide-mail"><path d="m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg>
-              <span style="margin-left:10px"></span>
-            </a>
-          </p>
-
+            <p class="contact-cta-wrap">
+              <a id="contact-cta" class="btn btn-primary btn-cta" role="button" aria-label="Send email to Alex McIvor">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg>
+                <span></span>
+              </a>
+            </p>
+          </div>
         </div>
       </section>
     </main>

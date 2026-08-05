@@ -9,7 +9,7 @@ export function initSkills() {
 
   skillsGrid.innerHTML = skills.categories.map(category => `
     <div class="skills-col">
-      <h4>${category.name}</h4>
+      <h3>${category.name}</h3>
       <ul>
         ${category.items.map(item => `<li>${item}</li>`).join('')}
       </ul>

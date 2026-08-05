@@ -1,36 +1,50 @@
-Accessibility checklist and manual tests
+# Accessibility checklist
 
-This file contains quick manual checks and remediation notes for the portfolio.
+Manual checks for the portfolio. Run these after any change to markup, the theme system,
+or the modal.
 
-Quick checks (manual)
+## 1. Keyboard navigation
 
-1. Keyboard navigation
-   - Tab through the page and ensure each interactive element receives a visible focus ring.
-   - The theme toggle (`#theme-toggle`) should be reachable with Tab and toggle with Enter/Space.
-   - Images in project cards (they are `role="button"` and `tabindex="0"`) should be focusable and open the modal with Enter or Space.
+- Tab through the page; every interactive element should get a visible focus ring
+  (2px clay outline).
+- The theme toggle (`#theme-toggle`) is reachable with Tab and activates with Enter/Space.
+- "Context" buttons in the Curio Cabinet and the pagination controls are reachable and
+  activate with Enter/Space.
 
-2. Modal behavior
-   - Open a project screenshot (click or keyboard). Focus should move into the modal (first focusable element).
-   - Tab should cycle through modal controls only (focus trap). Shift+Tab should work in reverse.
-   - Press Escape to close the modal. Focus should be restored to the element that opened it.
-   - Content behind the modal should be hidden from assistive tech (aria-hidden) while modal is open.
+## 2. Modal behaviour
 
-3. ARIA & semantics
-   - `main`, `nav`, `header`, and `footer` are present and have semantic roles.
-   - Buttons have appropriate `aria-label` or visible labels (theme toggle has `aria-pressed` and `aria-label`).
+- Open a Curio "Context" entry. Focus moves into the modal (first focusable element).
+- Tab cycles through modal controls only (focus trap); Shift+Tab works in reverse.
+- Escape closes the modal and restores focus to the button that opened it.
+- Content behind the modal is `inert` and `aria-hidden` while it is open.
 
-4. Forms
-   - The contact form has properly associated `label` elements and required fields.
+## 3. ARIA and semantics
 
-5. Visual focus
-   - Focus-visible styles are present and high-contrast for keyboard users (check `:focus-visible` on buttons and `img[role="button"]`).
+- `main`, `nav`, `header`, and `footer` are present.
+- One `h1` per page (the hero), with section headings as `h2` and card titles as `h3`.
+- The theme toggle uses the `switch` pattern (`role="switch"` + `aria-checked`) and
+  announces its new state through a polite live region.
+- The Curio table has a `<caption>` (visually hidden) and `<th>` column headers.
 
-Notes and next steps
-- Implemented: modal focus-trap, aria-hidden toggling, keyboard activation for project images, focus-visible improvements.
-- Remaining: add automated accessibility tests (axe/lighthouse CI), optimize images with responsive srcset, and run a full screen-reader test (NVDA/VoiceOver) if possible.
+## 4. Colour and contrast
 
-How to run the manual tests locally
+- Both themes are hand-designed — dark mode is not a computed inversion.
+- `--ink-faint` sits around 3.9:1 on paper, **below WCAG AA for body text**. It is only
+  used for eyebrows, metadata, and decoration. Anything meant to be read uses
+  `--ink-muted` (~7:1).
+- Never rely on the clay accent alone to convey meaning.
 
-1. Start a simple static server (e.g. `python -m http.server` in the project folder) and open `http://localhost:8000`.
-2. Use Tab/Shift+Tab to navigate; use Enter/Space to activate image modal and theme toggle; press Escape to close modal.
-3. Optionally run Lighthouse accessibility audit in Chrome DevTools and review any flagged issues.
+## Running the checks locally
+
+```bash
+python3 -m http.server 8000
+```
+
+Open `http://localhost:8000`, then navigate with Tab/Shift+Tab, activate with Enter/Space,
+and close the modal with Escape. A Lighthouse accessibility audit in Chrome DevTools is a
+useful backstop.
+
+## Not yet done
+
+- Automated accessibility tests (axe / Lighthouse CI).
+- A full screen-reader pass (VoiceOver / NVDA).

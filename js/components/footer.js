@@ -9,6 +9,6 @@ export function initFooter() {
 
   footerInner.innerHTML = `
     <p>${footerData.copyright}</p>
-    <p class="muted-note">${footerData.credit}</p>
+    <p class="credit">${footerData.credit}</p>
   `;
 }

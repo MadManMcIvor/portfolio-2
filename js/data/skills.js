@@ -18,8 +18,12 @@ export const skills = {
       items: ['PostgreSQL', 'SQLite', 'DynamoDB']
     },
     {
+      name: 'AI',
+      items: ['Claude', 'Copilot', 'OpenCode', 'Ollama', 'Local models']
+    },
+    {
       name: 'Tools',
-      items: ['Git', 'Docker', 'AWS', 'Linux', 'Copilot']
+      items: ['Git', 'Docker', 'AWS', 'Linux']
     }
   ]
 };

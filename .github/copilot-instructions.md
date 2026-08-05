@@ -25,7 +25,7 @@ This is **not an application** — it is a mostly static site with light interac
 * **Do NOT introduce a build step or bundler**
 * Use **plain HTML, CSS, and JavaScript only**
 * Use **ES Modules** (`<script type="module">`) for JavaScript organization
-* UI components should rely on **Basecoat UI (via CDN)**
+* **No CDNs and no third-party CSS frameworks** — everything ships from this repo
 
 ---
 
@@ -43,16 +43,10 @@ This is **not an application** — it is a mostly static site with light interac
 * HTML5
 * CSS3
 * Vanilla JavaScript (ES Modules)
-* [Basecoat UI (CDN-based)](https://basecoatui.com/installation/) — prefer using Basecoat primitives (badges, cards, buttons, dialogs) in markup instead of re-implementing these patterns.
-
-  Recommended CDN snippet to include in `<head>`:
-
-  ```html
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/basecoat-css@0.3.9/dist/basecoat.cdn.min.css">
-  <script src="https://cdn.jsdelivr.net/npm/basecoat-css@0.3.9/dist/js/all.min.js" defer></script>
-  ```
-
-  (Load Basecoat before your local CSS so you can override styles when necessary.)
+* **Cream & Ink** — the site's design system, a warm editorial palette shared with the
+  Steadwell project. `css/tokens.css` is a vendored copy; treat it as read-only and put
+  site-specific styling in `css/base.css`. The full rationale lives in
+  `steadwell-design-system/README.md`.
 * No Node build tooling
 
 ---
@@ -64,22 +58,12 @@ Use a simple, scalable structure:
 ```
 /index.html
 /css/
-  base.css
-  theme.css
+  tokens.css   # Cream & Ink design tokens (vendored — don't edit)
+  base.css     # layout and components, styled against the tokens
 /js/
   main.js
-  components/
-    navbar.js
-    themeToggle.js
-    projectCards.js
-  data/
-    projects.js
-  utils/
-    dom.js
-    theme.js
-/assets/
-  screenshots/README.md
-  screenshots/  # keep original screenshots here
+  components/  # one init*() per section, renders from /js/data
+  data/        # all site content lives here, not in markup
 
 > Note: Project metadata is stored in `/js/data/projects.js` as an exported array of simple objects. This makes it easy to list/iterate projects in an ES module without touching HTML.
 
@@ -108,12 +92,23 @@ export function initComponentName() {
 
 ## Styling Guidelines
 
-* Minimalist, calm, intentional UI
-* Generous whitespace
-* Subtle transitions (no flashy animations)
-* Accessible color contrast
-* Components should feel lightweight and unobtrusive
-* Avoid heavy shadows and excessive decoration
+Style against the custom properties in `css/tokens.css` — never hard-code a colour, size,
+or spacing value. The rules that matter most:
+
+* Never pure white, never pure black. Everything is warmed.
+* One accent (clay), and it is never red. Sage is the only second colour, and it means
+  *settled*. A third accent makes it a theme rather than a voice.
+* Space does the work — reach for the large end of the scale more than feels natural.
+* Depth comes from paper tone and hairline rules, not shadows. No elevation system.
+* The serif carries the voice sparingly — the display line and the occasional italic
+  aside, nothing else. Used more widely it tips from editorial into precious.
+* Sentence case, always. The exception is small uppercase eyebrows with `0.08em`
+  letter-spacing, which are a deliberate device.
+* Dark mode is designed, not computed — do not invert, and never auto-apply it from the
+  OS preference. Light is the intended look.
+
+What to resist: gradients, glassmorphism, drop shadows, animated headings, and a second
+sans-serif. Any of them will undo it.
 
 ---
 
@@ -125,16 +120,17 @@ export function initComponentName() {
 * Short professional tagline
 * Optional brief intro paragraph
 
-### 2. Projects
+### 2. Selected work
 
-Each project card should include:
+Each project card includes a title, a short description, and the tech stack as badges.
+These are professional projects without public repos, so the cards carry no links.
 
-* Screenshot image
-* Short description
-* Tech stack used
-* External links (GitHub, live demo if available)
+### 3. Curio cabinet
 
-### 3. Footer / Contact
+A paginated table of technologies and articles worth noting. "Context" opens a modal with
+the longer description and Alex's own take.
+
+### 4. Footer / Contact
 
 * Links to GitHub, LinkedIn, etc.
 * Simple, unobtrusive layout
@@ -143,17 +139,10 @@ Each project card should include:
 
 ---
 
-## Assets & Visual Direction
+## Visual Direction
 
-* Screenshots from **Lovable mockups** are provided in `/assets/screenshots`
-* Use these screenshots to infer:
-
-  * Layout
-  * Spacing
-  * Visual hierarchy
-  * Overall vibe and tone
-
-Do **not** invent flashy UI elements that are inconsistent with the mockups.
+The feeling to aim for is a well-made notebook: warm, durable, quiet. Not a SaaS
+dashboard, not a startup landing page. Do not invent flashy UI elements.
 
 My name is "Alex McIvor" **not** "Alex Johnson" so please use McIvor instead.
 

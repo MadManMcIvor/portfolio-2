@@ -1,4 +1,13 @@
+// Ordered most recent first.
 export const projects = [
+  {
+    id: 'Steadwell',
+    title: 'Steadwell',
+    desc: 'A free iOS app that keeps a record of a house — how old the roof is, when the water heater went in, what paint is in the guest room. Local-first with no account and no ads; optional sync runs on your own iCloud.',
+    tech: ['Vue','Ionic','Capacitor','SQLite'],
+    url: 'https://steadwell.dev/',
+    linkLabel: 'steadwell.dev',
+  },
   {
     id: 'Abigail',
     title: 'Abigail',

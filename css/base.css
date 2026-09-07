@@ -327,6 +327,21 @@ p a {
   flex-wrap: wrap;
 }
 
+/* Only some projects have somewhere public to point at, so this sits below the badges
+ * and is simply absent on the cards without a URL. */
+.card-link {
+  display: inline-block;
+  margin-top: var(--space-3);
+  color: var(--clay);
+  font-size: var(--text-sub);
+  font-weight: 500;
+}
+
+.card-link:hover {
+  color: var(--clay-strong);
+  text-decoration: underline;
+}
+
 .badge {
   padding: 0.15rem var(--space-2);
   border-radius: var(--radius-pill);
@@ -387,15 +402,20 @@ p a {
   margin-top: 0;
 }
 
+/* The cells are padded on all sides so the hover band has room to breathe around the
+ * text, and the table is pulled out by that same amount — so the first column still lines
+ * up optically with the section heading above it. `separate` rather than `collapse`
+ * because a collapsed table won't honour a border-radius on the hovered row. */
 .curio-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: var(--space-5);
+  width: calc(100% + var(--space-3) * 2);
+  margin: var(--space-5) calc(var(--space-3) * -1) 0;
+  border-collapse: separate;
+  border-spacing: 0;
 }
 
 .curio-table th {
   text-align: left;
-  padding: var(--space-3) var(--space-3) var(--space-3) 0;
+  padding: var(--space-3);
   font-size: var(--text-small);
   font-weight: 600;
   letter-spacing: 0.06em;
@@ -405,13 +425,32 @@ p a {
 }
 
 .curio-table td {
-  padding: var(--space-3) var(--space-3) var(--space-3) 0;
+  padding: var(--space-3);
   border-bottom: 1px solid var(--paper-line);
   font-size: var(--text-sub);
+  transition: background-color 120ms ease;
 }
 
-.curio-table tr:hover {
+/* Backgrounds sit on the cells rather than the row: a <tr> can't be given rounded
+ * corners, but the outer cells of the row can. */
+.curio-table tbody tr:hover td {
   background: var(--paper-raised);
+}
+
+.curio-table tbody tr:hover td:first-child {
+  border-top-left-radius: var(--radius-sm);
+  border-bottom-left-radius: var(--radius-sm);
+}
+
+.curio-table tbody tr:hover td:last-child {
+  border-top-right-radius: var(--radius-sm);
+  border-bottom-right-radius: var(--radius-sm);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .curio-table td {
+    transition: none;
+  }
 }
 
 .curio-link {

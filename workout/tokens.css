@@ -1,0 +1,206 @@
+/*
+ * VENDORED from ../css/tokens.css — do not edit here. Re-copy if the site's
+ * copy changes.
+ *
+ * Cream & Ink — a warm, editorial design system.
+ *
+ * Framework-agnostic. Drop this in, then style against the custom properties.
+ * No build step, no dependencies, no classes to learn.
+ *
+ * THEMING
+ * :root is light, which is the default and the intended look. Dark is applied
+ * only on an explicit choice (data-theme="dark") or when the OS asks AND the
+ * user opted to follow it (data-theme="system"). Never automatically — the
+ * light look is the point, and auto-dark means most visitors never see it.
+ *
+ * Set data-theme on <html> before first paint to avoid a flash. See README.
+ */
+
+:root {
+  /* ─── Paper ──────────────────────────────────────────────────────────────
+   * Warm off-whites. Never pure #FFF — it reads clinical against cream.       */
+  --paper-raised: #fdfbf7; /* cards, anything lifted */
+  --paper: #f8f4ec; /* page background */
+  --paper-sunken: #f1ebe0; /* wells, inset fills, code blocks */
+  --paper-line: #e4dcce; /* hairlines and dividers */
+
+  /* ─── Ink ────────────────────────────────────────────────────────────────
+   * Warm near-black. Pure black on cream is harsh and slightly cold.          */
+  --ink: #1c1917; /* primary text */
+  --ink-muted: #5f584e; /* secondary text (~7:1 on paper) */
+  --ink-faint: #857d70; /* tertiary — large or decorative text only */
+
+  /* ─── Clay — attention ───────────────────────────────────────────────────
+   * The primary accent. Warm and earthen, deliberately NOT red. Links, active
+   * states, anything that says "this matters".                                */
+  --clay: #a85d42;
+  --clay-strong: #8d4c35;
+  --clay-tint: #f3e3da;
+
+  /* ─── Sage — settled ─────────────────────────────────────────────────────
+   * The counterpart. Done, shipped, resolved. Muted on purpose — a bright
+   * green turns completion into a reward, which is a different feeling.       */
+  --sage: #5f7355;
+  --sage-strong: #4c5d44;
+  --sage-tint: #e7ede2;
+
+  /* ─── Type ───────────────────────────────────────────────────────────────
+   * System stacks. On Apple platforms this is SF Pro and New York — both
+   * excellent, both free, zero bundle cost, zero layout shift.                */
+  --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, 'Segoe UI', sans-serif;
+  --font-serif: ui-serif, 'New York', 'Iowan Old Style', Georgia, serif;
+  --font-mono: ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, monospace;
+
+  --text-display: 2.125rem; /* 34px — serif, one per page */
+  --text-title: 1.5rem; /* 24px */
+  --text-heading: 1.0625rem; /* 17px */
+  --text-body: 1.0625rem; /* 17px */
+  --text-sub: 0.9375rem; /* 15px */
+  --text-small: 0.8125rem; /* 13px */
+
+  --leading-tight: 1.2;
+  --leading-normal: 1.45;
+  --leading-relaxed: 1.6;
+
+  /* ─── Space — 4px base, generous by default ──────────────────────────── */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+
+  --radius-sm: 0.5rem;
+  --radius: 0.875rem;
+  --radius-lg: 1.25rem;
+  --radius-pill: 999px;
+
+  /* Depth comes from paper tone and rules, not elevation. Keep this tiny. */
+  --shadow-card: 0 1px 2px rgb(28 25 23 / 4%);
+
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  --paper-raised: #232019;
+  --paper: #1a1714;
+  --paper-sunken: #14120f;
+  --paper-line: #332e27;
+
+  --ink: #f2ede3;
+  --ink-muted: #aba294;
+  --ink-faint: #7d7568;
+
+  --clay: #d89272;
+  --clay-strong: #e5a586;
+  --clay-tint: #2e241e;
+
+  --sage: #9cb38e;
+  --sage-strong: #b3c7a6;
+  --sage-tint: #212a1d;
+
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 30%);
+
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-theme='system'] {
+    --paper-raised: #232019;
+    --paper: #1a1714;
+    --paper-sunken: #14120f;
+    --paper-line: #332e27;
+
+    --ink: #f2ede3;
+    --ink-muted: #aba294;
+    --ink-faint: #7d7568;
+
+    --clay: #d89272;
+    --clay-strong: #e5a586;
+    --clay-tint: #2e241e;
+
+    --sage: #9cb38e;
+    --sage-strong: #b3c7a6;
+    --sage-tint: #212a1d;
+
+    --shadow-card: 0 1px 2px rgb(0 0 0 / 30%);
+
+    color-scheme: dark;
+  }
+}
+
+/* ─── Base ─────────────────────────────────────────────────────────────────
+ * Minimal, opinionated defaults. Delete anything that fights your site.       */
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  line-height: var(--leading-relaxed);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  line-height: var(--leading-tight);
+  letter-spacing: -0.01em;
+}
+
+/* The serif carries the voice. Use it for the display line and the occasional
+ * italic aside — not for body copy, or it tips from editorial into precious. */
+h1 {
+  font-family: var(--font-serif);
+  font-size: var(--text-display);
+  font-weight: 400;
+}
+
+a {
+  color: var(--clay);
+  text-underline-offset: 0.2em;
+  text-decoration-thickness: 1px;
+}
+
+a:hover {
+  color: var(--clay-strong);
+}
+
+hr {
+  height: 0;
+  margin: var(--space-6) 0;
+  border: 0;
+  border-top: 1px solid var(--paper-line);
+}
+
+code,
+pre {
+  font-family: var(--font-mono);
+  font-size: 0.875em;
+}
+
+code {
+  padding: 0.1em 0.35em;
+  background: var(--paper-sunken);
+  border-radius: var(--radius-sm);
+}
+
+pre {
+  padding: var(--space-4);
+  overflow-x: auto;
+  background: var(--paper-sunken);
+  border: 1px solid var(--paper-line);
+  border-radius: var(--radius);
+}
+
+pre code {
+  padding: 0;
+  background: none;
+}
+
+::selection {
+  background: var(--clay-tint);
+  color: var(--ink);
+}

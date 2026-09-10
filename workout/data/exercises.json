@@ -1,0 +1,975 @@
+{
+  "version": 2,
+  "updated": "2026-09-10",
+  "exercises": [
+    {
+      "id": "two-hand-swing",
+      "name": "Two-Hand Kettlebell Swing",
+      "aliases": ["Russian Swing"],
+      "category": "hinge",
+      "primaryMuscles": ["glutes", "hamstrings", "back"],
+      "equipment": ["kettlebell"],
+      "difficulty": "beginner",
+      "unilateral": false,
+      "defaultMode": "time",
+      "tags": ["ballistic", "cardio", "posterior-chain"],
+      "cues": [
+        "Hike the bell back between the legs",
+        "Snap the hips to float the bell to chest height",
+        "Arms stay relaxed, ribs down"
+      ],
+      "description": "Hip-hinge ballistic movement; the foundational kettlebell exercise.",
+      "media": null
+    },
+    {
+      "id": "one-hand-swing",
+      "name": "One-Hand Kettlebell Swing",
+      "aliases": ["Single-Arm Swing"],
+      "category": "hinge",
+      "primaryMuscles": ["glutes", "hamstrings", "back", "core"],
+      "equipment": ["kettlebell"],
+      "difficulty": "intermediate",
+      "unilateral": true,
+      "defaultMode": "time",
+      "tags": ["ballistic", "cardio", "posterior-chain", "anti-rotation"],
+      "cues": [
+        "Grip the handle at a slight angle",
+        "Resist the bell twisting your torso",
+        "Free arm mirrors the working arm"
+      ],
+      "description": "Swing driven by one arm; adds an anti-rotation demand on the core.",
+      "media": null
+    },
+    {
+      "id": "hand-to-hand-swing",
+      "name": "Hand-to-Hand Swing",
+      "aliases": [],
+      "category": "hinge",
+      "primaryMuscles": ["glutes", "hamstrings", "back", "forearms"],
+      "equipment": ["kettlebell"],
+      "difficulty": "intermediate",
+      "unilateral": false,
+      "defaultMode": "time",
+      "tags": ["ballistic", "cardio", "coordination"],
+      "cues": [
+        "Release and catch at the top float",
+        "Soft grip, quiet hand",
+        "Keep the hinge rhythm unbroken"
+      ],
+      "description": "Swing where the bell is passed between hands at the top of each rep.",
+      "media": null
+    },
+    {
+      "id": "dead-clean",
+      "name": "Kettlebell Clean",
+      "aliases": ["Dead Clean"],
+      "category": "pull",
+      "primaryMuscles": ["glutes", "hamstrings", "traps", "forearms"],
+      "equipment": ["kettlebell"],
+      "difficulty": "intermediate",
+      "unilateral": true,
+      "defaultMode": "reps",
+      "tags": ["ballistic", "grind", "technique"],
+      "cues": [
+        "Zip the bell up close to the body",
+        "Spear the hand through, don't catch on the wrist",
+        "Land soft in the rack position"
+      ],
+      "description": "Brings the bell from the floor or a swing to the racked position on the shoulder.",
+      "media": null
+    },
+    {
+      "id": "clean-and-press",
+      "name": "Clean & Press",
+      "aliases": [],
+      "category": "full-body",
+      "primaryMuscles": ["glutes", "shoulders", "triceps", "core"],
+      "equipment": ["kettlebell"],
+      "difficulty": "intermediate",
+      "unilateral": true,
+      "defaultMode": "reps",
+      "tags": ["grind", "strength", "full-body"],
+      "cues": [
+        "Clean to the rack, pause and breathe",
+        "Press with the whole body braced",
+        "Lock out with the biceps by the ear"
+      ],
+      "description": "A clean into an overhead press; a complete strength movement in one rep.",
+      "media": null
+    },
+    {
+      "id": "strict-press",
+      "name": "Kettlebell Strict Press",
+      "aliases": ["Military Press"],
+      "category": "press",
+      "primaryMuscles": ["shoulders", "triceps", "core"],
+      "equipment": ["kettlebell"],
+      "difficulty": "intermediate",
+      "unilateral": true,
+      "defaultMode": "reps",
+      "tags": ["grind", "strength"],
+      "cues": [
+        "Brace the ribs down before pressing",
+        "Drive the bell slightly back as it passes the head",
+        "Squeeze the glute on the pressing side"
+      ],
+      "description": "Overhead press from the rack with no leg drive.",
+      "media": null
+    },
+    {
+      "id": "push-press",
+      "name": "Kettlebell Push Press",
+      "aliases": [],
+      "category": "press",
+      "primaryMuscles": ["shoulders", "triceps", "quads", "glutes"],
+      "equipment": ["kettlebell"],
+      "difficulty": "intermediate",
+      "unilateral": true,
+      "defaultMode": "reps",
+      "tags": ["power", "strength", "full-body"],
+      "cues": [
+        "Short dip with vertical torso",
+        "Drive through the legs, then punch up",
+        "Lock out overhead before lowering"
+      ],
+      "description": "Overhead press assisted by a sharp dip and drive from the legs.",
+      "media": null
+    },
+    {
+      "id": "snatch",
+      "name": "Kettlebell Snatch",
+      "aliases": [],
+      "category": "full-body",
+      "primaryMuscles": ["glutes", "hamstrings", "shoulders", "forearms"],
+      "equipment": ["kettlebell"],
+      "difficulty": "advanced",
+      "unilateral": true,
+      "defaultMode": "time",
+      "tags": ["ballistic", "cardio", "power", "full-body"],
+      "cues": [
+        "High-pull path, then punch the hand up",
+        "Bell rotates around the wrist, no flop",
+        "One smooth arc from hips to overhead"
+      ],
+      "description": "Explosive movement taking the bell from between the legs to overhead in one motion.",
+      "media": null
+    },
+    {
+      "id": "high-pull",
+      "name": "Kettlebell High Pull",
+      "aliases": [],
+      "category": "pull",
+      "primaryMuscles": ["glutes", "hamstrings", "traps", "shoulders"],
+      "equipment": ["kettlebell"],
+      "difficulty": "intermediate",
+      "unilateral": true,
+      "defaultMode": "time",
+      "tags": ["ballistic", "cardio", "power"],
+      "cues": [
+        "Hinge and hike like a swing",
+        "Lead with the elbow, high and wide",
+        "Bell stays close, knuckles to the chin"
+      ],
+      "description": "A swing that finishes with a hard row to chin height; snatch progression.",
+      "media": null
+    },
+    {
+      "id": "goblet-squat",
+      "name": "Goblet Squat",
+      "aliases": [],
+      "category": "squat",
+      "primaryMuscles": ["quads", "glutes", "core"],
+      "equipment": ["kettlebell"],
+      "difficulty": "beginner",
+      "unilateral": false,
+      "defaultMode": "reps",
+      "tags": ["strength", "mobility"],
+      "cues": [
+        "Hold the bell by the horns at the chest",
+        "Sit straight down, elbows inside the knees",
+        "Drive the floor away, ribs stacked over hips"
+      ],
+      "description": "Squat holding a single bell at the chest; great for depth and posture.",
+      "media": null
+    },
+    {
+      "id": "double-front-squat",
+      "name": "Double Front Squat",
+      "aliases": ["Double Rack Squat"],
+      "category": "squat",
+      "primaryMuscles": ["quads", "glutes", "core", "back"],
+      "equipment": ["kettlebell"],
+      "difficulty": "advanced",
+      "unilateral": false,
+      "defaultMode": "reps",
+      "tags": ["strength", "grind"],
+      "cues": [
+        "Both bells racked, elbows down and in",
+        "Big breath and brace before descending",
+        "Keep the chest tall against the load"
+      ],
+      "description": "Squat with two bells in the rack position; heavy lower-body strength.",
+      "media": null
+    },
+    {
+      "id": "reverse-lunge",
+      "name": "Kettlebell Reverse Lunge",
+      "aliases": [],
+      "category": "lunge",
+      "primaryMuscles": ["quads", "glutes", "hamstrings", "core"],
+      "equipment": ["kettlebell"],
+      "difficulty": "beginner",
+      "unilateral": true,
+      "defaultMode": "reps",
+      "tags": ["strength", "unilateral", "balance"],
+      "cues": [
+        "Step straight back, knee to a soft touch",
+        "Torso stays upright",
+        "Push through the front heel to stand"
+      ],
+      "description": "Step-back lunge; loaded in the rack, goblet, or suitcase position.",
+      "media": null
+    },
+    {
+      "id": "walking-lunge",
+      "name": "Kettlebell Walking Lunge",
+      "aliases": [],
+      "category": "lunge",
+      "primaryMuscles": ["quads", "glutes", "hamstrings", "core"],
+      "equipment": ["kettlebell"],
+      "difficulty": "intermediate",
+      "unilateral": true,
+      "defaultMode": "time",
+      "tags": ["strength", "conditioning", "unilateral"],
+      "cues": [
+        "Long steps, tall spine",
+        "Trail knee tracks down, not forward",
+        "Even tempo, no rushing the turnaround"
+      ],
+      "description": "Lunges travelling forward; carry position dictates the core demand.",
+      "media": null
+    },
+    {
+      "id": "turkish-get-up",
+      "name": "Turkish Get-Up",
+      "aliases": ["TGU"],
+      "category": "full-body",
+      "primaryMuscles": ["shoulders", "core", "obliques", "glutes"],
+      "equipment": ["kettlebell"],
+      "difficulty": "advanced",
+      "unilateral": true,
+      "defaultMode": "reps",
+      "tags": ["grind", "stability", "mobility", "full-body"],
+      "cues": [
+        "Eyes on the bell until standing",
+        "Roll to elbow, to hand, sweep the leg",
+        "Reverse the steps exactly on the way down"
+      ],
+      "description": "A slow floor-to-standing sequence under load; shoulder stability and control.",
+      "media": null
+    },
+    {
+      "id": "halo",
+      "name": "Kettlebell Halo",
+      "aliases": [],
+      "category": "rotation",
+      "primaryMuscles": ["shoulders", "core", "traps"],
+      "equipment": ["kettlebell"],
+      "difficulty": "beginner",
+      "unilateral": false,
+      "defaultMode": "reps",
+      "tags": ["mobility", "warmup"],
+      "cues": [
+        "Hold the bell upside down by the horns",
+        "Circle tight around the head",
+        "Ribs stay down, hips still"
+      ],
+      "description": "Bell circled around the head; shoulder mobility and warm-up staple.",
+      "media": null
+    },
+    {
+      "id": "around-the-world",
+      "name": "Around the World",
+      "aliases": [],
+      "category": "rotation",
+      "primaryMuscles": ["core", "obliques", "glutes", "forearms"],
+      "equipment": ["kettlebell"],
+      "difficulty": "beginner",
+      "unilateral": false,
+      "defaultMode": "time",
+      "tags": ["warmup", "coordination", "grip"],
+      "cues": [
+        "Pass the bell hand-to-hand behind the back and front",
+        "Stand tall, brace the trunk",
+        "Switch direction halfway through"
+      ],
+      "description": "Bell passed in a circle around the body; grip and bracing warm-up.",
+      "media": null
+    },
+    {
+      "id": "deadlift",
+      "name": "Kettlebell Deadlift",
+      "aliases": [],
+      "category": "hinge",
+      "primaryMuscles": ["glutes", "hamstrings", "back", "traps"],
+      "equipment": ["kettlebell"],
+      "difficulty": "beginner",
+      "unilateral": false,
+      "defaultMode": "reps",
+      "tags": ["strength", "posterior-chain", "technique"],
+      "cues": [
+        "Bell between the heels, hinge to reach it",
+        "Long spine, pull the slack out",
+        "Stand by squeezing the glutes"
+      ],
+      "description": "Hinge to lift the bell from the floor; teaches the swing pattern slowly.",
+      "media": null
+    },
+    {
+      "id": "suitcase-deadlift",
+      "name": "Suitcase Deadlift",
+      "aliases": [],
+      "category": "hinge",
+      "primaryMuscles": ["glutes", "hamstrings", "back", "obliques"],
+      "equipment": ["kettlebell"],
+      "difficulty": "beginner",
+      "unilateral": true,
+      "defaultMode": "reps",
+      "tags": ["strength", "anti-lateral-flexion", "unilateral"],
+      "cues": [
+        "Bell beside the foot, like a suitcase",
+        "Don't let the torso tip toward the bell",
+        "Shoulders and hips stay level"
+      ],
+      "description": "Single-sided deadlift; strong anti-lateral-flexion core challenge.",
+      "media": null
+    },
+    {
+      "id": "bent-over-row",
+      "name": "Kettlebell Bent-Over Row",
+      "aliases": [],
+      "category": "pull",
+      "primaryMuscles": ["lats", "back", "biceps", "core"],
+      "equipment": ["kettlebell"],
+      "difficulty": "beginner",
+      "unilateral": true,
+      "defaultMode": "reps",
+      "tags": ["strength", "pull"],
+      "cues": [
+        "Hinge to a flat back, free hand on the thigh",
+        "Row the bell to the hip, elbow past the ribs",
+        "Control the lower, no torso twist"
+      ],
+      "description": "Single-arm row from a hinged position; upper-back pulling strength.",
+      "media": null
+    },
+    {
+      "id": "gorilla-row",
+      "name": "Gorilla Row",
+      "aliases": [],
+      "category": "pull",
+      "primaryMuscles": ["lats", "back", "biceps", "core"],
+      "equipment": ["kettlebell"],
+      "difficulty": "intermediate",
+      "unilateral": true,
+      "defaultMode": "time",
+      "tags": ["strength", "conditioning", "anti-rotation"],
+      "cues": [
+        "Two bells between the feet, wide hinge stance",
+        "Row one while the other stays planted",
+        "Fight the rotation with the braced side"
+      ],
+      "description": "Alternating rows off the floor with two bells; pull volume plus anti-rotation.",
+      "media": null
+    },
+    {
+      "id": "farmer-carry",
+      "name": "Farmer Carry",
+      "aliases": ["Farmer's Walk"],
+      "category": "carry",
+      "primaryMuscles": ["forearms", "traps", "core", "glutes"],
+      "equipment": ["kettlebell"],
+      "difficulty": "beginner",
+      "unilateral": false,
+      "defaultMode": "time",
+      "tags": ["grip", "conditioning", "posture"],
+      "cues": [
+        "Stand tall, shoulders packed",
+        "Short quick steps, quiet feet",
+        "Don't let the bells swing"
+      ],
+      "description": "Walk carrying a bell in each hand; grip, posture, and trunk endurance.",
+      "media": null
+    },
+    {
+      "id": "rack-carry",
+      "name": "Rack Carry",
+      "aliases": [],
+      "category": "carry",
+      "primaryMuscles": ["core", "obliques", "shoulders", "traps"],
+      "equipment": ["kettlebell"],
+      "difficulty": "beginner",
+      "unilateral": true,
+      "defaultMode": "time",
+      "tags": ["core", "conditioning", "posture"],
+      "cues": [
+        "Bell racked, elbow tight to the ribs",
+        "Resist leaning away from the load",
+        "Breathe behind the brace"
+      ],
+      "description": "Carry with the bell in the rack position; offset load, heavy core demand.",
+      "media": null
+    },
+    {
+      "id": "overhead-carry",
+      "name": "Overhead Carry",
+      "aliases": ["Waiter Walk"],
+      "category": "carry",
+      "primaryMuscles": ["shoulders", "core", "traps", "obliques"],
+      "equipment": ["kettlebell"],
+      "difficulty": "intermediate",
+      "unilateral": true,
+      "defaultMode": "time",
+      "tags": ["shoulder-stability", "core", "posture"],
+      "cues": [
+        "Lock the elbow, biceps by the ear",
+        "Wrist stacked over shoulder over hip",
+        "Ribs down, glutes on"
+      ],
+      "description": "Carry with the bell locked out overhead; shoulder stability under fatigue.",
+      "media": null
+    },
+    {
+      "id": "windmill",
+      "name": "Kettlebell Windmill",
+      "aliases": [],
+      "category": "rotation",
+      "primaryMuscles": ["obliques", "core", "hamstrings", "shoulders"],
+      "equipment": ["kettlebell"],
+      "difficulty": "advanced",
+      "unilateral": true,
+      "defaultMode": "reps",
+      "tags": ["mobility", "grind", "stability"],
+      "cues": [
+        "Bell locked overhead, eyes on it",
+        "Push the hip out, hinge sideways",
+        "Reach the free hand down a straight front leg"
+      ],
+      "description": "Side-bending hinge under an overhead load; hip and thoracic mobility.",
+      "media": null
+    },
+    {
+      "id": "russian-twist",
+      "name": "Kettlebell Russian Twist",
+      "aliases": [],
+      "category": "core",
+      "primaryMuscles": ["obliques", "core"],
+      "equipment": ["kettlebell"],
+      "difficulty": "beginner",
+      "unilateral": false,
+      "defaultMode": "time",
+      "tags": ["core", "rotation"],
+      "cues": [
+        "Sit tall, lean back to a strong brace",
+        "Rotate from the ribs, not just the arms",
+        "Tap the bell each side, heels light or lifted"
+      ],
+      "description": "Seated rotational core exercise holding the bell at the chest.",
+      "media": null
+    },
+    {
+      "id": "kettlebell-pullover",
+      "name": "Kettlebell Pull-Through",
+      "aliases": ["Plank Drag"],
+      "category": "core",
+      "primaryMuscles": ["core", "obliques", "lats", "glutes"],
+      "equipment": ["kettlebell"],
+      "difficulty": "intermediate",
+      "unilateral": true,
+      "defaultMode": "time",
+      "tags": ["core", "anti-rotation", "plank"],
+      "cues": [
+        "High plank, feet wide for a base",
+        "Reach under and drag the bell across",
+        "Hips stay square to the floor"
+      ],
+      "description": "From a plank, drag the bell side to side; hard anti-rotation hold.",
+      "media": null
+    },
+    {
+      "id": "deck-squat",
+      "name": "Deck Squat",
+      "aliases": ["Roll-Up Squat"],
+      "category": "full-body",
+      "primaryMuscles": ["quads", "glutes", "core", "hamstrings"],
+      "equipment": ["kettlebell"],
+      "difficulty": "intermediate",
+      "unilateral": false,
+      "defaultMode": "reps",
+      "tags": ["conditioning", "mobility", "coordination"],
+      "cues": [
+        "Roll back holding the bell at the chest",
+        "Rock forward, plant the feet, stand up",
+        "Use momentum, not a jerk"
+      ],
+      "description": "Roll back to the floor and back up to a stand; conditioning and mobility.",
+      "media": null
+    },
+    {
+      "id": "push-up",
+      "name": "Push-Up",
+      "aliases": ["Press-Up"],
+      "category": "press",
+      "primaryMuscles": ["chest", "triceps", "shoulders", "core"],
+      "equipment": ["bodyweight"],
+      "difficulty": "beginner",
+      "unilateral": false,
+      "defaultMode": "reps",
+      "tags": ["bodyweight", "strength", "push"],
+      "cues": [
+        "Hands under the shoulders, body in one straight line",
+        "Elbows track back at roughly 45 degrees",
+        "Ribs down, squeeze the glutes — no sagging hips"
+      ],
+      "description": "Horizontal press against your own bodyweight; the staple upper-body push.",
+      "media": null
+    },
+    {
+      "id": "knee-push-up",
+      "name": "Knee Push-Up",
+      "aliases": [],
+      "category": "press",
+      "primaryMuscles": ["chest", "triceps", "shoulders"],
+      "equipment": ["bodyweight"],
+      "difficulty": "beginner",
+      "unilateral": false,
+      "defaultMode": "reps",
+      "tags": ["bodyweight", "strength", "push", "technique"],
+      "cues": [
+        "Knees down, hips in line with the shoulders",
+        "Same elbow path as a full push-up",
+        "Lower under control rather than dropping"
+      ],
+      "description": "Push-up with the knees down to shorten the lever; the honest way to build the full version.",
+      "media": null
+    },
+    {
+      "id": "pike-push-up",
+      "name": "Pike Push-Up",
+      "aliases": [],
+      "category": "press",
+      "primaryMuscles": ["shoulders", "triceps", "core"],
+      "equipment": ["bodyweight"],
+      "difficulty": "intermediate",
+      "unilateral": false,
+      "defaultMode": "reps",
+      "tags": ["bodyweight", "strength", "push", "shoulder-stability"],
+      "cues": [
+        "Hips high, body in an inverted V",
+        "Lower the crown of the head toward the floor",
+        "Keep the weight over the hands, not the feet"
+      ],
+      "description": "Hips-high push-up that tips the load onto the shoulders — the bodyweight overhead press.",
+      "media": null
+    },
+    {
+      "id": "air-squat",
+      "name": "Bodyweight Squat",
+      "aliases": ["Air Squat"],
+      "category": "squat",
+      "primaryMuscles": ["quads", "glutes"],
+      "equipment": ["bodyweight"],
+      "difficulty": "beginner",
+      "unilateral": false,
+      "defaultMode": "reps",
+      "tags": ["bodyweight", "strength", "warmup"],
+      "cues": [
+        "Feet about shoulder width, toes slightly out",
+        "Sit down between the hips, chest tall",
+        "Drive the floor away and stand all the way up"
+      ],
+      "description": "The foundational squat pattern with no load — a warm-up, a filler, or a whole workout at volume.",
+      "media": null
+    },
+    {
+      "id": "jump-squat",
+      "name": "Jump Squat",
+      "aliases": [],
+      "category": "squat",
+      "primaryMuscles": ["quads", "glutes", "calves"],
+      "equipment": ["bodyweight"],
+      "difficulty": "intermediate",
+      "unilateral": false,
+      "defaultMode": "reps",
+      "tags": ["bodyweight", "plyometric", "power", "conditioning"],
+      "cues": [
+        "Dip to a quarter squat, then jump",
+        "Land quietly through the whole foot",
+        "Absorb into the next rep rather than bouncing"
+      ],
+      "description": "Explosive squat that leaves the floor; adds power and a heart rate to the squat pattern.",
+      "media": null
+    },
+    {
+      "id": "wall-sit",
+      "name": "Wall Sit",
+      "aliases": [],
+      "category": "squat",
+      "primaryMuscles": ["quads", "glutes"],
+      "equipment": ["bodyweight"],
+      "difficulty": "beginner",
+      "unilateral": false,
+      "defaultMode": "time",
+      "tags": ["bodyweight", "isometric", "conditioning"],
+      "cues": [
+        "Back flat to the wall, thighs parallel to the floor",
+        "Knees stacked over the ankles",
+        "Breathe — the urge is to hold your breath"
+      ],
+      "description": "Isometric squat held against a wall; burns without any impact on the knees.",
+      "media": null
+    },
+    {
+      "id": "reverse-lunge-bw",
+      "name": "Reverse Lunge",
+      "aliases": [],
+      "category": "lunge",
+      "primaryMuscles": ["quads", "glutes", "hamstrings"],
+      "equipment": ["bodyweight"],
+      "difficulty": "beginner",
+      "unilateral": true,
+      "defaultMode": "reps",
+      "tags": ["bodyweight", "unilateral", "balance"],
+      "cues": [
+        "Step back and lower the back knee toward the floor",
+        "Front shin close to vertical",
+        "Push through the front heel to stand"
+      ],
+      "description": "Stepping back rather than forward keeps the front knee quiet; the friendliest single-leg start.",
+      "media": null
+    },
+    {
+      "id": "split-squat",
+      "name": "Split Squat",
+      "aliases": [],
+      "category": "lunge",
+      "primaryMuscles": ["quads", "glutes"],
+      "equipment": ["bodyweight"],
+      "difficulty": "intermediate",
+      "unilateral": true,
+      "defaultMode": "reps",
+      "tags": ["bodyweight", "unilateral", "balance", "strength"],
+      "cues": [
+        "Set a long stance and stay there for all the reps",
+        "Drop straight down, not forward",
+        "Keep the torso upright"
+      ],
+      "description": "A lunge held in place — all the single-leg work with none of the stepping.",
+      "media": null
+    },
+    {
+      "id": "glute-bridge",
+      "name": "Glute Bridge",
+      "aliases": [],
+      "category": "hinge",
+      "primaryMuscles": ["glutes", "hamstrings"],
+      "equipment": ["bodyweight"],
+      "difficulty": "beginner",
+      "unilateral": false,
+      "defaultMode": "reps",
+      "tags": ["bodyweight", "posterior-chain", "warmup"],
+      "cues": [
+        "Heels close to the hips, toes light",
+        "Drive through the heels and squeeze at the top",
+        "Ribs down — don't arch the lower back"
+      ],
+      "description": "Floor-based hip extension; wakes the glutes up without asking anything of the spine.",
+      "media": null
+    },
+    {
+      "id": "sit-up",
+      "name": "Sit-Up",
+      "aliases": [],
+      "category": "core",
+      "primaryMuscles": ["core", "hip-flexors"],
+      "equipment": ["bodyweight"],
+      "difficulty": "beginner",
+      "unilateral": false,
+      "defaultMode": "reps",
+      "tags": ["bodyweight", "core", "strength"],
+      "cues": [
+        "Feet anchored or flat, knees bent",
+        "Peel the spine off the floor one vertebra at a time",
+        "Lower with the same control you came up with"
+      ],
+      "description": "Full-range trunk flexion from the floor; the classic, and still a good one.",
+      "media": null
+    },
+    {
+      "id": "crunch",
+      "name": "Crunch",
+      "aliases": [],
+      "category": "core",
+      "primaryMuscles": ["core"],
+      "equipment": ["bodyweight"],
+      "difficulty": "beginner",
+      "unilateral": false,
+      "defaultMode": "reps",
+      "tags": ["bodyweight", "core"],
+      "cues": [
+        "Lift only the shoulder blades off the floor",
+        "Chin off the chest, eyes to the ceiling",
+        "Hands rest by the head — don't pull on the neck"
+      ],
+      "description": "Short-range trunk flexion; less hip flexor than a sit-up, and kinder to the lower back.",
+      "media": null
+    },
+    {
+      "id": "bicycle-crunch",
+      "name": "Bicycle Crunch",
+      "aliases": [],
+      "category": "core",
+      "primaryMuscles": ["core", "obliques"],
+      "equipment": ["bodyweight"],
+      "difficulty": "beginner",
+      "unilateral": false,
+      "defaultMode": "time",
+      "tags": ["bodyweight", "core", "rotation"],
+      "cues": [
+        "Opposite elbow toward opposite knee",
+        "Extend the free leg long and low",
+        "Slow down — speed hides the work"
+      ],
+      "description": "Alternating crunch with rotation; brings the obliques into the pattern.",
+      "media": null
+    },
+    {
+      "id": "leg-raise",
+      "name": "Lying Leg Raise",
+      "aliases": [],
+      "category": "core",
+      "primaryMuscles": ["core", "hip-flexors"],
+      "equipment": ["bodyweight"],
+      "difficulty": "intermediate",
+      "unilateral": false,
+      "defaultMode": "reps",
+      "tags": ["bodyweight", "core", "strength"],
+      "cues": [
+        "Press the lower back into the floor and keep it there",
+        "Legs straight, lower only as far as you can hold that",
+        "Hands under the hips if the back lifts"
+      ],
+      "description": "Lower-abdominal work; the range is only as long as your back stays flat.",
+      "media": null
+    },
+    {
+      "id": "plank",
+      "name": "Plank",
+      "aliases": ["Front Plank"],
+      "category": "core",
+      "primaryMuscles": ["core", "shoulders"],
+      "equipment": ["bodyweight"],
+      "difficulty": "beginner",
+      "unilateral": false,
+      "defaultMode": "time",
+      "tags": ["bodyweight", "core", "isometric", "plank", "stability"],
+      "cues": [
+        "Elbows under the shoulders, forearms flat",
+        "One line from heels to head",
+        "Squeeze the glutes and tuck the ribs"
+      ],
+      "description": "Isometric anti-extension hold; the baseline test of whether the trunk can stay stiff.",
+      "media": null
+    },
+    {
+      "id": "side-plank",
+      "name": "Side Plank",
+      "aliases": [],
+      "category": "core",
+      "primaryMuscles": ["obliques", "core"],
+      "equipment": ["bodyweight"],
+      "difficulty": "beginner",
+      "unilateral": true,
+      "defaultMode": "time",
+      "tags": ["bodyweight", "core", "isometric", "plank", "anti-lateral-flexion"],
+      "cues": [
+        "Elbow under the shoulder, feet stacked or staggered",
+        "Push the hip to the ceiling",
+        "Don't let the top shoulder roll forward"
+      ],
+      "description": "Isometric hold on one side; the anti-lateral-flexion counterpart to the plank.",
+      "media": null
+    },
+    {
+      "id": "hollow-hold",
+      "name": "Hollow Hold",
+      "aliases": [],
+      "category": "core",
+      "primaryMuscles": ["core", "hip-flexors"],
+      "equipment": ["bodyweight"],
+      "difficulty": "intermediate",
+      "unilateral": false,
+      "defaultMode": "time",
+      "tags": ["bodyweight", "core", "isometric", "stability"],
+      "cues": [
+        "Lower back pinned to the floor throughout",
+        "Arms and legs long, shoulders just off the ground",
+        "Raise the limbs higher if the back lifts"
+      ],
+      "description": "Gymnastic hollow position; teaches the trunk to hold a shape under load.",
+      "media": null
+    },
+    {
+      "id": "dead-bug",
+      "name": "Dead Bug",
+      "aliases": [],
+      "category": "core",
+      "primaryMuscles": ["core"],
+      "equipment": ["bodyweight"],
+      "difficulty": "beginner",
+      "unilateral": false,
+      "defaultMode": "reps",
+      "tags": ["bodyweight", "core", "anti-extension", "technique"],
+      "cues": [
+        "Opposite arm and leg extend together",
+        "Lower back stays flat on the floor",
+        "Move slowly and breathe out as you extend"
+      ],
+      "description": "Anti-extension drill done lying down; hard to cheat and easy on the back.",
+      "media": null
+    },
+    {
+      "id": "superman",
+      "name": "Superman",
+      "aliases": [],
+      "category": "core",
+      "primaryMuscles": ["back", "glutes"],
+      "equipment": ["bodyweight"],
+      "difficulty": "beginner",
+      "unilateral": false,
+      "defaultMode": "time",
+      "tags": ["bodyweight", "posterior-chain", "isometric", "posture"],
+      "cues": [
+        "Face down, arms and legs lifted",
+        "Reach long rather than lifting high",
+        "Look at the floor to keep the neck neutral"
+      ],
+      "description": "Prone spinal extension; the counterweight to a day spent sitting.",
+      "media": null
+    },
+    {
+      "id": "mountain-climber",
+      "name": "Mountain Climber",
+      "aliases": [],
+      "category": "cardio",
+      "primaryMuscles": ["core", "shoulders", "quads"],
+      "equipment": ["bodyweight"],
+      "difficulty": "beginner",
+      "unilateral": false,
+      "defaultMode": "time",
+      "tags": ["bodyweight", "cardio", "conditioning", "core"],
+      "cues": [
+        "Strong plank first, then drive the knees",
+        "Hips stay level — no bouncing",
+        "Hands stacked under the shoulders"
+      ],
+      "description": "A plank with moving legs; conditioning that keeps the trunk honest.",
+      "media": null
+    },
+    {
+      "id": "jumping-jack",
+      "name": "Jumping Jack",
+      "aliases": ["Star Jump"],
+      "category": "cardio",
+      "primaryMuscles": ["calves", "shoulders"],
+      "equipment": ["bodyweight"],
+      "difficulty": "beginner",
+      "unilateral": false,
+      "defaultMode": "time",
+      "tags": ["bodyweight", "cardio", "warmup", "conditioning"],
+      "cues": [
+        "Land soft through the balls of the feet",
+        "Arms all the way overhead",
+        "Find a rhythm and hold it"
+      ],
+      "description": "The universal warm-up; raises the heart rate and needs no space at all.",
+      "media": null
+    },
+    {
+      "id": "high-knees",
+      "name": "High Knees",
+      "aliases": [],
+      "category": "cardio",
+      "primaryMuscles": ["quads", "hip-flexors", "calves"],
+      "equipment": ["bodyweight"],
+      "difficulty": "beginner",
+      "unilateral": false,
+      "defaultMode": "time",
+      "tags": ["bodyweight", "cardio", "conditioning"],
+      "cues": [
+        "Knees to hip height",
+        "Stay tall — don't lean back",
+        "Quick feet, light contacts"
+      ],
+      "description": "Running on the spot with intent; a fast way to raise the heart rate in one square metre.",
+      "media": null
+    },
+    {
+      "id": "burpee",
+      "name": "Burpee",
+      "aliases": [],
+      "category": "full-body",
+      "primaryMuscles": ["quads", "chest", "core", "shoulders"],
+      "equipment": ["bodyweight"],
+      "difficulty": "intermediate",
+      "unilateral": false,
+      "defaultMode": "reps",
+      "tags": ["bodyweight", "cardio", "conditioning", "full-body"],
+      "cues": [
+        "Hands down, feet back to a plank",
+        "Chest to the floor if you want the full version",
+        "Jump the feet in and stand tall"
+      ],
+      "description": "Squat, plank, push, jump — the whole body in one rep, and the reason everyone dreads it.",
+      "media": null
+    },
+    {
+      "id": "inchworm",
+      "name": "Inchworm",
+      "aliases": [],
+      "category": "full-body",
+      "primaryMuscles": ["hamstrings", "core", "shoulders"],
+      "equipment": ["bodyweight"],
+      "difficulty": "beginner",
+      "unilateral": false,
+      "defaultMode": "reps",
+      "tags": ["bodyweight", "mobility", "warmup", "full-body"],
+      "cues": [
+        "Hinge and walk the hands out to a plank",
+        "Keep the legs as straight as your hamstrings allow",
+        "Walk the feet back to the hands"
+      ],
+      "description": "Walking hand-to-foot stretch; a warm-up that opens the hamstrings and loads the trunk.",
+      "media": null
+    },
+    {
+      "id": "bear-crawl",
+      "name": "Bear Crawl",
+      "aliases": [],
+      "category": "full-body",
+      "primaryMuscles": ["core", "shoulders", "quads"],
+      "equipment": ["bodyweight"],
+      "difficulty": "intermediate",
+      "unilateral": false,
+      "defaultMode": "time",
+      "tags": ["bodyweight", "conditioning", "stability", "coordination", "full-body"],
+      "cues": [
+        "Knees an inch off the floor and keep them there",
+        "Opposite hand and foot move together",
+        "Hips low and level — no swaying"
+      ],
+      "description": "Quadrupedal crawl with the knees hovering; deceptively hard on the trunk and shoulders.",
+      "media": null
+    }
+  ]
+}

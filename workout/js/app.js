@@ -4,7 +4,7 @@ import { renderLibrary } from './library.js';
 import { renderCircuitList, renderCircuitEditor } from './builder.js';
 import { startPlayer, stopPlayer } from './player.js';
 import { startBoard, stopBoard } from './board.js';
-import { renderTransfer } from './transfer.js';
+import { renderSettings } from './settings.js';
 import { clear } from './util.js';
 
 function setActiveTab(name) {
@@ -13,6 +13,16 @@ function setActiveTab(name) {
     tab.classList.toggle('is-active', isActive);
     if (isActive) tab.setAttribute('aria-current', 'page');
     else tab.removeAttribute('aria-current');
+  }
+
+  // The gear is not a tab — it is a destination like any other, and should say
+  // so when you are standing in it.
+  const gear = document.getElementById('settings-link');
+  if (gear) {
+    const on = name === 'settings';
+    gear.classList.toggle('is-active', on);
+    if (on) gear.setAttribute('aria-current', 'page');
+    else gear.removeAttribute('aria-current');
   }
 }
 
@@ -56,9 +66,12 @@ function route() {
       startBoard(id);
       break;
 
+    // '#/data' is what this view used to be called, before it grew a kit list
+    // and the sound toggle. Kept as an alias rather than breaking a bookmark.
+    case 'settings':
     case 'data':
-      setActiveTab(null);
-      renderTransfer(main);
+      setActiveTab('settings');
+      renderSettings(main);
       break;
 
     default:

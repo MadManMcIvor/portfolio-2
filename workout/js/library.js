@@ -1,6 +1,7 @@
 /* Library view, plus the reusable exercise picker the builder uses. */
 import { exercises, categories, difficulties, equipmentKinds } from './exercises.js';
 import { isFavourite, toggleFavourite, getFavourites } from './favourites.js';
+import { EQUIPMENT, canDo, equipmentLabel, getKit, hasKit } from './equipment.js';
 import { el, clear, sentenceCase } from './util.js';
 
 const LEVELS = ['beginner', 'intermediate', 'advanced'];
@@ -20,16 +21,39 @@ const SORTS = {
   },
 };
 
-export const defaultFilters = () => ({ q: '', kit: '', cat: '', diff: '', sort: 'name', starred: false });
+/*
+ * `scope` is your kit or everything; `kind` is one specific piece of equipment.
+ * Scope starts on your kit as soon as you have told the app what you have —
+ * and on everything until then, since hiding half the library before being
+ * told anything would be the wrong way round.
+ */
+export const defaultFilters = () => ({
+  q: '',
+  scope: hasKit() ? 'mine' : 'all',
+  kind: '',
+  cat: '',
+  diff: '',
+  sort: 'name',
+  starred: false,
+});
 
-function matches(ex, { q, kit, cat, diff, starred }, favourites) {
+function matches(ex, { q, scope, kind, cat, diff, starred }, favourites, kit) {
   if (starred && !favourites.has(ex.id)) return false;
-  if (kit && !ex.equipment.includes(kit)) return false;
+  // Every piece has to be there: a dumbbell bench press needs the bench *and*
+  // the dumbbells, and having one of the two doesn't get you the movement.
+  if (scope === 'mine' && !canDo(ex, kit)) return false;
+  if (kind && !ex.equipment.includes(kind)) return false;
   if (cat && ex.category !== cat) return false;
   if (diff && ex.difficulty !== diff) return false;
   if (!q) return true;
 
-  const hay = [ex.name, ...(ex.aliases || []), ...(ex.tags || []), ex.category, ...ex.equipment]
+  const hay = [
+    ex.name,
+    ...(ex.aliases || []),
+    ...(ex.tags || []),
+    ex.category,
+    ...ex.equipment.map(equipmentLabel),
+  ]
     .join(' ')
     .toLowerCase();
   return hay.includes(q.toLowerCase());
@@ -52,20 +76,23 @@ function select(values, current, allLabel, onChange, label) {
 }
 
 /*
- * Equipment is the filter that decides whether you can do a movement at all,
- * so it gets a segmented control rather than being buried in a dropdown.
+ * Your kit or everything. Two options, and it stays two however long the
+ * equipment table gets — the specific-kind filter is a dropdown below.
  *
  * The buttons update their own pressed state rather than being re-rendered:
  * a repaint would rebuild the search box alongside them and take the caret
  * with it mid-word.
  */
-function equipmentToggle(state, onChange) {
-  const options = [['', 'Everything'], ...equipmentKinds().map((k) => [k, sentenceCase(k)])];
+function scopeToggle(state, onChange) {
+  const options = [
+    ['mine', 'My kit'],
+    ['all', 'Everything'],
+  ];
   const buttons = [];
 
   function sync() {
     for (const [value, button] of buttons) {
-      const on = state.kit === value;
+      const on = state.scope === value;
       button.classList.toggle('is-active', on);
       button.setAttribute('aria-pressed', String(on));
     }
@@ -79,7 +106,7 @@ function equipmentToggle(state, onChange) {
       type: 'button',
       text: label,
       onclick: () => {
-        state.kit = value;
+        state.scope = value;
         sync();
         onChange();
       },
@@ -89,7 +116,7 @@ function equipmentToggle(state, onChange) {
   }
 
   sync();
-  return group;
+  return { node: group, sync };
 }
 
 /* Same reasoning as the segmented control: it restyles itself in place. */
@@ -117,21 +144,80 @@ function starFilter(state, onChange) {
   return button;
 }
 
-function filterBar(state, onChange) {
-  return el('div', { class: 'filters' }, [
-    el('input', {
-      class: 'search',
-      type: 'search',
-      placeholder: 'Search movements',
-      'aria-label': 'Search movements',
-      value: state.q,
-      oninput: (e) => {
-        state.q = e.target.value;
+/* The kinds that actually appear in the data, in the table's order rather than
+ * alphabetically — "Bodyweight, Kettlebell, …, Bike, Pool" groups the way the
+ * settings list does. */
+function kindOptions() {
+  const present = new Set(equipmentKinds());
+  return EQUIPMENT.filter((kind) => present.has(kind.id));
+}
+
+function kindSelect(state, onChange, syncScope) {
+  return el(
+    'select',
+    {
+      'aria-label': 'Filter by a kind of equipment',
+      onchange: (e) => {
+        state.kind = e.target.value;
+        // Asking for a kind you don't have, while filtered to your kit, would
+        // return nothing with no visible reason why. Widen the scope instead.
+        if (state.kind && state.scope === 'mine' && !(getKit() || []).includes(state.kind)) {
+          state.scope = 'all';
+          syncScope();
+        }
         onChange();
       },
-    }),
-    el('div', { class: 'filter-kit' }, [equipmentToggle(state, onChange), starFilter(state, onChange)]),
+    },
+    [
+      el('option', { value: '', text: 'All kit', selected: state.kind === '' ? 'selected' : null }),
+      ...kindOptions().map((kind) =>
+        el('option', {
+          value: kind.id,
+          text: kind.label,
+          selected: kind.id === state.kind ? 'selected' : null,
+        })
+      ),
+    ]
+  );
+}
+
+function filterBar(state, onChange) {
+  // Until you have said what you have, "My kit" would filter against nothing,
+  // so the control stays out of the way and the count line offers the way in.
+  const scope = hasKit() ? scopeToggle(state, onChange) : null;
+  const syncScope = scope ? scope.sync : () => {};
+
+  const node = el('div', { class: 'filters' }, [
+    // The star rides with the search box rather than sitting on a row of its
+    // own: it is a one-button filter, and alone on a line it reads as a
+    // leftover.
+    el('div', { class: 'filter-search' }, [
+      el('input', {
+        class: 'search',
+        type: 'search',
+        placeholder: 'Search movements',
+        'aria-label': 'Search movements',
+        value: state.q,
+        oninput: (e) => {
+          state.q = e.target.value;
+          onChange();
+        },
+      }),
+      starFilter(state, onChange),
+    ]),
+    // The link sits with the control it changes: settings is a place nobody
+    // visits on spec, and "why can't I see the bench press" is a question you
+    // ask here, not there.
+    el('div', { class: 'filter-scope' }, [
+      scope ? scope.node : null,
+      el('a', {
+        class: 'kit-link',
+        href: '#/settings',
+        text: scope ? 'Edit kit' : 'Filter by the kit you have',
+      }),
+    ]),
     el('div', { class: 'filter-row' }, [
+      kindSelect(state, onChange, syncScope),
       select(['', ...categories()], state.cat, 'All patterns', (v) => {
         state.cat = v;
         onChange();
@@ -155,6 +241,8 @@ function filterBar(state, onChange) {
       ),
     ]),
   ]);
+
+  return { node, syncScope };
 }
 
 /* ─── Card ─────────────────────────────────────────────────────────────── */
@@ -180,7 +268,7 @@ function levelMeter(difficulty) {
 function chips(ex) {
   const row = el('div', { class: 'chips' }, [
     el('span', { class: 'chip chip-solid', text: sentenceCase(ex.category) }),
-    ...ex.equipment.map((kit) => el('span', { class: 'chip chip-outline', text: sentenceCase(kit) })),
+    ...ex.equipment.map((kit) => el('span', { class: 'chip chip-outline', text: equipmentLabel(kit) })),
   ]);
   if (ex.unilateral) {
     row.appendChild(el('span', { class: 'chip chip-outline', text: 'Per side' }));
@@ -299,26 +387,41 @@ export function renderExerciseList(container, opts = {}) {
   let cards = new Map();
   let selectedId = opts.openId || null;
 
+  /*
+   * Says why you are seeing a subset, not just that you are — "38 of 93" with
+   * no reason given is the sort of thing you end up staring at. No link: the
+   * way to your kit is the gear in the top bar, not a call to action wedged
+   * into a line of metadata.
+   */
+  function paintCount(shown, total) {
+    if (!shown) {
+      count.textContent = '';
+      return;
+    }
+    if (shown === total) {
+      count.textContent = `${total} movements`;
+      return;
+    }
+    count.textContent =
+      state.scope === 'mine'
+        ? `${shown} of ${total} movements, filtered to your kit`
+        : `${shown} of ${total} movements`;
+  }
+
   function paint() {
     clear(grid);
     cards = new Map();
 
     const favourites = new Set(getFavourites());
+    const kit = getKit();
     const rows = exercises()
-      .filter((ex) => matches(ex, state, favourites))
+      .filter((ex) => matches(ex, state, favourites, kit))
       .sort(SORTS[state.sort].compare);
 
-    count.textContent = rows.length ? `${rows.length} of ${exercises().length} movements` : '';
+    paintCount(rows.length, exercises().length);
 
     if (!rows.length) {
-      grid.appendChild(
-        el('p', {
-          class: 'empty',
-          text: state.starred
-            ? 'Nothing starred yet — tap a star to keep a movement close to hand.'
-            : 'No movements match those filters.',
-        })
-      );
+      grid.appendChild(emptyState());
       return;
     }
 
@@ -348,7 +451,35 @@ export function renderExerciseList(container, opts = {}) {
     for (const [exerciseId, card] of cards) markSelected(card, exerciseId === id);
   }
 
-  container.appendChild(filterBar(state, paint));
+  /* Filtered to your kit and nothing matched: a dead end unless it says so and
+   * offers the way out. */
+  function emptyState() {
+    if (state.starred) {
+      return el('p', {
+        class: 'empty',
+        text: 'Nothing starred yet — tap a star to keep a movement close to hand.',
+      });
+    }
+    if (state.scope === 'mine') {
+      return el('div', { class: 'empty' }, [
+        el('p', { text: 'Nothing here works with the kit you have.' }),
+        el('button', {
+          class: 'btn btn-outline btn-sm',
+          type: 'button',
+          text: 'Show everything',
+          onclick: () => {
+            state.scope = 'all';
+            bar.syncScope();
+            paint();
+          },
+        }),
+      ]);
+    }
+    return el('p', { class: 'empty', text: 'No movements match those filters.' });
+  }
+
+  const bar = filterBar(state, paint);
+  container.appendChild(bar.node);
   container.appendChild(count);
   container.appendChild(grid);
   paint();

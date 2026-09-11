@@ -66,12 +66,17 @@ root so the app sits at `/workout/`, exactly as it does in production.
 You can also pencil in **"any workout"** on a day you mean to train without
 having decided what. Finishing anything that day fills the slot in.
 
-Circuits, schedule, starred movements and settings live in `localStorage` on
-that browser only. The app follows the same light/dark choice as the main site
-(shared `theme` key).
+Circuits, schedule, starred movements, your kit and settings live in
+`localStorage` on that browser only. The app follows the same light/dark choice
+as the main site (shared `theme` key).
 
-**Export and import** — the *Your data* link in the footer gives you everything
-— circuits, calendar and stars — as a block of JSON text to copy out or paste in.
+**Your kit** — the gear in the top bar opens settings, where you tick what you
+can actually get to: a stationary bike but not a pool, kettlebells but not a barbell. The
+library then filters to movements you can do, with **Everything** always one tap
+away. Until you tick anything it shows the lot.
+
+**Export and import** — the same screen gives you everything — circuits,
+calendar, stars and kit — as a block of JSON text to copy out or paste in.
 Merging skips anything already present, so re-importing the same export is
 harmless.
 
@@ -97,10 +102,18 @@ foreground, so beeps fire for the length of a workout with the phone propped up.
 ## Editing the exercise library
 
 `data/exercises.json` is the source of truth and is loaded directly — no
-generation step. It holds 51 movements across kettlebell and bodyweight work;
-`equipment` is what the library's segmented filter is built from, so a new kind
-of kit shows up there on its own. Schema and field reference:
+generation step. It holds 93 movements across kettlebells, bodyweight, weights,
+machines and the outdoors. Schema and field reference:
 [docs/specs/001-exercise-library-data.md](docs/specs/001-exercise-library-data.md).
+
+Every id in an exercise's `equipment` must appear in the table in
+[`js/equipment.js`](js/equipment.js) — that table, not the data, is what the
+kit list and the filters are built from, so a new kind of kit means a row there
+first and a movement second. After editing either, run:
+
+```
+node workout/tools/check-data.mjs
+```
 
 ## Structure
 
@@ -118,7 +131,9 @@ of kit shows up there on its own. Schema and field reference:
 │   ├── storage.js        # localStorage (circuits, settings)
 │   ├── schedule.js       # localStorage (the calendar's entries)
 │   ├── favourites.js     # localStorage (starred movements)
+│   ├── equipment.js      # the equipment vocabulary + localStorage (your kit)
 │   ├── transfer.js       # export / import everything as JSON text
+│   ├── settings.js       # your kit, sounds, and the data sections
 │   ├── util.js           # time maths, DOM builder, audio
 │   ├── calendar.js       # month grid + day detail
 │   ├── library.js        # library view + reusable exercise picker
@@ -131,6 +146,7 @@ of kit shows up there on its own. Schema and field reference:
 ├── icons/                # icon.svg is the source; PNGs are generated
 ├── tools/
 │   ├── serve.mjs         # zero-dependency static file server
+│   ├── check-data.mjs    # validates exercises.json against the equipment table
 │   └── gen-icons.mjs     # icon.svg -> the manifest and iOS PNGs (macOS only)
 └── docs/
     ├── README.md
@@ -145,6 +161,7 @@ of kit shows up there on its own. Schema and field reference:
 
 ## Ideas for later
 
-A [catalogue of ready-made circuits](docs/specs/004-circuit-catalogue.md) to
-adopt and edit — specced, not built. Then repeating schedules, drag-to-reorder,
-and custom user-created exercises.
+[Logging an outside class or a run](docs/specs/006-logged-sessions.md) onto the
+calendar, then a [catalogue of ready-made circuits](docs/specs/004-circuit-catalogue.md)
+to adopt and edit — both specced, neither built. After that: repeating
+schedules, drag-to-reorder, and custom user-created exercises.

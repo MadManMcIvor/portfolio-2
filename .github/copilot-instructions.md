@@ -148,6 +148,20 @@ My name is "Alex McIvor" **not** "Alex Johnson" so please use McIvor instead.
 
 ---
 
+## Specs and who builds them
+
+`/workout` is a self-contained mini-app with its own working notes in
+`workout/docs/`. Work there is spec-first: one numbered spec per chunk of work,
+kept as the record of the decision even after it ships.
+
+Each proposed spec carries a `Model:` line in its header naming the model it
+should be handed to — Sonnet for work the spec has fully settled, Opus for
+prose in the house voice, decisions left deliberately open, and code whose
+correctness isn't visible on screen. Split it when a spec is both. The full
+convention is in [`workout/docs/README.md`](../workout/docs/README.md).
+
+---
+
 ## Philosophy
 
 This codebase should reflect:

@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "updated": "2026-09-10",
   "exercises": [
     {
@@ -969,6 +969,803 @@
         "Hips low and level — no swaying"
       ],
       "description": "Quadrupedal crawl with the knees hovering; deceptively hard on the trunk and shoulders.",
+      "media": null
+    },
+    {
+      "id": "stationary-bike",
+      "name": "Stationary Bike",
+      "aliases": ["Exercise Bike", "Spin Bike"],
+      "category": "cardio",
+      "primaryMuscles": ["quads", "glutes", "hamstrings", "calves"],
+      "equipment": ["stationary-bike"],
+      "difficulty": "beginner",
+      "unilateral": false,
+      "defaultMode": "time",
+      "tags": ["cardio", "conditioning"],
+      "cues": [
+        "Saddle at hip height — a soft knee at the bottom of the stroke",
+        "Drive through the whole circle, not just down",
+        "Sit tall rather than slumping onto the bars"
+      ],
+      "description": "Steady or interval work with no impact; the cardio machine that fits in a spare room.",
+      "media": null
+    },
+    {
+      "id": "rowing-machine",
+      "name": "Rowing Machine",
+      "aliases": ["Erg", "Ergometer"],
+      "category": "cardio",
+      "primaryMuscles": ["back", "lats", "quads", "core"],
+      "equipment": ["rower"],
+      "difficulty": "beginner",
+      "unilateral": false,
+      "defaultMode": "time",
+      "tags": ["cardio", "conditioning", "full-body"],
+      "cues": [
+        "Legs, then back, then arms — in that order",
+        "Reverse it coming in: arms, back, legs",
+        "Hold the handle lightly; the legs do the work"
+      ],
+      "description": "The closest thing to full-body cardio on a machine, and the easiest one to do badly.",
+      "media": null
+    },
+    {
+      "id": "cross-trainer",
+      "name": "Cross Trainer",
+      "aliases": ["Elliptical"],
+      "category": "cardio",
+      "primaryMuscles": ["quads", "glutes", "hamstrings", "calves"],
+      "equipment": ["elliptical"],
+      "difficulty": "beginner",
+      "unilateral": false,
+      "defaultMode": "time",
+      "tags": ["cardio", "conditioning"],
+      "cues": [
+        "Stand tall, weight through the middle of the foot",
+        "Push and pull the handles rather than leaning on them",
+        "Keep the stride length honest"
+      ],
+      "description": "Low-impact and unglamorous; useful when the knees have had enough of running.",
+      "media": null
+    },
+    {
+      "id": "stair-machine",
+      "name": "Stair Machine",
+      "aliases": ["Stairmaster", "Step Mill"],
+      "category": "cardio",
+      "primaryMuscles": ["glutes", "quads", "calves"],
+      "equipment": ["stair-machine"],
+      "difficulty": "intermediate",
+      "unilateral": false,
+      "defaultMode": "time",
+      "tags": ["cardio", "conditioning", "posterior-chain"],
+      "cues": [
+        "Whole foot on each step, not just the toes",
+        "Stand up off the rails — holding on gives the work away",
+        "A pace you can hold beats a pace you can't"
+      ],
+      "description": "Climbing that never arrives anywhere; quietly brutal on the glutes.",
+      "media": null
+    },
+    {
+      "id": "treadmill-intervals",
+      "name": "Treadmill Intervals",
+      "aliases": ["Treadmill Sprints"],
+      "category": "cardio",
+      "primaryMuscles": ["quads", "hamstrings", "glutes", "calves"],
+      "equipment": ["treadmill"],
+      "difficulty": "intermediate",
+      "unilateral": false,
+      "defaultMode": "time",
+      "tags": ["cardio", "conditioning", "power"],
+      "cues": [
+        "Set the pace before you step on, not once you're moving",
+        "Ride the side rails through the rest rather than stopping the belt",
+        "Land under the hips, quick turnover"
+      ],
+      "description": "Hard efforts with the pace chosen for you; the belt makes the decision you'd otherwise negotiate.",
+      "media": null
+    },
+    {
+      "id": "incline-walk",
+      "name": "Incline Walk",
+      "aliases": ["Hill Walk"],
+      "category": "cardio",
+      "primaryMuscles": ["glutes", "hamstrings", "calves"],
+      "equipment": ["treadmill"],
+      "difficulty": "beginner",
+      "unilateral": false,
+      "defaultMode": "time",
+      "tags": ["cardio", "conditioning", "posterior-chain"],
+      "cues": [
+        "Raise the incline before you raise the speed",
+        "Hands off the rails",
+        "Long stride, heel down first"
+      ],
+      "description": "Steady uphill walking: easy for the first five minutes, considerably less so by twenty.",
+      "media": null
+    },
+    {
+      "id": "running",
+      "name": "Running",
+      "aliases": ["Jogging", "Road Run"],
+      "category": "cardio",
+      "primaryMuscles": ["quads", "hamstrings", "glutes", "calves"],
+      "equipment": ["bodyweight"],
+      "difficulty": "beginner",
+      "unilateral": false,
+      "defaultMode": "time",
+      "tags": ["cardio", "conditioning"],
+      "cues": [
+        "Land under the hips rather than out in front",
+        "Short, quick steps on the hills",
+        "Breathe at a rhythm you could still talk over"
+      ],
+      "description": "Out the door and back. Nothing needed but shoes, which is most of the appeal.",
+      "media": null
+    },
+    {
+      "id": "easy-walk",
+      "name": "Easy Walk",
+      "aliases": ["Zone 2 Walk"],
+      "category": "cardio",
+      "primaryMuscles": ["glutes", "hamstrings", "calves"],
+      "equipment": ["bodyweight"],
+      "difficulty": "beginner",
+      "unilateral": false,
+      "defaultMode": "time",
+      "tags": ["cardio", "warmup"],
+      "cues": [
+        "Brisk enough to warm up, easy enough to hold a conversation",
+        "Arms swinging, shoulders loose"
+      ],
+      "description": "The one that counts on a day when nothing else is going to. Movement is movement.",
+      "media": null
+    },
+    {
+      "id": "hill-sprints",
+      "name": "Hill Sprints",
+      "aliases": [],
+      "category": "cardio",
+      "primaryMuscles": ["glutes", "hamstrings", "quads", "calves"],
+      "equipment": ["bodyweight"],
+      "difficulty": "advanced",
+      "unilateral": false,
+      "defaultMode": "reps",
+      "tags": ["cardio", "conditioning", "power"],
+      "cues": [
+        "Drive the knees, lean from the ankles",
+        "Walk down slowly — the walk back is the rest",
+        "Stop while the last one still looks like the first"
+      ],
+      "description": "Short, steep, near-maximal efforts; a sprint session with the brakes built into the hill.",
+      "media": null
+    },
+    {
+      "id": "cycling",
+      "name": "Cycling",
+      "aliases": ["Bike Ride"],
+      "category": "cardio",
+      "primaryMuscles": ["quads", "glutes", "hamstrings", "calves"],
+      "equipment": ["bike"],
+      "difficulty": "beginner",
+      "unilateral": false,
+      "defaultMode": "time",
+      "tags": ["cardio", "conditioning"],
+      "cues": [
+        "Spin a light gear rather than grinding a heavy one",
+        "Saddle high enough that the knee stays soft at the bottom",
+        "Hands relaxed on the bars"
+      ],
+      "description": "A ride that actually goes somewhere — the outdoor half of the bike.",
+      "media": null
+    },
+    {
+      "id": "swimming",
+      "name": "Swimming",
+      "aliases": ["Lengths"],
+      "category": "cardio",
+      "primaryMuscles": ["lats", "shoulders", "back", "core"],
+      "equipment": ["pool"],
+      "difficulty": "intermediate",
+      "unilateral": false,
+      "defaultMode": "time",
+      "tags": ["cardio", "conditioning", "full-body"],
+      "cues": [
+        "Long strokes, fewer of them",
+        "Roll with each stroke rather than swimming flat",
+        "Breathe on a count you can keep to"
+      ],
+      "description": "Full-body conditioning with nothing to land on. Hard to fake, and kind to the joints.",
+      "media": null
+    },
+    {
+      "id": "rucking",
+      "name": "Rucking",
+      "aliases": ["Weighted Walk"],
+      "category": "carry",
+      "primaryMuscles": ["glutes", "hamstrings", "back", "core"],
+      "equipment": ["bodyweight"],
+      "difficulty": "intermediate",
+      "unilateral": false,
+      "defaultMode": "time",
+      "tags": ["cardio", "conditioning", "posterior-chain"],
+      "cues": [
+        "Load high in the pack and tight to the back",
+        "Hips forward, chest up, no leaning into the straps",
+        "Start lighter than you think and add weight later"
+      ],
+      "description": "Walking with a loaded pack; the cheapest way to make an hour's walk count for something.",
+      "media": null
+    },
+    {
+      "id": "skipping",
+      "name": "Skipping",
+      "aliases": ["Jump Rope", "Skip Rope"],
+      "category": "cardio",
+      "primaryMuscles": ["calves", "shoulders", "core"],
+      "equipment": ["jump-rope"],
+      "difficulty": "beginner",
+      "unilateral": false,
+      "defaultMode": "time",
+      "tags": ["cardio", "conditioning", "coordination"],
+      "cues": [
+        "Turn the rope from the wrists, not the arms",
+        "Small jumps — an inch of clearance is plenty",
+        "Land on the balls of the feet with soft knees"
+      ],
+      "description": "Small, fast and relentless; the most conditioning available per square metre of floor.",
+      "media": null
+    },
+    {
+      "id": "double-unders",
+      "name": "Double Unders",
+      "aliases": [],
+      "category": "cardio",
+      "primaryMuscles": ["calves", "shoulders", "core"],
+      "equipment": ["jump-rope"],
+      "difficulty": "advanced",
+      "unilateral": false,
+      "defaultMode": "reps",
+      "tags": ["cardio", "conditioning", "coordination", "plyometric"],
+      "cues": [
+        "Jump higher, not slower",
+        "The wrists turn faster; the arms stay where they are",
+        "Fall back to singles between attempts rather than flailing"
+      ],
+      "description": "Two passes of the rope per jump — a coordination problem long before it is a fitness one.",
+      "media": null
+    },
+    {
+      "id": "dumbbell-floor-press",
+      "name": "Dumbbell Floor Press",
+      "aliases": [],
+      "category": "press",
+      "primaryMuscles": ["chest", "triceps", "shoulders"],
+      "equipment": ["dumbbell"],
+      "difficulty": "beginner",
+      "unilateral": false,
+      "defaultMode": "reps",
+      "tags": ["push", "strength"],
+      "cues": [
+        "The elbows touching the floor is the bottom of the rep",
+        "Elbows at about 45 degrees, not flared to the sides",
+        "Press and squeeze at the top"
+      ],
+      "description": "A bench press with the floor as its safety net; easier on the shoulders and needs no bench.",
+      "media": null
+    },
+    {
+      "id": "dumbbell-bench-press",
+      "name": "Dumbbell Bench Press",
+      "aliases": [],
+      "category": "press",
+      "primaryMuscles": ["chest", "triceps", "shoulders"],
+      "equipment": ["dumbbell", "bench"],
+      "difficulty": "intermediate",
+      "unilateral": false,
+      "defaultMode": "reps",
+      "tags": ["push", "strength"],
+      "cues": [
+        "Shoulder blades pinned back and down",
+        "Lower until the chest stretches, no further",
+        "Feet planted — the drive starts from the floor"
+      ],
+      "description": "The bench press with two independent weights, which the weaker side will report honestly.",
+      "media": null
+    },
+    {
+      "id": "dumbbell-row",
+      "name": "Dumbbell Row",
+      "aliases": ["One-Arm Row"],
+      "category": "pull",
+      "primaryMuscles": ["back", "lats", "biceps"],
+      "equipment": ["dumbbell"],
+      "difficulty": "beginner",
+      "unilateral": true,
+      "defaultMode": "reps",
+      "tags": ["pull", "strength", "unilateral"],
+      "cues": [
+        "Flat back, hips square to the floor",
+        "Pull the elbow past the ribs",
+        "Lower it under control rather than dropping it"
+      ],
+      "description": "One-sided pulling with the free hand braced; the simplest back movement there is.",
+      "media": null
+    },
+    {
+      "id": "dumbbell-shoulder-press",
+      "name": "Dumbbell Shoulder Press",
+      "aliases": ["Dumbbell Overhead Press"],
+      "category": "press",
+      "primaryMuscles": ["shoulders", "triceps", "core"],
+      "equipment": ["dumbbell"],
+      "difficulty": "beginner",
+      "unilateral": false,
+      "defaultMode": "reps",
+      "tags": ["push", "strength"],
+      "cues": [
+        "Ribs down — don't arch backwards to get under it",
+        "Press slightly back so the head stays clear",
+        "Finish with the biceps by the ears"
+      ],
+      "description": "Pressing overhead from the shoulders. The ribs are usually what gives way first, not the arms.",
+      "media": null
+    },
+    {
+      "id": "dumbbell-romanian-deadlift",
+      "name": "Dumbbell Romanian Deadlift",
+      "aliases": ["DB RDL"],
+      "category": "hinge",
+      "primaryMuscles": ["hamstrings", "glutes", "back"],
+      "equipment": ["dumbbell"],
+      "difficulty": "beginner",
+      "unilateral": false,
+      "defaultMode": "reps",
+      "tags": ["posterior-chain", "strength", "grind"],
+      "cues": [
+        "Push the hips back rather than lowering the weight down",
+        "Soft knees, long spine",
+        "Stop where the hamstrings stop you"
+      ],
+      "description": "A hinge with the knees nearly straight; hamstring length sets the depth, not the weight.",
+      "media": null
+    },
+    {
+      "id": "dumbbell-walking-lunge",
+      "name": "Dumbbell Walking Lunge",
+      "aliases": [],
+      "category": "lunge",
+      "primaryMuscles": ["quads", "glutes", "hamstrings"],
+      "equipment": ["dumbbell"],
+      "difficulty": "intermediate",
+      "unilateral": true,
+      "defaultMode": "reps",
+      "tags": ["unilateral", "strength"],
+      "cues": [
+        "Step out far enough to leave the front shin vertical",
+        "Back knee towards the floor, not towards the wall in front",
+        "Stand tall between steps"
+      ],
+      "description": "Loaded lunging that travels; the last few steps are where the balance goes first.",
+      "media": null
+    },
+    {
+      "id": "dumbbell-curl",
+      "name": "Dumbbell Curl",
+      "aliases": ["Biceps Curl"],
+      "category": "pull",
+      "primaryMuscles": ["biceps", "forearms"],
+      "equipment": ["dumbbell"],
+      "difficulty": "beginner",
+      "unilateral": false,
+      "defaultMode": "reps",
+      "tags": ["pull", "strength"],
+      "cues": [
+        "Elbows stay pinned to the ribs",
+        "Turn the palm up as you lift",
+        "Lower slower than you raised it"
+      ],
+      "description": "Unfashionable and entirely fine — the one movement here with no pretence of being functional.",
+      "media": null
+    },
+    {
+      "id": "back-squat",
+      "name": "Back Squat",
+      "aliases": ["Barbell Squat"],
+      "category": "squat",
+      "primaryMuscles": ["quads", "glutes", "hamstrings", "core"],
+      "equipment": ["barbell"],
+      "difficulty": "advanced",
+      "unilateral": false,
+      "defaultMode": "reps",
+      "tags": ["strength", "grind"],
+      "cues": [
+        "Brace before you unrack it, not after",
+        "Knees track over the toes; hips and chest rise together",
+        "Earn the depth before you add the weight"
+      ],
+      "description": "The heaviest squat available to you, and the one that most wants a rack and another person nearby.",
+      "media": null
+    },
+    {
+      "id": "barbell-deadlift",
+      "name": "Barbell Deadlift",
+      "aliases": ["Conventional Deadlift"],
+      "category": "hinge",
+      "primaryMuscles": ["glutes", "hamstrings", "back", "forearms"],
+      "equipment": ["barbell"],
+      "difficulty": "advanced",
+      "unilateral": false,
+      "defaultMode": "reps",
+      "tags": ["posterior-chain", "strength", "grind"],
+      "cues": [
+        "Bar over the mid-foot, shins almost touching",
+        "Take the slack out of the bar before you pull",
+        "Finish standing tall — no leaning back at the top"
+      ],
+      "description": "Picking the heaviest available thing up off the floor. Unforgiving of a rounded back.",
+      "media": null
+    },
+    {
+      "id": "bench-press",
+      "name": "Bench Press",
+      "aliases": ["Barbell Bench Press"],
+      "category": "press",
+      "primaryMuscles": ["chest", "triceps", "shoulders"],
+      "equipment": ["barbell", "bench"],
+      "difficulty": "intermediate",
+      "unilateral": false,
+      "defaultMode": "reps",
+      "tags": ["push", "strength"],
+      "cues": [
+        "Shoulder blades back and down, chest up",
+        "Bar to the lower chest with the elbows tucked",
+        "Drive the feet into the floor"
+      ],
+      "description": "The standard horizontal press; past a certain weight it needs a rack and a spotter, in that order.",
+      "media": null
+    },
+    {
+      "id": "overhead-press",
+      "name": "Overhead Press",
+      "aliases": ["Military Press", "Barbell Press"],
+      "category": "press",
+      "primaryMuscles": ["shoulders", "triceps", "core"],
+      "equipment": ["barbell"],
+      "difficulty": "intermediate",
+      "unilateral": false,
+      "defaultMode": "reps",
+      "tags": ["push", "strength", "grind"],
+      "cues": [
+        "Squeeze the glutes so the ribs can't flare",
+        "Head back out of the way, then through as the bar passes",
+        "Finish with the bar stacked over the mid-foot"
+      ],
+      "description": "A standing press with a bar: whole-body work wearing a shoulder movement's clothes.",
+      "media": null
+    },
+    {
+      "id": "barbell-row",
+      "name": "Barbell Row",
+      "aliases": ["Bent-Over Barbell Row"],
+      "category": "pull",
+      "primaryMuscles": ["back", "lats", "biceps"],
+      "equipment": ["barbell"],
+      "difficulty": "intermediate",
+      "unilateral": false,
+      "defaultMode": "reps",
+      "tags": ["pull", "strength"],
+      "cues": [
+        "Hinge to about 45 degrees and stay there for the whole set",
+        "Pull to the belly button, not to the chest",
+        "Lower the bar without standing up to meet it"
+      ],
+      "description": "Heavy horizontal pulling. Holding the position is harder than making the pull.",
+      "media": null
+    },
+    {
+      "id": "pull-up",
+      "name": "Pull-Up",
+      "aliases": [],
+      "category": "pull",
+      "primaryMuscles": ["lats", "back", "biceps", "forearms"],
+      "equipment": ["pull-up-bar"],
+      "difficulty": "advanced",
+      "unilateral": false,
+      "defaultMode": "reps",
+      "tags": ["pull", "bodyweight", "strength"],
+      "cues": [
+        "Start from a dead hang with the shoulders pulled down",
+        "Chest towards the bar, elbows to the ribs",
+        "Lower all the way — half a rep builds half a back"
+      ],
+      "description": "Overhand pulling with your whole body as the load; the benchmark, fairly or not.",
+      "media": null
+    },
+    {
+      "id": "chin-up",
+      "name": "Chin-Up",
+      "aliases": [],
+      "category": "pull",
+      "primaryMuscles": ["lats", "biceps", "back"],
+      "equipment": ["pull-up-bar"],
+      "difficulty": "intermediate",
+      "unilateral": false,
+      "defaultMode": "reps",
+      "tags": ["pull", "bodyweight", "strength"],
+      "cues": [
+        "Palms facing you, hands about shoulder width",
+        "Drive the elbows down and back",
+        "Stay tight through the middle — no kicking"
+      ],
+      "description": "The pull-up's friendlier cousin. The biceps take a bigger share, which is why this one comes first.",
+      "media": null
+    },
+    {
+      "id": "dead-hang",
+      "name": "Dead Hang",
+      "aliases": [],
+      "category": "pull",
+      "primaryMuscles": ["forearms", "lats", "shoulders"],
+      "equipment": ["pull-up-bar"],
+      "difficulty": "beginner",
+      "unilateral": false,
+      "defaultMode": "time",
+      "tags": ["grip", "isometric", "mobility"],
+      "cues": [
+        "Let the shoulders rise, then gently pull them back down",
+        "Breathe rather than brace",
+        "Feet still — no swinging"
+      ],
+      "description": "Hanging, and nothing else: grip, shoulders, and a decent stretch for a back that has been at a desk.",
+      "media": null
+    },
+    {
+      "id": "hanging-knee-raise",
+      "name": "Hanging Knee Raise",
+      "aliases": [],
+      "category": "core",
+      "primaryMuscles": ["core", "obliques", "forearms"],
+      "equipment": ["pull-up-bar"],
+      "difficulty": "intermediate",
+      "unilateral": false,
+      "defaultMode": "reps",
+      "tags": ["core", "grip", "anti-extension"],
+      "cues": [
+        "Knees to hip height or higher",
+        "Curl the pelvis at the top rather than only lifting the legs",
+        "Down slowly, and kill the swing before the next rep"
+      ],
+      "description": "Core work with your grip as the time limit. Very hard to cheat while hanging.",
+      "media": null
+    },
+    {
+      "id": "band-pull-apart",
+      "name": "Band Pull-Apart",
+      "aliases": [],
+      "category": "pull",
+      "primaryMuscles": ["traps", "shoulders", "back"],
+      "equipment": ["resistance-band"],
+      "difficulty": "beginner",
+      "unilateral": false,
+      "defaultMode": "reps",
+      "tags": ["posture", "warmup", "shoulder-stability"],
+      "cues": [
+        "Arms straight, band at chest height",
+        "Pull the shoulder blades together, not the hands apart",
+        "Slow on the way back in"
+      ],
+      "description": "Thirty seconds of this undoes a surprising amount of sitting. The best warm-up here.",
+      "media": null
+    },
+    {
+      "id": "band-pull-through",
+      "name": "Band Pull-Through",
+      "aliases": [],
+      "category": "hinge",
+      "primaryMuscles": ["glutes", "hamstrings"],
+      "equipment": ["resistance-band"],
+      "difficulty": "beginner",
+      "unilateral": false,
+      "defaultMode": "reps",
+      "tags": ["posterior-chain", "technique"],
+      "cues": [
+        "Anchor the band low behind you and face away from it",
+        "Push the hips back, then snap them forward",
+        "Squeeze the glutes at the top instead of leaning back"
+      ],
+      "description": "The hinge pattern with the load pulling backwards; the cheapest way to learn a swing.",
+      "media": null
+    },
+    {
+      "id": "band-overhead-press",
+      "name": "Band Overhead Press",
+      "aliases": [],
+      "category": "press",
+      "primaryMuscles": ["shoulders", "triceps", "core"],
+      "equipment": ["resistance-band"],
+      "difficulty": "beginner",
+      "unilateral": false,
+      "defaultMode": "reps",
+      "tags": ["push", "strength"],
+      "cues": [
+        "Stand on the band, feet about hip width",
+        "Ribs down as the hands pass the head",
+        "Control the way back — the band wants to snap home"
+      ],
+      "description": "Pressing against a band, which is heaviest at the top. Kind to the shoulders and packs in a bag.",
+      "media": null
+    },
+    {
+      "id": "band-assisted-pull-up",
+      "name": "Band-Assisted Pull-Up",
+      "aliases": [],
+      "category": "pull",
+      "primaryMuscles": ["lats", "back", "biceps"],
+      "equipment": ["resistance-band", "pull-up-bar"],
+      "difficulty": "intermediate",
+      "unilateral": false,
+      "defaultMode": "reps",
+      "tags": ["pull", "strength", "technique"],
+      "cues": [
+        "Loop the band over the bar and put one foot in it",
+        "Same shape as a pull-up: dead hang to chest",
+        "Move to a thinner band before you add reps"
+      ],
+      "description": "A pull-up with the hardest part propped up. How most people get their first one.",
+      "media": null
+    },
+    {
+      "id": "step-up",
+      "name": "Step-Up",
+      "aliases": [],
+      "category": "lunge",
+      "primaryMuscles": ["quads", "glutes", "hamstrings"],
+      "equipment": ["box"],
+      "difficulty": "beginner",
+      "unilateral": true,
+      "defaultMode": "reps",
+      "tags": ["unilateral", "strength", "balance"],
+      "cues": [
+        "Whole foot on the box",
+        "Push through the top foot — don't bounce off the bottom one",
+        "Step back down under control rather than dropping"
+      ],
+      "description": "One leg at a time onto a step. The height sets the difficulty long before any weight does.",
+      "media": null
+    },
+    {
+      "id": "box-jump",
+      "name": "Box Jump",
+      "aliases": [],
+      "category": "squat",
+      "primaryMuscles": ["quads", "glutes", "calves"],
+      "equipment": ["box"],
+      "difficulty": "intermediate",
+      "unilateral": false,
+      "defaultMode": "reps",
+      "tags": ["plyometric", "power"],
+      "cues": [
+        "Swing the arms and land quietly",
+        "Land in a quarter squat, not a deep one",
+        "Step down every rep — jumping down adds nothing but risk"
+      ],
+      "description": "Jumping onto a box: explosive work with the landing taken out of it.",
+      "media": null
+    },
+    {
+      "id": "elevated-push-up",
+      "name": "Elevated Push-Up",
+      "aliases": ["Incline Push-Up"],
+      "category": "press",
+      "primaryMuscles": ["chest", "triceps", "shoulders", "core"],
+      "equipment": ["box"],
+      "difficulty": "beginner",
+      "unilateral": false,
+      "defaultMode": "reps",
+      "tags": ["push", "bodyweight"],
+      "cues": [
+        "Hands on the box, body in one line from heels to head",
+        "Elbows at about 45 degrees",
+        "Higher box for easier, lower for harder"
+      ],
+      "description": "A push-up with the hands raised — the dial between a knee push-up and the full thing.",
+      "media": null
+    },
+    {
+      "id": "bulgarian-split-squat",
+      "name": "Bulgarian Split Squat",
+      "aliases": ["Rear-Foot-Elevated Split Squat"],
+      "category": "lunge",
+      "primaryMuscles": ["quads", "glutes", "hamstrings"],
+      "equipment": ["box"],
+      "difficulty": "advanced",
+      "unilateral": true,
+      "defaultMode": "reps",
+      "tags": ["unilateral", "strength", "balance"],
+      "cues": [
+        "Back foot on the box, laces down",
+        "Front shin near vertical, torso leaning slightly forward",
+        "Down slowly — the depth is the whole point"
+      ],
+      "description": "The hardest thing you can do to one leg without adding any weight. Dreaded for good reason.",
+      "media": null
+    },
+    {
+      "id": "squat-hold",
+      "name": "Squat Hold",
+      "aliases": ["Deep Squat Hold"],
+      "category": "squat",
+      "primaryMuscles": ["quads", "glutes", "calves"],
+      "equipment": ["bodyweight"],
+      "difficulty": "beginner",
+      "unilateral": false,
+      "defaultMode": "time",
+      "tags": ["mobility", "isometric", "bodyweight"],
+      "cues": [
+        "Sit as deep as you can with the heels down",
+        "Elbows inside the knees, gently pushing them out",
+        "Breathe into the bottom position"
+      ],
+      "description": "Sitting in the bottom of a squat; a mobility drill that passes for a rest.",
+      "media": null
+    },
+    {
+      "id": "lateral-lunge",
+      "name": "Lateral Lunge",
+      "aliases": ["Side Lunge"],
+      "category": "lunge",
+      "primaryMuscles": ["quads", "glutes", "hamstrings"],
+      "equipment": ["bodyweight"],
+      "difficulty": "beginner",
+      "unilateral": true,
+      "defaultMode": "reps",
+      "tags": ["unilateral", "mobility", "bodyweight"],
+      "cues": [
+        "Step wide and sit into that hip",
+        "The trailing leg stays straight",
+        "Push back to the middle off the bent leg"
+      ],
+      "description": "Lunging sideways — the direction most programmes forget about entirely.",
+      "media": null
+    },
+    {
+      "id": "single-leg-glute-bridge",
+      "name": "Single-Leg Glute Bridge",
+      "aliases": [],
+      "category": "hinge",
+      "primaryMuscles": ["glutes", "hamstrings", "core"],
+      "equipment": ["bodyweight"],
+      "difficulty": "intermediate",
+      "unilateral": true,
+      "defaultMode": "reps",
+      "tags": ["posterior-chain", "unilateral", "bodyweight"],
+      "cues": [
+        "One foot planted, the other knee hugged in",
+        "Drive through the heel and keep the hips level",
+        "Pause at the top before lowering"
+      ],
+      "description": "The glute bridge with half its support, which is exactly where the cheating shows up.",
+      "media": null
+    },
+    {
+      "id": "bird-dog",
+      "name": "Bird Dog",
+      "aliases": [],
+      "category": "core",
+      "primaryMuscles": ["core", "glutes", "back"],
+      "equipment": ["bodyweight"],
+      "difficulty": "beginner",
+      "unilateral": true,
+      "defaultMode": "reps",
+      "tags": ["anti-rotation", "stability", "core", "bodyweight"],
+      "cues": [
+        "Opposite arm and opposite leg, slowly",
+        "Hips stay square — a glass of water on your back shouldn't spill",
+        "Pause at full length before coming back"
+      ],
+      "description": "Slow opposite-limb reaching on all fours; a stability drill that looks far too easy to be worth it.",
       "media": null
     }
   ]

@@ -13,10 +13,13 @@
 import { getCircuits, replaceCircuits } from './storage.js';
 import { getEntries, replaceEntries } from './schedule.js';
 import { getFavourites, replaceFavourites } from './favourites.js';
+import { getKit, setKit } from './equipment.js';
 import { el, clear } from './util.js';
 
 const FORMAT = 'workout-export';
-const VERSION = 1;
+/* 2 added `kit`. Version 1 exports still import — they simply say nothing
+ * about your kit, which leaves whatever this browser has alone. */
+const VERSION = 2;
 
 export function exportData() {
   return {
@@ -26,6 +29,7 @@ export function exportData() {
     circuits: getCircuits(),
     schedule: getEntries(),
     favourites: getFavourites(),
+    kit: getKit(),
   };
 }
 
@@ -56,11 +60,15 @@ export function importText(text, mode = 'merge') {
   const circuits = data.circuits;
   const schedule = Array.isArray(data.schedule) ? data.schedule : [];
   const favourites = Array.isArray(data.favourites) ? data.favourites : [];
+  // Absent rather than empty means the export predates kit, so leave this
+  // browser's answer alone rather than wiping it.
+  const kit = Array.isArray(data.kit) ? data.kit : null;
 
   if (mode === 'replace') {
     replaceCircuits(circuits);
     replaceEntries(schedule);
     replaceFavourites(favourites);
+    if (kit) setKit(kit);
     return { circuits: circuits.length, schedule: schedule.length, favourites: favourites.length };
   }
 
@@ -73,6 +81,7 @@ export function importText(text, mode = 'merge') {
   const newEntries = schedule.filter((e) => e && e.id && !existingEntries.has(e.id));
 
   const mergedFavourites = [...new Set([...getFavourites(), ...favourites])];
+  if (kit) setKit([...(getKit() || []), ...kit]);
 
   replaceCircuits([...getCircuits(), ...newCircuits]);
   replaceEntries([...getEntries(), ...newEntries]);
@@ -85,25 +94,11 @@ export function importText(text, mode = 'merge') {
 
 const plural = (n, one, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
-export function renderTransfer(main) {
-  clear(main);
-
-  // Reached from the footer, which is on every screen, so back means back
-  // rather than any particular tab.
-  main.appendChild(
-    el('div', { class: 'page-head' }, [
-      el('button', {
-        class: 'btn btn-ghost back-link',
-        type: 'button',
-        text: 'Back',
-        onclick: () => (history.length > 1 ? history.back() : (location.hash = '#/calendar')),
-      }),
-    ])
-  );
-
-  // Spelled out rather than summarised: reached from a footer link called
-  // "Your data", it should be obvious this is the whole thing and not just the
-  // circuits.
+/** Appends the data sections into `main`. The settings view supplies the page
+ * around them; this file is only responsible for what moves between browsers. */
+export function renderTransferSections(main) {
+  // Spelled out rather than summarised: under a heading called "Your data", it
+  // should be obvious this is the whole thing and not just the circuits.
   const data = exportData();
   const doneCount = data.schedule.filter((e) => e.status === 'done').length;
 
@@ -116,6 +111,9 @@ export function renderTransfer(main) {
         `, ${doneCount} of them done`,
       ]),
       el('li', {}, [el('strong', { text: plural(data.favourites.length, 'starred movement') })]),
+      data.kit
+        ? el('li', {}, [el('strong', { text: plural(data.kit.length, 'kind of kit', 'kinds of kit') })])
+        : null,
     ])
   );
 

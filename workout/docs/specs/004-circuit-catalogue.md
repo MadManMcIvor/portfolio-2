@@ -1,6 +1,7 @@
 # 004 — Circuit catalogue
 
 **Status:** Proposed — not built
+**Model:** Sonnet — the blurbs want a read-through afterwards.
 **Depends on:** [003 — Scheduling and tracking](003-scheduling.md)
 
 ## Goal

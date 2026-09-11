@@ -221,6 +221,19 @@ main.is-library {
   background: var(--paper-sunken);
 }
 
+/* Standing in the view this opens. A clay border rather than a fill: it is a
+ * marker, not a pressed button. */
+.btn-icon.is-active {
+  border-color: var(--clay);
+  color: var(--clay);
+}
+
+/* The two icon buttons are a pair, not two sections of the bar. */
+.topbar-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
 /* Remove and reorder: quiet marks, never red — clay is the only accent. */
 .btn-remove {
   width: var(--tap);
@@ -383,6 +396,16 @@ h4.eyebrow {
   text-align: center;
 }
 
+.empty p {
+  margin: 0;
+}
+
+/* Filtering to your kit can empty the grid, so the way back out sits with the
+ * sentence that explains it. */
+.empty .btn {
+  margin-top: var(--space-3);
+}
+
 .badges {
   display: flex;
   flex-wrap: wrap;
@@ -443,8 +466,16 @@ button.back-link {
 
 .filter-row {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: repeat(4, 1fr);
   gap: var(--space-2);
+}
+
+/* Kit, pattern, level and sort only fit across a wide screen; below that they
+ * pair up rather than each becoming too narrow to read. */
+@media (max-width: 44rem) {
+  .filter-row {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 
 /* A segmented control rather than a fourth dropdown: equipment is the filter
@@ -994,6 +1025,44 @@ button.ex-card-trigger:hover h3 {
   color: var(--clay);
 }
 
+/* ─── Settings ────────────────────────────────────────────────────────── */
+
+/* Quieter than an eyebrow: the group headings sit inside a section that
+ * already has one, and two competing eyebrows read as two sections. */
+.kit-group {
+  margin: var(--space-5) 0 var(--space-2);
+  color: var(--ink-muted);
+  font-size: var(--text-small);
+  font-weight: 600;
+}
+
+.kit-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: var(--space-1) var(--space-4);
+}
+
+/* .checkbox spans its row in the circuit editor's grid; here it is one cell
+ * among several. */
+.kit-list .checkbox,
+.sounds .checkbox {
+  grid-column: auto;
+  min-height: var(--tap);
+}
+
+.kit-status {
+  margin: var(--space-5) 0 0;
+}
+
+.kit-reset {
+  margin-top: var(--space-1);
+  padding-left: 0;
+}
+
+.sounds .meta {
+  margin: var(--space-1) 0 0;
+}
+
 /* ─── Install hint ────────────────────────────────────────────────────── */
 
 .install-hint {
@@ -1044,14 +1113,40 @@ button.ex-card-trigger:hover h3 {
 
 /* ─── Favourites ──────────────────────────────────────────────────────── */
 
-.filter-kit {
+.filter-search {
   display: flex;
   gap: var(--space-2);
 }
 
-.filter-kit .segmented {
+.filter-search .search {
   flex: 1;
   min-width: 0;
+}
+
+.filter-scope {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+/* Two options shouldn't stretch the width of a desktop library. */
+.filter-scope .segmented {
+  flex: 1;
+  min-width: 0;
+  max-width: 24rem;
+}
+
+/* Quiet, like the other in-page links: a clay underline here would shout over
+ * the filters it sits beside. */
+.kit-link {
+  color: var(--ink-muted);
+  font-size: var(--text-small);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.kit-link:hover {
+  color: var(--clay);
 }
 
 .star,
@@ -1759,15 +1854,6 @@ button.ex-card-trigger:hover h3 {
 
   .stats {
     gap: var(--space-2);
-  }
-
-  /* Pattern and level share a row; sort drops beneath them. */
-  .filter-row {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .filter-row select:last-child {
-    grid-column: 1 / -1;
   }
 
   .install-hint {

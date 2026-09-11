@@ -1,9 +1,11 @@
 # 001 — Exercise Library Data
 
-**Status:** Implemented. `data/exercises.json` is at version 2 — 51 movements,
+**Status:** Implemented. `data/exercises.json` is at version 3 — 93 movements,
 fetched directly at startup. Version 2 widened the library past kettlebells:
-`equipment` now carries `bodyweight` as well as `kettlebell`, and `cardio` was
-added to the category vocabulary. Rep-mode items also carry a `reps` field on circuit entries
+`equipment` gained `bodyweight` alongside `kettlebell`, and `cardio` joined the
+category vocabulary. Version 3 widened it again, to machines, weights and the
+outdoors; `equipment` is no longer free-form but validates against the table in
+[005 — Kit and a wider library](005-kit-and-a-wider-library.md). Rep-mode items also carry a `reps` field on circuit entries
 (see spec 002); the library JSON itself matches the schema below.
 
 ## Goal

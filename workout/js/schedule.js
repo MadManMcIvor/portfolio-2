@@ -104,12 +104,22 @@ export function scheduleCircuit(dateKeyStr, circuitId = null) {
   return entry;
 }
 
+/**
+ * An "any workout" slot means "something, that day" — so the moment anything on
+ * that day is done, the slot has served its purpose and would otherwise sit
+ * there as a second, permanently unfinished entry for a day you did train.
+ */
+function dropOpenSlots(list, dateKeyStr, exceptId) {
+  return list.filter((e) => !(e.date === dateKeyStr && !e.circuitId && e.id !== exceptId));
+}
+
 export function setStatus(id, status) {
-  const list = read();
+  let list = read();
   const entry = list.find((e) => e.id === id);
   if (!entry) return null;
   entry.status = status;
   entry.completedAt = status === DONE ? new Date().toISOString() : null;
+  if (status === DONE) list = dropOpenSlots(list, entry.date, entry.id);
   write(list);
   return entry;
 }
@@ -168,11 +178,23 @@ export function recordCompletion(circuitId) {
  * Finds — or starts — today's entry for a circuit. A tally circuit is a day-long
  * thing you chip away at, so it needs somewhere durable to keep its running
  * counts from the moment you open it, not only once you finish.
+ *
+ * An open "any workout" slot for today is what you meant when you scheduled it,
+ * so this claims it rather than adding a second entry alongside it.
  */
 export function ensureTodayEntry(circuitId) {
   const today = todayKey();
-  const existing = read().find((e) => e.date === today && e.circuitId === circuitId);
-  return existing || scheduleCircuit(today, circuitId);
+  const list = read();
+  const existing = list.find((e) => e.date === today && e.circuitId === circuitId);
+  if (existing) return existing;
+
+  const slot = list.find((e) => e.date === today && !e.circuitId && e.status === PLANNED);
+  if (slot) {
+    slot.circuitId = circuitId;
+    write(list);
+    return slot;
+  }
+  return scheduleCircuit(today, circuitId);
 }
 
 /**

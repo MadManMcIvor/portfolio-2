@@ -9,7 +9,7 @@
  * Bump CACHE_VERSION when the shell changes; the old cache is dropped on
  * activate.
  */
-const CACHE_VERSION = 'workout-v5';
+const CACHE_VERSION = 'workout-v6';
 
 const SHELL = [
   './',

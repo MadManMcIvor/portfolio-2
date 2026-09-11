@@ -115,7 +115,20 @@ Status uses the design system's existing two colours and adds nothing:
 
 - **"Any workout" slots.** A scheduled entry with a null `circuitId` — a day you
   intend to train without having decided what. Finishing anything that day fills
-  it in and binds it to what you actually did.
+  it in and binds it to what you actually did, and anything else done that day
+  clears it, so a day never shows both the slot and the workout that satisfied
+  it. See [006](006-logged-sessions.md).
+
+- **Rep ranges and "to failure".** A rep-mode item carries an optional `repsMax`
+  — `10` with a `repsMax` of `14` reads as "10–14" — and an optional `toFailure`
+  flag that replaces the count entirely. Both are off by default, so the
+  ordinary case is still one box with one number in it. Estimates budget the top
+  of a range, and a nominal count for failure.
+
+- **Optional tally set sizes.** A tally item's `step` may be null, meaning no
+  fixed chunk. The board then offers a field and an **Add** rather than a `+10`,
+  which is what "40, then 40, then 20" actually needs. A named step still gets
+  its one-tap button.
 
 ## Open questions
 

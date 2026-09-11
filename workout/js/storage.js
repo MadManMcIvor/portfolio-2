@@ -72,17 +72,22 @@ export function deleteCircuit(id) {
 export const INTERVALS = 'intervals';
 export const AMRAP = 'amrap';
 export const TALLY = 'tally';
+export const SESSION = 'session';
 
 /*
  * AMRAP is the default because it is the shape most sessions here take: a short
  * list of movements with rep counts, looped for a fixed stretch of time. An
  * interval circuit is the older shape — each movement timed, with rest between.
+ *
+ * A `session` is the odd one out: a class, a swim, a walk — something this app
+ * doesn't run. It has no movements and no clock, so the only question it ever
+ * asks is whether you did it.
  */
 export function newCircuit(type = AMRAP) {
   const now = new Date().toISOString();
   return {
     id: uuid(),
-    name: 'New circuit',
+    name: type === SESSION ? 'New session' : 'New circuit',
     type,
     created: now,
     updated: now,
@@ -90,8 +95,9 @@ export function newCircuit(type = AMRAP) {
     rounds: 3,
     restBetweenRounds: 60,
     // Used by AMRAP circuits: how long you keep going for. A tally circuit has
-    // no duration at all — it is a total to reach by the end of the day.
-    duration: 20 * 60,
+    // no duration at all — it is a total to reach by the end of the day. A
+    // session's is optional, and starts unset.
+    duration: type === SESSION ? 0 : 20 * 60,
     items: [],
   };
 }
@@ -103,10 +109,13 @@ export function newCircuit(type = AMRAP) {
  */
 function withDefaults(circuit) {
   if (!circuit) return circuit;
+  const type = circuit.type || INTERVALS;
   return {
     ...circuit,
-    type: circuit.type || INTERVALS,
-    duration: circuit.duration || 20 * 60,
+    type,
+    // A session's minutes are optional, so an unset one has to survive the
+    // round trip rather than being filled in with a default it never had.
+    duration: circuit.duration || (type === SESSION ? 0 : 20 * 60),
     items: circuit.items || [],
   };
 }

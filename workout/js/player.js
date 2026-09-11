@@ -8,7 +8,7 @@
 import { exerciseById } from './exercises.js';
 import { getCircuit, saveSettings } from './storage.js';
 import { recordCompletion } from './schedule.js';
-import { el, clear, fmtTime, estimateRepSeconds, beep } from './util.js';
+import { el, clear, fmtTime, estimateRepSeconds, beep, repsLabel } from './util.js';
 
 let active = null; // { circuit, segments, i, remaining, paused, tick, wakeLock, root }
 
@@ -23,7 +23,8 @@ export function buildSegments(circuit) {
       const name = ex ? ex.name : 'Unknown movement';
       const cue = ex && ex.cues && ex.cues.length ? ex.cues[0] : '';
       const seconds = item.mode === 'reps' ? estimateRepSeconds(item) : Number(item.work) || 40;
-      const reps = item.mode === 'reps' ? `${item.reps || 8} reps` : null;
+      const reps =
+        item.mode === 'reps' ? (item.toFailure ? repsLabel(item) : `${repsLabel(item)} reps`) : null;
       const sides = item.perSide && ex && ex.unilateral ? ['Left', 'Right'] : [null];
 
       sides.forEach((side, si) => {

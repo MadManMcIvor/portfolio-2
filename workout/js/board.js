@@ -20,7 +20,7 @@ import {
   setProgress,
   setStatus,
 } from './schedule.js';
-import { el, clear, fmtTime, beep, sentenceCase } from './util.js';
+import { el, clear, fmtTime, beep, sentenceCase, repsLabel } from './util.js';
 
 let active = null; // { circuit, remaining, elapsed, rounds, paused, timed, done, entry, counts, tick, wakeLock, root }
 
@@ -332,11 +332,12 @@ function movementRow(item, i) {
 
   // An AMRAP item is always reps; an interval item is reps or a stretch of time.
   const byReps = active.circuit.type === AMRAP || item.mode === 'reps';
-  const amount = byReps ? String(item.reps || 10) : fmtTime(item.work || 40);
+  const amount = byReps ? repsLabel(item) : fmtTime(item.work || 40);
 
   // On an AMRAP board every line is reps, so saying so five times adds nothing.
-  // An intervals board mixes reps and time, so there it earns its place.
-  const unit = active.circuit.type === AMRAP ? null : byReps ? 'reps' : null;
+  // An intervals board mixes reps and time, so there it earns its place. "To
+  // failure" already says what it is and reads wrong with a unit after it.
+  const unit = item.toFailure || active.circuit.type === AMRAP ? null : byReps ? 'reps' : null;
   const note = [unit, item.perSide && ex && ex.unilateral ? 'each side' : null]
     .filter(Boolean)
     .join(' · ');
@@ -376,7 +377,6 @@ function tallyRow(item, i) {
   const name = ex ? ex.name : 'Unknown movement';
   const target = targetFor(item);
   const count = countFor(i);
-  const step = Number(item.step) || 10;
   const complete = count >= target;
 
   return el('li', { class: `board-item board-tally${complete ? ' is-done' : ''}` }, [
@@ -400,28 +400,81 @@ function tallyRow(item, i) {
           disabled: count ? null : 'disabled',
           onclick: () => bump(i, -1),
         }),
-        el('button', {
-          class: 'btn btn-outline btn-sm',
-          type: 'button',
-          text: '+1',
-          'aria-label': `One more ${name}`,
-          disabled: complete ? 'disabled' : null,
-          onclick: () => bump(i, 1),
-        }),
-        el('button', {
-          class: 'btn btn-primary btn-sm',
-          type: 'button',
-          text: `+${step}`,
-          'aria-label': `${step} more ${name}`,
-          disabled: complete ? 'disabled' : null,
-          onclick: () => bump(i, step),
-        }),
+        ...tallyAdders(item, i, name, complete),
       ]),
     ]),
     el('div', { class: 'board-tally-bar', 'aria-hidden': 'true' }, [
       el('span', { style: `width:${target ? Math.min(100, (count / target) * 100).toFixed(2) : 0}%` }),
     ]),
   ]);
+}
+
+/*
+ * How you bank reps. A movement with a set size gets that as one tap, which is
+ * the whole point of naming a chunk. One without gets a field instead, because
+ * "no fixed set" means the number is only known once you have stopped — 40,
+ * then 40, then 20.
+ */
+function tallyAdders(item, i, name, complete) {
+  const step = Number(item.step) || 0;
+
+  if (step) {
+    return [
+      el('button', {
+        class: 'btn btn-outline btn-sm',
+        type: 'button',
+        text: '+1',
+        'aria-label': `One more ${name}`,
+        disabled: complete ? 'disabled' : null,
+        onclick: () => bump(i, 1),
+      }),
+      el('button', {
+        class: 'btn btn-primary btn-sm',
+        type: 'button',
+        text: `+${step}`,
+        'aria-label': `${step} more ${name}`,
+        disabled: complete ? 'disabled' : null,
+        onclick: () => bump(i, step),
+      }),
+    ];
+  }
+
+  const input = el('input', {
+    class: 'board-tally-input',
+    type: 'number',
+    min: 1,
+    inputmode: 'numeric',
+    placeholder: '0',
+    'aria-label': `How many ${name} to add`,
+    disabled: complete ? 'disabled' : null,
+  });
+
+  const add = () => {
+    const by = Math.round(Number(input.value) || 0);
+    if (by > 0) bump(i, by);
+  };
+
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      add();
+    }
+    // The board's own shortcuts would otherwise fire while you are typing a
+    // number into it.
+    e.stopPropagation();
+  });
+
+  return [
+    input,
+    el('button', {
+      class: 'btn btn-primary btn-sm',
+      type: 'button',
+      text: 'Add',
+      'aria-label': `Add ${name}`,
+      disabled: complete ? 'disabled' : null,
+      onclick: add,
+    }),
+  ];
 }
 
 function paintClock() {

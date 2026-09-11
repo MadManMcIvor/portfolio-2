@@ -651,9 +651,9 @@ button.ex-card-trigger:hover h3 {
   color: var(--clay);
 }
 
-.ex-card-add {
-  align-self: flex-start;
-  margin-top: var(--space-3);
+/* Clears both corner icons where a card carries the info button as well. */
+.ex-card.has-info h3 {
+  margin-right: 3.25rem;
 }
 
 .ex-detail {
@@ -768,6 +768,10 @@ button.ex-card-trigger:hover h3 {
   grid-template-columns: repeat(3, 1fr);
   gap: var(--space-3);
   margin-top: var(--space-4);
+}
+
+.session-schedule {
+  margin-top: var(--space-5);
 }
 
 .picker {
@@ -1014,6 +1018,7 @@ button.ex-card-trigger:hover h3 {
   margin-top: var(--space-4);
 }
 
+
 .head-link {
   margin-left: auto;
   color: var(--ink-muted);
@@ -1186,6 +1191,40 @@ button.ex-card-trigger:hover h3 {
 
 .star:hover {
   color: var(--clay);
+}
+
+/* A quiet "what is this?" — an outlined glyph rather than a filled one, so it
+ * sits behind the star rather than competing with it. */
+.ex-info {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 1.4rem;
+  height: 1.4rem;
+  padding: 0;
+  border: 1px solid var(--paper-line);
+  border-radius: 50%;
+  background: none;
+  color: var(--ink-faint);
+  font-family: var(--font-serif);
+  font-size: var(--text-small);
+  font-style: italic;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.ex-info:hover {
+  border-color: var(--clay);
+  color: var(--clay);
+}
+
+/* On a card it sits in the corner beside the star; in a built circuit's row it
+ * is just another control in the line. */
+.ex-card .ex-info {
+  position: absolute;
+  top: calc(var(--space-1) + 0.17rem);
+  right: 1.9rem;
 }
 
 /* ─── The board ───────────────────────────────────────────────────────── */
@@ -1449,14 +1488,16 @@ button.ex-card-trigger:hover h3 {
   font-size: var(--text-sub);
 }
 
-/* Wide: the sheet becomes a column that stays put while you browse. */
+/* Wide: the Library's sheet becomes a column that stays put while you browse.
+ * Only the Library's — a sheet opened over the builder is a passing question
+ * and stays a sheet at every width. */
 @media (min-width: 56rem) {
   .library {
     grid-template-columns: minmax(0, 1fr) 19rem;
     align-items: start;
   }
 
-  .ex-panel {
+  .library .ex-panel {
     position: sticky;
     inset: auto;
     top: calc(var(--topbar-height) + var(--space-5));
@@ -1469,9 +1510,20 @@ button.ex-card-trigger:hover h3 {
     transition: none;
   }
 
-  .ex-panel-backdrop,
-  .ex-panel-close {
+  .library ~ .ex-panel-backdrop,
+  .library .ex-panel-close {
     display: none;
+  }
+
+  /* Over the builder it is a centred dialog rather than a bottom sheet — there
+   * is no thumb reaching for it on a desktop. */
+  .ex-panel.is-sheet {
+    inset: 50% auto auto 50%;
+    width: min(30rem, calc(100vw - var(--space-6) * 2));
+    max-height: 80vh;
+    border: 1px solid var(--paper-line);
+    border-radius: var(--radius-lg);
+    transform: translate(-50%, -50%);
   }
 }
 
@@ -1551,6 +1603,15 @@ button.ex-card-trigger:hover h3 {
   align-items: center;
   gap: var(--space-2);
   flex-shrink: 0;
+}
+
+/* Wide enough for three digits and no wider — it sits in a row of buttons and
+ * a full-width field would push them off a phone. */
+.board-tally-input {
+  width: 4.5rem;
+  padding: var(--space-2);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
 }
 
 /* A hairline of progress per movement — enough to see where you are without
@@ -1654,9 +1715,10 @@ button.ex-card-trigger:hover h3 {
   font-size: var(--text-sub);
 }
 
-/* An AMRAP movement only carries a rep count, so its card needs one field. */
+/* An AMRAP movement only carries a rep count — a number, and the optional upper
+ * bound that turns it into a range. */
 .item-controls.is-simple {
-  grid-template-columns: minmax(0, 8rem);
+  grid-template-columns: repeat(2, minmax(0, 8rem));
 }
 
 .item-controls.is-pair {

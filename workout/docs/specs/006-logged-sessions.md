@@ -1,7 +1,6 @@
-# 006 — Logged sessions
+# 006 — Sessions
 
-**Status:** Proposed — not built
-**Model:** Sonnet.
+**Status:** Implemented
 **Depends on:** [003 — Scheduling and tracking](003-scheduling.md)
 
 ## Goal
@@ -11,93 +10,89 @@ Thursday was a swim, Saturday was a long walk. The calendar is supposed to be
 the record of what you did, and those days are currently blank — which is worse
 than useless, because a blank day is how this app says you didn't train.
 
-A logged session is a name and a date. No movements, no reps, no timer, no
-circuit. You went and did a thing; the calendar should say so.
-
 ## Shape
 
-It is an entry on `kb.schedule`, not a new store. Make it an entry and the month
-grid, the day panel, the done/skipped rings, the lifetime totals and the export
-all handle it without being told anything.
+A session is a **circuit**, with a fourth `type` alongside `amrap`, `tally` and
+`intervals`:
 
 ```json
 {
   "id": "uuid",
-  "date": "2026-09-08",
-  "circuitId": null,
-  "activity": { "name": "Orange Theory", "minutes": 60, "note": "" },
-  "status": "done",
-  "created": "2026-09-08T19:40:00Z",
-  "completedAt": "2026-09-08T19:40:00Z"
+  "name": "Orange Theory",
+  "type": "session",
+  "duration": 3600,
+  "items": []
 }
 ```
 
-Two fields now tell the three kinds of entry apart:
+That is the whole of it. No movements, no clock, no rounds — the only question
+a session ever asks is whether you did it. `duration` is optional minutes, and
+0 means you never said.
 
-| `circuitId` | `activity` | What it is |
-| --- | --- | --- |
-| set | null | A circuit — planned, done or skipped (003) |
-| null | null | An "any workout" slot — a day you meant to train (003) |
-| null | set | A logged session |
+Making it a circuit rather than a one-off entry on the calendar is the entire
+design: Orange Theory is a thing you do repeatedly, so it should be a thing you
+*have*, schedulable from the same dropdown as everything else. Scheduling,
+done/skipped, the month grid, the lifetime totals and the export then all handle
+it without being told anything, and there is no second way to log a workout.
 
-`name` is required and is what shows. `minutes` and `note` are both optional and
-may be null.
+### Why not a field on the calendar entry
+
+The first cut of this spec put an `activity: { name, minutes, note }` blob on
+the schedule entry, with its own "Log something else" form in the day panel.
+It was rejected before it shipped: it meant a second, parallel way of recording
+a workout, a form to re-type the same class name into every week, and a third
+kind of entry for every reader of `kb.schedule` to know about. A circuit type
+costs none of that.
 
 ## Behaviour
 
-- **Logging lives in the day panel**, next to the existing schedule control:
-  "Log something else", opening a name field, minutes, and a note. It is the
-  same panel you would have marked a circuit done in.
-- **Status follows the date.** Logging on today or a past day lands as `done` —
-  you are recording what happened. Logging on a future day lands as `planned`,
-  which quietly gets you "Orange Theory, Tuesday 6pm" with no extra UI. Marking
-  it done afterwards already works.
-- **Names suggest themselves.** A `<datalist>` of names you have used before,
-  most recent first, read off the existing entries. No store of activity types,
-  nothing to curate, and by the third week the field is effectively a menu.
-- **`recordCompletion()` needs a guard.** It currently fills the first entry
-  matching `!e.circuitId && status === 'planned'`, which would be a class you
-  scheduled for tonight — finishing a kettlebell circuit would tick off your
-  gym class. The test becomes `!e.circuitId && !e.activity`.
-- **Done, skip and undo behave exactly as they do for a circuit.** A class you
+- **Scheduling is the same as for any circuit.** Pick it from the day panel's
+  dropdown, press Add, and it lands `planned`. One press of **Mark done** is the
+  record. Skip and undo behave exactly as they do for a circuit; a class you
   didn't go to is skipped, with the same hairline ring. Still no red.
-- **No editing, at first.** Delete and log it again; the delete button is
-  already on the row. If that turns out to be annoying in practice, an edit form
-  is a small addition — but it is a form, and this is meant to be four seconds
-  of typing.
+- **There is nothing to start.** No **Start** button on the circuits list, in
+  the editor, or on the calendar row — a session is not run by this app.
+- **The editor is name, kind and minutes**, then a button through to the
+  calendar. The movements list, the picker and the running estimate are all
+  hidden, because none of them mean anything here.
+- **Switching kind keeps your movements.** Changing an existing circuit to a
+  session leaves `items` untouched rather than rebuilding them, so switching
+  back finds the movements where you left them.
+- **The meta line** reads "Session · 60 min", or just "Session".
 
-## Display
+## Open slots
 
-The row in the day panel is the same row, with the activity name where the
-circuit name goes and no **Start** button — there is nothing to start. The meta
-line carries the shape of it: "Logged · 60 min", or the note if there is one, or
-just "Logged".
+Related, and fixed alongside: an **"any workout" slot** — a scheduled entry with
+a null `circuitId`, meaning "I know I'm training Wednesday, I haven't decided
+what" — was leaving a day with two entries. `recordCompletion()` bound the slot
+to what you finished, but `ensureTodayEntry()` (the tally path) added a second
+entry beside it instead, and marking something done by hand never cleared it.
 
-Nothing else changes. A done session is a filled sage dot on the month grid like
-any other, and it counts in the all-time / this-year / this-month totals, which
-is the entire point of putting it here rather than in a notebook.
+The rule is now: **a slot means "something, that day", so anything done that day
+satisfies it.** `ensureTodayEntry()` claims an open slot rather than adding
+alongside it, and an entry becoming `done` drops any other open slot on its
+date. One workout, one entry, one dot.
 
 ## Export
 
-Nothing to do. Entries are copied whole and merged by id, so `activity` rides
-along in `schedule` with no change to `transfer.js` and no format bump.
+Nothing to do. A session is a circuit, so it rides along in `circuits` with no
+change to `transfer.js` and no format bump.
 
 ## Open questions
 
-- Are minutes worth the field? Name and date are the honest minimum. Minutes
-  cost one input and make "how much did I actually do this month" possible
-  later, so: keep, optional, never required.
-- Should a session carry a kind (`class`, `run`, `swim`, `other`) so the app
-  could summarise by type? That is a taxonomy nobody asked for, and the datalist
-  gets most of the benefit for none of the cost. No.
-- Once 005 lands, "Bike, 40 min" could be a logged session *or* a one-movement
-  cardio circuit you actually ran. Both are legitimate and they will both get
-  used; the log is the lighter path and will probably win.
-- Should finishing a session in the player ever produce one of these? No —
-  that is what `recordCompletion()` already does, with a circuit attached.
+- A session is only reachable by making a circuit and changing its Kind. That is
+  consistent — every other format lives in the same dropdown — but it is not
+  discoverable. If it turns out to be the thing that gets used most, it wants
+  its own button on the circuits list.
+- Adding a session to *today* lands it `planned`, needing one more press to tick
+  it off, on the grounds that "Schedule" is a future-tense word and a morning
+  plan is not a record. If that press gets annoying, landing a past or present
+  date as `done` is a two-line change.
+- No note field. A session is a name and a date; if "how did it go" turns out to
+  be the point, it is a small addition.
 
 ## Non-goals
 
 Importing from Strava, Apple Health, or any other service. Pace, distance, heart
-rate, calories, or anything else a watch would know. Attaching a logged session
-to a circuit. Reminders or nagging about a class you scheduled and missed.
+rate, calories, or anything else a watch would know. Reminders or nagging about
+a class you scheduled and missed.

@@ -161,7 +161,6 @@ node workout/tools/check-data.mjs
 
 ## Ideas for later
 
-[Logging an outside class or a run](docs/specs/006-logged-sessions.md) onto the
-calendar, then a [catalogue of ready-made circuits](docs/specs/004-circuit-catalogue.md)
-to adopt and edit — both specced, neither built. After that: repeating
-schedules, drag-to-reorder, and custom user-created exercises.
+A [catalogue of ready-made circuits](docs/specs/004-circuit-catalogue.md) to
+adopt and edit — specced, not built. After that: repeating schedules,
+drag-to-reorder, and custom user-created exercises.

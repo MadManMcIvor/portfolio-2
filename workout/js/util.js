@@ -11,12 +11,32 @@ export function fmtTime(total) {
   return `${Math.floor(t / 60)}:${s < 10 ? '0' : ''}${s}`;
 }
 
+/*
+ * How many reps an item asks for. A plain count is the common case and stays a
+ * plain number; `repsMax` makes it a range, and `toFailure` replaces the count
+ * with "as many as you have". Only ever one of the three.
+ */
+export function repsLabel(item) {
+  if (item.toFailure) return 'To failure';
+  const low = Number(item.reps) || 0;
+  const high = Number(item.repsMax) || 0;
+  // An en dash, not a hyphen: this is a span, not a subtraction.
+  return high > low ? `${low}–${high}` : String(low);
+}
+
+/* The rep count to budget time against — the top of a range, so an estimate
+ * errs long rather than short. To failure has no number, so it uses a nominal. */
+function repsForEstimate(item) {
+  if (item.toFailure) return Number(item.reps) || 10;
+  return Math.max(Number(item.reps) || 0, Number(item.repsMax) || 0) || 8;
+}
+
 /**
  * Rep-mode items still need a time budget for the estimate and the player.
  * Rough: 3s per rep, min 20s.
  */
 export function estimateRepSeconds(item) {
-  return Math.max(20, (Number(item.reps) || 8) * 3);
+  return Math.max(20, repsForEstimate(item) * 3);
 }
 
 /**

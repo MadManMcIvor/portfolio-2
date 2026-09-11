@@ -4,6 +4,7 @@ import {
   AMRAP,
   INTERVALS,
   TALLY,
+  SESSION,
   getCircuits,
   getCircuit,
   saveCircuit,
@@ -11,7 +12,7 @@ import {
   newCircuit,
 } from './storage.js';
 import { el, clear, fmtTime, circuitSeconds, amrapRoundSeconds } from './util.js';
-import { renderExerciseList } from './library.js';
+import { renderExerciseList, openExerciseSheet } from './library.js';
 
 /* ─── Saved circuits ───────────────────────────────────────────────────── */
 
@@ -57,15 +58,19 @@ export function renderCircuitList(main) {
             el('div', { class: 'meta', text: summaryLine(c) }),
           ]
         ),
-        el('button', {
-          class: 'btn btn-outline btn-sm',
-          type: 'button',
-          text: 'Start',
-          disabled: moves ? null : 'disabled',
-          onclick: () => {
-            location.hash = `${c.type === INTERVALS ? '#/play' : '#/board'}/${c.id}`;
-          },
-        }),
+        // A session has nothing to run, so it gets no Start — you tick it off on
+        // the calendar and that is the whole of it.
+        c.type === SESSION
+          ? null
+          : el('button', {
+              class: 'btn btn-outline btn-sm',
+              type: 'button',
+              text: 'Start',
+              disabled: moves ? null : 'disabled',
+              onclick: () => {
+                location.hash = `${c.type === INTERVALS ? '#/play' : '#/board'}/${c.id}`;
+              },
+            }),
         removeButton(`Delete ${c.name}`, () => {
           if (confirm(`Delete “${c.name}”?`)) {
             deleteCircuit(c.id);
@@ -77,10 +82,14 @@ export function renderCircuitList(main) {
   }
 }
 
-/** Two kinds of circuit, two ways of describing what one is. */
+/** Each kind of circuit has its own way of saying what it is. */
 function summaryLine(c) {
   const moves = (c.items || []).length;
   const count = `${moves} ${moves === 1 ? 'move' : 'moves'}`;
+  if (c.type === SESSION) {
+    const mins = Math.round((c.duration || 0) / 60);
+    return mins ? `Session · ${mins} min` : 'Session';
+  }
   if (c.type === AMRAP) {
     return `AMRAP · ${count} · ${Math.round((c.duration || 0) / 60)} min`;
   }
@@ -106,6 +115,7 @@ export function renderCircuitEditor(main, id) {
 
   function repaint() {
     clear(main);
+    totalsEl = null;
 
     main.appendChild(
       el('div', { class: 'page-head' }, [
@@ -146,7 +156,16 @@ export function renderCircuitEditor(main, id) {
                   refreshTotals();
                 })
               )
-            : null,
+            : circuit.type === SESSION
+              ? // Optional, and never required: it makes "how much did I do this
+                // month" answerable later without asking anything of you now.
+                field('Minutes', () =>
+                  optionalNumberInput(Math.round((circuit.duration || 0) / 60), 1, 600, 'Optional', (v) => {
+                    circuit.duration = v * 60;
+                    persist();
+                  })
+                )
+              : null,
       ])
     );
 
@@ -174,9 +193,27 @@ export function renderCircuitEditor(main, id) {
             ? 'As many rounds as possible: work through the list, then start again, until the time is up.'
             : circuit.type === TALLY
               ? 'A total to reach by the end of the day, in whatever chunks suit. No clock, and no need to do it all at once.'
-              : 'Each movement runs for its own set time, with rest in between, for a fixed number of rounds.',
+              : circuit.type === SESSION
+                ? 'Something you do elsewhere — a class, a swim, a walk. No movements and no clock: put it on a day and tick it off.'
+                : 'Each movement runs for its own set time, with rest in between, for a fixed number of rounds.',
       })
     );
+
+    // A session has no movements by definition, so the whole apparatus below —
+    // the list, the picker, the running estimate — has nothing to say about it.
+    if (circuit.type === SESSION) {
+      main.appendChild(
+        el('button', {
+          class: 'btn btn-primary session-schedule',
+          type: 'button',
+          text: 'Put it on a day',
+          onclick: () => {
+            location.hash = '#/calendar';
+          },
+        })
+      );
+      return;
+    }
 
     main.appendChild(el('h2', { class: 'eyebrow', text: 'Movements' }));
 
@@ -210,10 +247,14 @@ export function renderCircuitEditor(main, id) {
       {
         onchange: (e) => {
           circuit.type = e.target.value;
-          // The two kinds keep different fields on their items, so switching
+          // The kinds keep different fields on their items, so switching
           // rebuilds them from each movement's own defaults rather than
-          // leaving half-populated leftovers behind.
-          circuit.items = circuit.items.map((item) => defaultItem(exerciseById(item.exerciseId) || { id: item.exerciseId }, circuit.type, item));
+          // leaving half-populated leftovers behind. A session keeps its list
+          // untouched instead: it simply stops showing one, and switching back
+          // finds the movements where you left them.
+          if (circuit.type !== SESSION) {
+            circuit.items = circuit.items.map((item) => defaultItem(exerciseById(item.exerciseId) || { id: item.exerciseId }, circuit.type, item));
+          }
           persist();
           repaint();
         },
@@ -222,6 +263,7 @@ export function renderCircuitEditor(main, id) {
         el('option', { value: AMRAP, text: 'AMRAP', selected: circuit.type === AMRAP ? 'selected' : null }),
         el('option', { value: TALLY, text: 'Tally', selected: circuit.type === TALLY ? 'selected' : null }),
         el('option', { value: INTERVALS, text: 'Intervals', selected: circuit.type === INTERVALS ? 'selected' : null }),
+        el('option', { value: SESSION, text: 'Session', selected: circuit.type === SESSION ? 'selected' : null }),
       ]
     );
   }
@@ -235,13 +277,48 @@ export function renderCircuitEditor(main, id) {
         pickerOpen = false;
         repaint();
       },
+      onInfo: openExerciseSheet,
     });
     return wrap;
+  }
+
+  /*
+   * A rep count, and the two ways it stops being a single number: an upper
+   * bound turns it into a range, and "to failure" replaces the number with an
+   * instruction. The range box stays empty unless you want one, so the ordinary
+   * case is still one field with one number in it.
+   */
+  function repFields(item, min, max, fallback) {
+    if (item.toFailure) return [];
+    return [
+      field('Reps', () =>
+        numberInput(item.reps || fallback, min, max, (v) => {
+          item.reps = v;
+          persist();
+          refreshTotals();
+        })
+      ),
+      field('Up to', () =>
+        optionalNumberInput(item.repsMax, min, max, 'Optional', (v) => {
+          item.repsMax = v || null;
+          persist();
+          refreshTotals();
+        })
+      ),
+    ];
+  }
+
+  function checkbox(label, checked, onChange) {
+    const box = el('input', { type: 'checkbox' });
+    box.checked = checked;
+    box.addEventListener('change', () => onChange(box.checked));
+    return el('label', { class: 'checkbox' }, [box, label]);
   }
 
   function itemCard(item, i) {
     const ex = exerciseById(item.exerciseId);
     const name = ex ? ex.name : `Unknown movement (${item.exerciseId})`;
+    const byReps = circuit.type === AMRAP || item.mode === 'reps';
 
     // An AMRAP movement is just "how many", so the card is one field rather
     // than the mode/work/rest set an interval needs.
@@ -249,15 +326,7 @@ export function renderCircuitEditor(main, id) {
       'div',
       { class: `item-controls${circuit.type === AMRAP ? ' is-simple' : ''}${circuit.type === TALLY ? ' is-pair' : ''}` },
       circuit.type === AMRAP
-        ? [
-            field('Reps', () =>
-              numberInput(item.reps || 10, 1, 200, (v) => {
-                item.reps = v;
-                persist();
-                refreshTotals();
-              })
-            ),
-          ]
+        ? repFields(item, 1, 200, 10)
         : circuit.type === TALLY
           ? [
               field('Total reps', () =>
@@ -267,30 +336,29 @@ export function renderCircuitEditor(main, id) {
                   refreshTotals();
                 })
               ),
+              // Blank is a real answer: it means you have not decided on a chunk
+              // size, and the board lets you bank whatever you actually did —
+              // 40, then 40, then 20.
               field('Per set', () =>
-                numberInput(item.step || 10, 1, 200, (v) => {
-                  item.step = v;
+                optionalNumberInput(item.step, 1, 200, 'Any', (v) => {
+                  item.step = v || null;
                   persist();
                 })
               ),
             ]
           : [
             field('Mode', () => modeSelect(item, repaint)),
-            item.mode === 'reps'
-              ? field('Reps', () =>
-                  numberInput(item.reps || 8, 1, 100, (v) => {
-                    item.reps = v;
-                    persist();
-                    refreshTotals();
-                  })
-                )
-              : field('Work (s)', () =>
-                  numberInput(item.work || 40, 5, 600, (v) => {
-                    item.work = v;
-                    persist();
-                    refreshTotals();
-                  })
-                ),
+            ...(item.mode === 'reps'
+              ? repFields(item, 1, 100, 8)
+              : [
+                  field('Work (s)', () =>
+                    numberInput(item.work || 40, 5, 600, (v) => {
+                      item.work = v;
+                      persist();
+                      refreshTotals();
+                    })
+                  ),
+                ]),
             field('Rest (s)', () =>
               numberInput(item.rest != null ? item.rest : 20, 0, 600, (v) => {
                 item.rest = v;
@@ -301,16 +369,25 @@ export function renderCircuitEditor(main, id) {
           ]
     );
 
-    if (ex && ex.unilateral) {
-      const box = el('input', { type: 'checkbox' });
-      box.checked = !!item.perSide;
-      box.addEventListener('change', () => {
-        item.perSide = box.checked;
-        persist();
-        refreshTotals();
-      });
+    // A tally is a total for the day, which is a number by definition — there is
+    // no failing at it, and no range to give.
+    if (byReps && circuit.type !== TALLY) {
       controls.appendChild(
-        el('label', { class: 'checkbox' }, [box, 'Both sides — counts the work twice'])
+        checkbox('To failure — as many as you have', !!item.toFailure, (on) => {
+          item.toFailure = on;
+          persist();
+          repaint();
+        })
+      );
+    }
+
+    if (ex && ex.unilateral) {
+      controls.appendChild(
+        checkbox('Both sides — counts the work twice', !!item.perSide, (on) => {
+          item.perSide = on;
+          persist();
+          refreshTotals();
+        })
       );
     }
 
@@ -335,6 +412,18 @@ export function renderCircuitEditor(main, id) {
           }),
         ]),
         el('h3', { text: name }),
+        // Checking what a movement actually is shouldn't mean leaving the
+        // circuit you are halfway through building.
+        ex
+          ? el('button', {
+              class: 'ex-info',
+              type: 'button',
+              text: 'i',
+              title: `What is ${name}?`,
+              'aria-label': `What is ${name}?`,
+              onclick: () => openExerciseSheet(ex),
+            })
+          : null,
         removeButton(`Remove ${name}`, () => {
           circuit.items.splice(i, 1);
           persist();
@@ -406,6 +495,8 @@ function defaultItem(ex, type, existing = {}) {
     return {
       exerciseId: ex.id,
       reps: existing.reps || 10,
+      repsMax: existing.repsMax || null,
+      toFailure: !!existing.toFailure,
       perSide: !!existing.perSide,
     };
   }
@@ -415,7 +506,7 @@ function defaultItem(ex, type, existing = {}) {
       // A tally is a day's worth, so it starts an order of magnitude higher
       // than a single AMRAP set.
       reps: existing.reps || 100,
-      step: existing.step || 10,
+      step: existing.step || null,
       perSide: !!existing.perSide,
     };
   }
@@ -425,7 +516,13 @@ function defaultItem(ex, type, existing = {}) {
     mode,
     rest: existing.rest != null ? existing.rest : 20,
     perSide: !!existing.perSide,
-    ...(mode === 'reps' ? { reps: existing.reps || 8 } : { work: existing.work || 40 }),
+    ...(mode === 'reps'
+      ? {
+          reps: existing.reps || 8,
+          repsMax: existing.repsMax || null,
+          toFailure: !!existing.toFailure,
+        }
+      : { work: existing.work || 40 }),
   };
 }
 
@@ -456,6 +553,32 @@ function modeSelect(item, onChange) {
       el('option', { value: 'reps', text: 'Reps', selected: item.mode === 'reps' ? 'selected' : null }),
     ]
   );
+}
+
+/*
+ * A number you are allowed to leave alone. Unset shows as an empty field with a
+ * hint in it, not as a 0 you have to clear before you can type — and clearing it
+ * again is how you say "no answer", which reads back as 0.
+ */
+function optionalNumberInput(value, min, max, placeholder, onChange) {
+  const input = el('input', {
+    type: 'number',
+    value: value || '',
+    min,
+    max,
+    placeholder,
+    inputmode: 'numeric',
+  });
+  input.addEventListener('change', () => {
+    if (!input.value.trim()) {
+      onChange(0);
+      return;
+    }
+    const v = Math.max(min, Math.min(max, Math.round(Number(input.value) || min)));
+    input.value = v;
+    onChange(v);
+  });
+  return input;
 }
 
 function numberInput(value, min, max, onChange) {

@@ -5,7 +5,7 @@
  * for done (settled), a clay outline for planned (still owed), and a plain
  * hairline for skipped. No red, no third colour.
  */
-import { AMRAP, INTERVALS, TALLY, getCircuits, getCircuit } from './storage.js';
+import { AMRAP, INTERVALS, TALLY, SESSION, getCircuits, getCircuit } from './storage.js';
 import {
   PLANNED,
   DONE,
@@ -260,20 +260,27 @@ export function renderCalendar(main) {
     const circuit = open ? null : getCircuit(entry.circuitId);
     const name = open ? 'Any workout' : circuit ? circuit.name : 'Deleted circuit';
     const done = entry.status === DONE;
+    const session = circuit && circuit.type === SESSION;
 
     const meta = open
       ? 'Undecided — finishing anything today fills this in.'
       : !circuit
         ? 'This circuit no longer exists.'
-        : circuit.type === AMRAP
-          ? `AMRAP · ${circuit.items.length} moves · ${Math.round((circuit.duration || 0) / 60)} min`
-          : circuit.type === TALLY
-            ? `Tally · ${circuit.items.reduce((n, i) => n + (Number(i.reps) || 0), 0)} reps`
-            : `${circuit.items.length} moves · ${circuit.rounds} rounds · about ${fmtTime(circuitSeconds(circuit))}`;
+        : session
+          ? circuit.duration
+            ? `Session · ${Math.round(circuit.duration / 60)} min`
+            : 'Session'
+          : circuit.type === AMRAP
+            ? `AMRAP · ${circuit.items.length} moves · ${Math.round((circuit.duration || 0) / 60)} min`
+            : circuit.type === TALLY
+              ? `Tally · ${circuit.items.reduce((n, i) => n + (Number(i.reps) || 0), 0)} reps`
+              : `${circuit.items.length} moves · ${circuit.rounds} rounds · about ${fmtTime(circuitSeconds(circuit))}`;
 
     const actions = el('div', { class: 'cal-entry-actions' });
 
-    if (circuit && !done) {
+    // A session is not run by this app, so there is nothing to start — the only
+    // thing it ever needs is a tick.
+    if (circuit && !session && !done) {
       actions.appendChild(
         el('button', {
           class: 'btn btn-outline btn-sm',

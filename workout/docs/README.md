@@ -48,8 +48,8 @@ it goes sideways.
 | 003 | [Scheduling and tracking](specs/003-scheduling.md) | Implemented | — |
 | 004 | [Circuit catalogue](specs/004-circuit-catalogue.md) | Proposed | Sonnet |
 | 005 | [Kit and a wider library](specs/005-kit-and-a-wider-library.md) | Implemented | Split |
-| 006 | [Logged sessions](specs/006-logged-sessions.md) | Proposed | Sonnet |
+| 006 | [Sessions](specs/006-logged-sessions.md) | Implemented | Split |
 
-Numbering is the order they were written, not the order they get built: 006 is
-next, and 004 last — a catalogue of ready-made circuits is worth writing once
-the library it draws on has settled.
+Numbering is the order they were written, not the order they get built: 004 is
+last — a catalogue of ready-made circuits is worth writing once the library it
+draws on has settled.

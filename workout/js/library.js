@@ -276,13 +276,15 @@ function chips(ex) {
   return row;
 }
 
-function exerciseCard(ex, { onAdd, onOpen, selected, onStar } = {}) {
+function exerciseCard(ex, { onAdd, onOpen, onInfo, selected, onStar } = {}) {
   const body = [el('div', { class: 'ex-card-head' }, [el('h3', { text: ex.name })]), chips(ex)];
 
   // Selected is a border, not a layout change: opening a card used to make it
   // span the grid, which reshuffled every card after it and pushed the thing
   // you had just tapped off the screen.
-  const card = el('article', { class: `ex-card${selected ? ' is-selected' : ''}` });
+  const card = el('article', {
+    class: `ex-card${selected ? ' is-selected' : ''}${onInfo ? ' has-info' : ''}`,
+  });
 
   const star = el('button', { class: 'star', type: 'button' });
   function syncStar() {
@@ -301,33 +303,44 @@ function exerciseCard(ex, { onAdd, onOpen, selected, onStar } = {}) {
   syncStar();
   card.appendChild(star);
 
-  if (onOpen) {
+  // Only where the card itself does something else. In the library, tapping the
+  // card already opens the detail, and a button that repeats it is clutter.
+  if (onInfo) {
+    card.appendChild(
+      el('button', {
+        class: 'ex-info',
+        type: 'button',
+        text: 'i',
+        title: `What is ${ex.name}?`,
+        'aria-label': `What is ${ex.name}?`,
+        onclick: (e) => {
+          e.stopPropagation();
+          onInfo(ex);
+        },
+      })
+    );
+  }
+
+  // Whatever the card is for, the whole card does it — picking a movement to
+  // add is the entire reason the picker is on screen, so it should not need a
+  // separate button sitting on a line of its own.
+  const act = onOpen || onAdd;
+  if (act) {
     card.appendChild(
       el(
         'button',
         {
           class: 'ex-card-trigger',
           type: 'button',
-          'aria-pressed': String(!!selected),
-          onclick: () => onOpen(ex),
+          'aria-pressed': onOpen ? String(!!selected) : null,
+          'aria-label': onOpen ? null : `Add ${ex.name}`,
+          onclick: () => act(ex),
         },
         body
       )
     );
   } else {
     card.appendChild(el('div', { class: 'ex-card-trigger' }, body));
-  }
-
-  if (onAdd) {
-    card.appendChild(
-      el('button', {
-        class: 'btn btn-outline btn-sm ex-card-add',
-        type: 'button',
-        text: 'Add',
-        'aria-label': `Add ${ex.name}`,
-        onclick: () => onAdd(ex),
-      })
-    );
   }
 
   return card;
@@ -369,11 +382,56 @@ export function exerciseDetail(ex) {
   ]);
 }
 
+/*
+ * The same detail, as a sheet over whatever you were doing. The Library gives
+ * the detail a column of its own because browsing is the point there; anywhere
+ * else — mid-build, say — it is a question you ask in passing and dismiss, so it
+ * arrives over the top and leaves the page behind it untouched.
+ */
+export function openExerciseSheet(ex) {
+  const panel = el('aside', {
+    class: 'ex-panel is-open is-sheet',
+    role: 'dialog',
+    'aria-modal': 'true',
+    'aria-label': ex.name,
+  });
+  const backdrop = el('div', { class: 'ex-panel-backdrop', onclick: () => close() });
+
+  function close() {
+    panel.remove();
+    backdrop.remove();
+    document.removeEventListener('keydown', onKey);
+  }
+
+  function onKey(e) {
+    if (e.key === 'Escape') close();
+  }
+
+  panel.appendChild(
+    el('div', { class: 'ex-panel-head' }, [
+      el('h2', { class: 'ex-panel-title', text: ex.name }),
+      el('button', {
+        class: 'btn btn-ghost ex-panel-close',
+        type: 'button',
+        text: '×',
+        'aria-label': 'Close',
+        onclick: close,
+      }),
+    ])
+  );
+  panel.appendChild(exerciseDetail(ex));
+
+  document.body.appendChild(backdrop);
+  document.body.appendChild(panel);
+  document.addEventListener('keydown', onKey);
+  return close;
+}
+
 /* ─── Lists ────────────────────────────────────────────────────────────── */
 
 /**
  * Renders a filterable grid into `container`.
- * opts: { onAdd(ex), onOpen(ex), openId, state }
+ * opts: { onAdd(ex), onOpen(ex), onInfo(ex), openId, state }
  */
 export function renderExerciseList(container, opts = {}) {
   const state = opts.state || defaultFilters();
@@ -429,6 +487,7 @@ export function renderExerciseList(container, opts = {}) {
       const card = exerciseCard(ex, {
         onAdd: opts.onAdd,
         onOpen: opts.onOpen,
+        onInfo: opts.onInfo,
         // Starring only changes what is on screen when the list is filtered to
         // starred movements; otherwise the card has already updated itself.
         onStar: () => {

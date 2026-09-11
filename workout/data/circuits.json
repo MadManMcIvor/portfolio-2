@@ -1,0 +1,114 @@
+{
+  "version": 1,
+  "updated": "2026-09-11",
+  "circuits": [
+    {
+      "id": "twenty-minute-starter",
+      "name": "Twenty-minute starter",
+      "blurb": "Five movements, one bell, and no decisions left to make. The one to run when you know you should train and can't face choosing how.",
+      "type": "amrap",
+      "duration": 1200,
+      "items": [
+        { "exerciseId": "two-hand-swing", "reps": 15, "perSide": false },
+        { "exerciseId": "goblet-squat", "reps": 10, "perSide": false },
+        { "exerciseId": "push-up", "reps": 10, "perSide": false },
+        { "exerciseId": "bent-over-row", "reps": 8, "perSide": true },
+        { "exerciseId": "reverse-lunge", "reps": 8, "perSide": true }
+      ]
+    },
+    {
+      "id": "nothing-but-you",
+      "name": "Nothing but you",
+      "blurb": "No kit and nowhere to go. A hotel room, a spare bedroom or a patch of grass, and about as much space as a towel.",
+      "type": "amrap",
+      "duration": 1080,
+      "items": [
+        { "exerciseId": "air-squat", "reps": 15, "perSide": false },
+        { "exerciseId": "push-up", "reps": 10, "perSide": false },
+        { "exerciseId": "reverse-lunge-bw", "reps": 8, "perSide": true },
+        { "exerciseId": "sit-up", "reps": 15, "perSide": false },
+        { "exerciseId": "burpee", "reps": 5, "perSide": false }
+      ]
+    },
+    {
+      "id": "back-and-hips",
+      "name": "Back and hips",
+      "blurb": "Swings, hinges and rows — the whole back of you, which is the half a day at a desk quietly switches off. Expect to notice it sitting down tomorrow.",
+      "type": "amrap",
+      "duration": 1200,
+      "items": [
+        { "exerciseId": "two-hand-swing", "reps": 20, "perSide": false },
+        { "exerciseId": "deadlift", "reps": 10, "perSide": false },
+        { "exerciseId": "bent-over-row", "reps": 10, "perSide": true },
+        { "exerciseId": "suitcase-deadlift", "reps": 8, "perSide": true },
+        { "exerciseId": "single-leg-glute-bridge", "reps": 10, "perSide": true }
+      ]
+    },
+    {
+      "id": "carries-and-braces",
+      "name": "Carries and braces",
+      "blurb": "Picking something heavy up and refusing to put it down. Nothing here is clever, and your middle does most of the work whether you ask it to or not.",
+      "type": "intervals",
+      "rounds": 3,
+      "restBetweenRounds": 60,
+      "items": [
+        { "exerciseId": "farmer-carry", "mode": "time", "work": 45, "rest": 20, "perSide": false },
+        { "exerciseId": "plank", "mode": "time", "work": 40, "rest": 20, "perSide": false },
+        { "exerciseId": "rack-carry", "mode": "time", "work": 30, "rest": 20, "perSide": true },
+        { "exerciseId": "hollow-hold", "mode": "time", "work": 30, "rest": 30, "perSide": false }
+      ]
+    },
+    {
+      "id": "ten-minutes",
+      "name": "Ten minutes",
+      "blurb": "For the day that got away from you. Short enough that there is no good reason not to, and long enough that the calendar still gets its mark.",
+      "type": "amrap",
+      "duration": 600,
+      "items": [
+        { "exerciseId": "burpee", "reps": 5, "perSide": false },
+        { "exerciseId": "air-squat", "reps": 15, "perSide": false },
+        { "exerciseId": "push-up", "reps": 10, "perSide": false }
+      ]
+    },
+    {
+      "id": "first-session",
+      "name": "A first session",
+      "blurb": "Deliberately easy. Every movement has a version you can already do, and the rest is longer than you think you need. If it feels too gentle, add a round before you add reps.",
+      "type": "intervals",
+      "rounds": 3,
+      "restBetweenRounds": 60,
+      "items": [
+        { "exerciseId": "air-squat", "mode": "reps", "reps": 10, "rest": 40, "perSide": false },
+        { "exerciseId": "knee-push-up", "mode": "reps", "reps": 8, "rest": 40, "perSide": false },
+        { "exerciseId": "glute-bridge", "mode": "reps", "reps": 10, "rest": 40, "perSide": false },
+        { "exerciseId": "dead-bug", "mode": "reps", "reps": 8, "rest": 40, "perSide": false },
+        { "exerciseId": "plank", "mode": "time", "work": 20, "rest": 40, "perSide": false }
+      ]
+    },
+    {
+      "id": "the-hundreds",
+      "name": "The hundreds",
+      "blurb": "A hundred each of three things, in whatever pieces the day allows — ten between meetings, forty before dinner. Less a workout than a running total.",
+      "type": "tally",
+      "items": [
+        { "exerciseId": "push-up", "reps": 100, "step": 10, "perSide": false },
+        { "exerciseId": "sit-up", "reps": 100, "step": 10, "perSide": false },
+        { "exerciseId": "air-squat", "reps": 100, "step": 10, "perSide": false }
+      ]
+    },
+    {
+      "id": "two-dumbbells",
+      "name": "Two dumbbells",
+      "blurb": "A pair of bells and a bit of floor. Presses, rows, a hinge and a lunge, which between them is most of what there is to train.",
+      "type": "amrap",
+      "duration": 1200,
+      "items": [
+        { "exerciseId": "dumbbell-romanian-deadlift", "reps": 10, "perSide": false },
+        { "exerciseId": "dumbbell-shoulder-press", "reps": 8, "perSide": false },
+        { "exerciseId": "dumbbell-row", "reps": 8, "perSide": true },
+        { "exerciseId": "dumbbell-walking-lunge", "reps": 8, "perSide": true },
+        { "exerciseId": "push-up", "reps": 10, "perSide": false }
+      ]
+    }
+  ]
+}

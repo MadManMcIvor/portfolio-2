@@ -1,5 +1,5 @@
 /*
- * Validates data/exercises.json. Zero dependencies:
+ * Validates data/exercises.json and data/circuits.json. Zero dependencies:
  *
  *   node workout/tools/check-data.mjs
  *
@@ -7,6 +7,10 @@
  * when spec 005 took the library to 93 movements and made `equipment` a closed
  * vocabulary — an id that isn't in the table silently disappears from the kit
  * filter, which is the sort of mistake nothing else would catch.
+ *
+ * The catalogue (spec 004) has the same failure mode and worse: a circuit
+ * pointing at a movement that isn't there renders as "Unknown movement" and
+ * runs anyway.
  */
 import { readFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
@@ -52,6 +56,52 @@ for (const ex of data.exercises) {
   if (!ex.description) problems.push(`${at}: no description`);
 }
 
+/* ─── The catalogue ────────────────────────────────────────────────────── */
+
+const TYPES = ['amrap', 'tally', 'intervals'];
+const catalogue = JSON.parse(await readFile(join(app, 'data/circuits.json'), 'utf8'));
+const byExerciseId = new Map(data.exercises.map((ex) => [ex.id, ex]));
+const seenCircuits = new Set();
+
+for (const c of catalogue.circuits) {
+  const at = c.id || '(no id)';
+  if (!c.id) problems.push('A circuit has no id');
+  if (seenCircuits.has(c.id)) problems.push(`${at}: duplicate id`);
+  seenCircuits.add(c.id);
+
+  if (!c.name) problems.push(`${at}: no name`);
+  if (!c.blurb) problems.push(`${at}: no blurb`);
+  // A session has nothing to adopt — it is a name and a tick, and you would
+  // write your own rather than take a copy of someone else's.
+  if (!TYPES.includes(c.type)) problems.push(`${at}: unknown type "${c.type}"`);
+  if (c.type === 'amrap' && !c.duration) problems.push(`${at}: an AMRAP needs a duration`);
+  if (c.type === 'intervals' && !c.rounds) problems.push(`${at}: an intervals circuit needs rounds`);
+
+  if (!Array.isArray(c.items) || !c.items.length) {
+    problems.push(`${at}: has no movements`);
+    continue;
+  }
+
+  for (const item of c.items) {
+    const ex = byExerciseId.get(item.exerciseId);
+    if (!ex) {
+      problems.push(`${at}: "${item.exerciseId}" is not a movement in exercises.json`);
+      continue;
+    }
+    // Claiming both sides of a movement that has no sides doubles its time
+    // budget for nothing.
+    if (item.perSide && !ex.unilateral) {
+      problems.push(`${at}: "${item.exerciseId}" is not unilateral, so perSide does nothing`);
+    }
+    if (c.type === 'intervals' && item.mode === 'time' && !item.work) {
+      problems.push(`${at}: "${item.exerciseId}" is timed but has no work`);
+    }
+    if ((c.type !== 'intervals' || item.mode === 'reps') && !item.reps) {
+      problems.push(`${at}: "${item.exerciseId}" has no reps`);
+    }
+  }
+}
+
 if (problems.length) {
   console.error(`${problems.length} problem${problems.length === 1 ? '' : 's'}:`);
   for (const p of problems) console.error(`  ${p}`);
@@ -63,3 +113,4 @@ const unused = kinds.filter((kind) => !used.has(kind));
 
 console.log(`exercises.json v${data.version}: ${data.exercises.length} movements, ${used.size} kinds of kit — all valid.`);
 if (unused.length) console.log(`Nothing uses: ${unused.join(', ')} — a box you can tick that changes nothing.`);
+console.log(`circuits.json v${catalogue.version}: ${catalogue.circuits.length} catalogue circuits — all valid.`);

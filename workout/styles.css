@@ -774,6 +774,60 @@ button.ex-card-trigger:hover h3 {
   margin-top: var(--space-5);
 }
 
+/* ─── Catalogue ───────────────────────────────────────────────────────── */
+
+.catalogue {
+  margin-top: var(--space-5);
+}
+
+.cat-card {
+  padding: var(--space-4) 0;
+  border-bottom: 1px solid var(--paper-line);
+}
+
+.cat-card:first-of-type {
+  border-top: 1px solid var(--paper-line);
+}
+
+.cat-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.cat-title {
+  min-width: 0;
+}
+
+.cat-card h3 {
+  margin: 0 0 var(--space-1);
+  font-size: var(--text-heading);
+  font-weight: 600;
+}
+
+.cat-blurb {
+  margin: var(--space-3) 0;
+  color: var(--ink-muted);
+  font-size: var(--text-sub);
+}
+
+/* The whole circuit on one line, so adopting is never done on the strength of
+ * a name alone. Quiet, because it is a list to scan rather than read. */
+.cat-moves {
+  margin: var(--space-3) 0 0;
+  color: var(--ink-faint);
+  font-size: var(--text-small);
+}
+
+.cat-missing {
+  margin: var(--space-2) 0 0;
+  color: var(--ink-faint);
+  font-size: var(--text-small);
+  font-family: var(--font-serif);
+  font-style: italic;
+}
+
 .picker {
   margin-top: var(--space-5);
 }

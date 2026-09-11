@@ -33,7 +33,11 @@ root so the app sits at `/workout/`, exactly as it does in production.
 - **Calendar** tab — the home view. A month at a glance: a filled sage dot for a
   workout you did, an open clay ring for one still planned. Tap a day to schedule
   a circuit onto it, or to mark one done or skipped.
-- **Circuits** tab — make a circuit. Three kinds:
+- **Circuits** tab — two halves, **Yours** and the **Catalogue**. Yours is what
+  you have built; the catalogue is a shelf of eight ready-made circuits to take
+  a copy of, each with a blurb, the kit it needs and its movements listed. Adopt
+  one and it is yours — editing your copy never touches the shelf, and adopting
+  twice gives you two independent circuits. Four kinds:
   - **AMRAP** (the default): a list of movements with rep counts, looped for a
     fixed stretch of time. No rest to configure — you rest when you need to.
   - **Tally**: a total to reach by the end of the day, in whatever chunks suit.
@@ -42,6 +46,13 @@ root so the app sits at `/workout/`, exactly as it does in production.
     you can close the app and come back to it.
   - **Intervals**: each movement runs for its own set time with rest in between,
     for a fixed number of rounds. Live time estimate pinned to the bottom.
+  - **Session**: something you do elsewhere — a class, a swim, a long walk. No
+    movements and no clock; put it on a day and tick it off, so the calendar is
+    a record of everything you did rather than only what this app ran.
+
+  A rep count can be a single number, a range (10–14), or **to failure**. On a
+  movement card, the small **i** opens its cues and targets without leaving the
+  circuit you're building.
 - **Library** tab — browse the movements as cards. Filter by equipment, pattern,
   level or your starred movements; sort A–Z, by pattern, or by difficulty.
   Tapping a card shows its cues beside the grid on a wide screen, or in a sheet
@@ -54,7 +65,9 @@ root so the app sits at `/workout/`, exactly as it does in production.
     clock at all.
   - A tally opens the board in counting mode: each movement with what you've
     banked against its target, and a `+1` and a `+10` (or whatever chunk size you
-    set). Reaching every target marks the day done.
+    set). Leave the chunk size blank and you get a field instead, for banking
+    whatever you actually did — 40, then 40, then 20. Reaching every target
+    marks the day done.
   - An intervals circuit opens the **step-by-step timer**, which walks through
     each movement with beeps and shows what's coming up next while you rest.
     Space = pause, ←/→ = back/skip, Esc = quit.
@@ -109,7 +122,12 @@ machines and the outdoors. Schema and field reference:
 Every id in an exercise's `equipment` must appear in the table in
 [`js/equipment.js`](js/equipment.js) — that table, not the data, is what the
 kit list and the filters are built from, so a new kind of kit means a row there
-first and a movement second. After editing either, run:
+first and a movement second.
+
+`data/circuits.json` holds the catalogue, in the same shape a saved circuit has
+plus a `blurb`. Every `exerciseId` in it has to exist in `exercises.json`, or
+the circuit renders as "Unknown movement" and runs anyway. After editing either
+file, run:
 
 ```
 node workout/tools/check-data.mjs
@@ -138,15 +156,17 @@ node workout/tools/check-data.mjs
 │   ├── calendar.js       # month grid + day detail
 │   ├── library.js        # library view + reusable exercise picker
 │   ├── builder.js        # circuits list + editor
+│   ├── catalogue.js      # the ready-made circuits, and adopting one
 │   ├── player.js         # step-by-step interval timer
 │   ├── board.js          # whole-workout-on-one-screen view
 │   └── themeToggle.js    # top-bar light/dark toggle
 ├── data/
-│   └── exercises.json    # canonical exercise library
+│   ├── exercises.json    # canonical exercise library
+│   └── circuits.json     # the ready-made circuits shipped with the app
 ├── icons/                # icon.svg is the source; PNGs are generated
 ├── tools/
 │   ├── serve.mjs         # zero-dependency static file server
-│   ├── check-data.mjs    # validates exercises.json against the equipment table
+│   ├── check-data.mjs    # validates exercises.json and circuits.json
 │   └── gen-icons.mjs     # icon.svg -> the manifest and iOS PNGs (macOS only)
 └── docs/
     ├── README.md
@@ -161,6 +181,5 @@ node workout/tools/check-data.mjs
 
 ## Ideas for later
 
-A [catalogue of ready-made circuits](docs/specs/004-circuit-catalogue.md) to
-adopt and edit — specced, not built. After that: repeating schedules,
-drag-to-reorder, and custom user-created exercises.
+Repeating schedules, drag-to-reorder, and custom user-created exercises. Every
+spec written so far is built — see [docs/README.md](docs/README.md).

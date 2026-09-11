@@ -13,6 +13,7 @@ import {
 } from './storage.js';
 import { el, clear, fmtTime, circuitSeconds, amrapRoundSeconds } from './util.js';
 import { renderExerciseList, openExerciseSheet } from './library.js';
+import { tabs } from './catalogue.js';
 
 /* ─── Saved circuits ───────────────────────────────────────────────────── */
 
@@ -20,6 +21,8 @@ export function renderCircuitList(main) {
   clear(main);
 
   const circuits = getCircuits().sort((a, b) => (b.updated || '').localeCompare(a.updated || ''));
+
+  main.appendChild(tabs('yours'));
 
   main.appendChild(
     el('div', { class: 'page-head' }, [
@@ -36,12 +39,22 @@ export function renderCircuitList(main) {
     ])
   );
 
+  // Starting from nothing means already knowing what a good twenty minutes
+  // looks like, so the empty state points at the shelf rather than the blank
+  // page beside it.
   if (!circuits.length) {
     main.appendChild(
-      el('p', {
-        class: 'empty',
-        text: 'No circuits yet. Build a twenty-minute one to get started.',
-      })
+      el('div', { class: 'empty' }, [
+        el('p', { text: 'No circuits yet. Build one from scratch, or take a copy of a ready-made one.' }),
+        el('button', {
+          class: 'btn btn-outline btn-sm',
+          type: 'button',
+          text: 'Browse the catalogue',
+          onclick: () => {
+            location.hash = '#/catalogue';
+          },
+        }),
+      ])
     );
     return;
   }

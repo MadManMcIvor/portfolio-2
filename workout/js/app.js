@@ -2,6 +2,7 @@
 import { renderCalendar } from './calendar.js';
 import { renderLibrary } from './library.js';
 import { renderCircuitList, renderCircuitEditor } from './builder.js';
+import { renderCatalogue } from './catalogue.js';
 import { startPlayer, stopPlayer } from './player.js';
 import { startBoard, stopBoard } from './board.js';
 import { renderSettings } from './settings.js';
@@ -52,6 +53,13 @@ function route() {
       setActiveTab('builder');
       if (id) renderCircuitEditor(main, id);
       else renderCircuitList(main);
+      break;
+
+    // Yours and the catalogue are two halves of the Circuits tab, so the tab
+    // stays lit — but each keeps its own hash, so going back works.
+    case 'catalogue':
+      setActiveTab('builder');
+      renderCatalogue(main);
       break;
 
     case 'play':

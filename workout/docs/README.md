@@ -46,10 +46,10 @@ it goes sideways.
 | 001 | [Exercise library data](specs/001-exercise-library-data.md) | Implemented | — |
 | 002 | [Web app](specs/002-web-app.md) | Implemented, reworked for the portfolio | — |
 | 003 | [Scheduling and tracking](specs/003-scheduling.md) | Implemented | — |
-| 004 | [Circuit catalogue](specs/004-circuit-catalogue.md) | Proposed | Sonnet |
+| 004 | [Circuit catalogue](specs/004-circuit-catalogue.md) | Implemented | Opus |
 | 005 | [Kit and a wider library](specs/005-kit-and-a-wider-library.md) | Implemented | Split |
 | 006 | [Sessions](specs/006-logged-sessions.md) | Implemented | Split |
 
-Numbering is the order they were written, not the order they get built: 004 is
-last — a catalogue of ready-made circuits is worth writing once the library it
-draws on has settled.
+Numbering is the order they were written, not the order they got built: 004 was
+last, because a catalogue of ready-made circuits was worth writing once the
+library it draws on had settled.

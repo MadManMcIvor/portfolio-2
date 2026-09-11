@@ -1,7 +1,8 @@
 # 004 — Circuit catalogue
 
-**Status:** Proposed — not built
-**Model:** Sonnet — the blurbs want a read-through afterwards.
+**Status:** Implemented. `data/circuits.json` is at version 1 — eight circuits.
+See "What changed in the building" at the foot of this spec.
+**Model:** Opus.
 **Depends on:** [003 — Scheduling and tracking](003-scheduling.md)
 
 ## Goal
@@ -76,3 +77,44 @@ voice as the movement descriptions.
 
 Sharing circuits between people, user-submitted catalogue entries, or fetching
 the catalogue from anywhere but this repo.
+
+## What changed in the building
+
+- **Eight circuits, and they cover all three runnable kinds.** The spread the
+  spec asked for, plus a tally ("The hundreds") and two intervals circuits —
+  the catalogue is the only place a new user meets AMRAP, tally and intervals
+  side by side, so it may as well teach the vocabulary. Carries turned out to
+  need intervals: an AMRAP item is a rep count, and "15 reps of farmer carry"
+  means nothing.
+- **A segmented control, and its own hash.** Yours | Catalogue on the Circuits
+  view, as the spec guessed. `#/catalogue` is a route rather than in-page state,
+  so the back button and a bookmark both work and the Circuits tab stays lit.
+- **The kit you haven't got is named.** Spec 004 predates [005](005-kit-and-a-wider-library.md);
+  a catalogue that recommends a kettlebell circuit to someone with no kettlebell
+  and says nothing is worse than useless. Each circuit lists the kit it needs as
+  chips, and one it can't run reads "Needs kit you haven't got — Kettlebell",
+  with a link to change that. Nothing is hidden or filtered: the catalogue is
+  worth reading through either way, and a swap is usually one edit away.
+- **The movements are on the card.** Adopting on the strength of a name and a
+  blurb is adopting blind, so each card carries the whole circuit on one quiet
+  line — "Two-Hand Kettlebell Swing 15 · Goblet Squat 10 · …".
+- **The empty state points at the shelf.** "No circuits yet" now offers
+  "Browse the catalogue" beside building one, which was the whole motivation.
+- **Adopting deep-copies.** `structuredClone`, not a spread — a shallow copy
+  shares its `items` objects with the in-memory catalogue, so editing your copy
+  would have quietly rewritten the shelf for the rest of the session.
+- **`tools/check-data.mjs` validates the catalogue too.** A circuit pointing at
+  a movement that isn't there renders as "Unknown movement" and runs anyway,
+  which is exactly the class of mistake the checker exists for. It also catches
+  `perSide` on a movement that has no sides, which silently doubles a time
+  budget for nothing.
+- **Fetched on first visit**, not at startup: most sessions never open the
+  catalogue, and the app already waits on one JSON file before it can paint.
+  Both data files are precached by the service worker, so it works offline.
+
+### Still open
+
+The spec's three open questions all landed where it guessed: catalogue circuits
+stay visible after adopting (a duplicate is the user's problem), favourites stay
+movement-only, and there is no `catalogueVersion`. Nothing has changed to make
+any of those worth revisiting.

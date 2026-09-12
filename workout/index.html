@@ -51,7 +51,18 @@
   <body>
     <div class="app">
       <header class="topbar">
-        <h1 class="app-title">Workout</h1>
+        <h1 class="app-title">
+          <!-- The kettlebell mark. Same geometry as icons/icon.svg (the source
+               of truth), minus the paper ground: the bell takes currentColor so
+               it inverts with the theme, the base stays clay. -->
+          <svg class="app-mark" viewBox="106 93 300 327" aria-hidden="true" focusable="false">
+            <path fill="none" stroke="currentColor" stroke-width="46"
+                  d="M193 250 L193 151 Q193 116 237 116 L275 116 Q319 116 319 151 L319 250"/>
+            <path fill="currentColor" d="M170 200 A150 105 0 0 0 170 372 L342 372 A150 105 0 0 0 342 200 Z"/>
+            <rect x="170" y="394" width="172" height="26" rx="13" fill="var(--clay)"/>
+          </svg>
+          Workout
+        </h1>
 
         <nav class="tabs" aria-label="Sections">
           <a href="#/calendar" data-tab="calendar">Calendar</a>

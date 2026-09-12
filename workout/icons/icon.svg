@@ -1,6 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Kettlebell">
   <rect width="512" height="512" rx="112" fill="#f8f4ec"/>
-  <path fill="#a85d42" d="M186 240 C138 272 114 318 118 358 C120 394 140 418 168 432 L344 432 C372 418 392 394 394 358 C398 318 374 272 326 240 Z"/>
-  <path fill="none" stroke="#a85d42" stroke-width="38" stroke-linecap="round"
-        d="M176 252 L176 196 Q176 140 232 140 L280 140 Q336 140 336 196 L336 252"/>
+  <path fill="none" stroke="#1c1917" stroke-width="46"
+        d="M193 250 L193 151 Q193 116 237 116 L275 116 Q319 116 319 151 L319 250"/>
+  <path fill="#1c1917" d="M170 200 A150 105 0 0 0 170 372 L342 372 A150 105 0 0 0 342 200 Z"/>
+  <rect x="170" y="394" width="172" height="26" rx="13" fill="#a85d42"/>
 </svg>

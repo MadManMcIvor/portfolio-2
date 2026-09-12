@@ -3,7 +3,7 @@
 //   node tools/gen-icons.mjs
 //
 // `icons/icon.svg` is the source of truth for the art; the glyph below is the
-// same two paths, reused to build the platform variants (rounded, full-bleed,
+// same three shapes, reused to build the platform variants (rounded, full-bleed,
 // safe-zone inset). Rasterising uses macOS' own QuickLook and sips, so there is
 // nothing to install — but that does make this a Mac-only step. It is art
 // tooling, not a build step: the PNGs are committed, and this only needs
@@ -18,13 +18,15 @@ const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const OUT = join(ROOT, 'icons');
 
 const PAPER = '#f8f4ec';
+const INK = '#1c1917';
 const CLAY = '#a85d42';
 
 /** The mark itself, in a 512-unit design space. Keep in sync with icon.svg. */
 const GLYPH = `
-  <path fill="${CLAY}" d="M186 240 C138 272 114 318 118 358 C120 394 140 418 168 432 L344 432 C372 418 392 394 394 358 C398 318 374 272 326 240 Z"/>
-  <path fill="none" stroke="${CLAY}" stroke-width="38" stroke-linecap="round"
-        d="M176 252 L176 196 Q176 140 232 140 L280 140 Q336 140 336 196 L336 252"/>`;
+  <path fill="none" stroke="${INK}" stroke-width="46"
+        d="M193 250 L193 151 Q193 116 237 116 L275 116 Q319 116 319 151 L319 250"/>
+  <path fill="${INK}" d="M170 200 A150 105 0 0 0 170 372 L342 372 A150 105 0 0 0 342 200 Z"/>
+  <rect x="170" y="394" width="172" height="26" rx="13" fill="${CLAY}"/>`;
 
 /**
  * @param corner rounded-rect radius of the paper ground; 0 is full bleed, for

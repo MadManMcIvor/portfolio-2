@@ -8,12 +8,14 @@ import {
   getCircuits,
   getCircuit,
   saveCircuit,
+  duplicateCircuit,
   deleteCircuit,
   newCircuit,
 } from './storage.js';
-import { el, clear, fmtTime, circuitSeconds, amrapRoundSeconds } from './util.js';
+import { el, clear, fmtTime, circuitSeconds, amrapRoundSeconds, repsLabel } from './util.js';
 import { renderExerciseList, openExerciseSheet } from './library.js';
 import { tabs } from './catalogue.js';
+import { movesDisclosure } from './movesList.js';
 
 /* ─── Saved circuits ───────────────────────────────────────────────────── */
 
@@ -26,7 +28,7 @@ export function renderCircuitList(main) {
 
   main.appendChild(
     el('div', { class: 'page-head' }, [
-      el('h2', { class: 'eyebrow', text: 'Saved circuits' }),
+      el('h2', { class: 'eyebrow', text: 'Your circuits' }),
       el('button', {
         class: 'btn btn-primary btn-sm',
         type: 'button',
@@ -63,36 +65,112 @@ export function renderCircuitList(main) {
     const moves = (c.items || []).length;
     main.appendChild(
       el('div', { class: 'circuit-row' }, [
-        el(
-          'a',
-          { class: 'circuit-row-main', href: `#/builder/${c.id}` },
-          [
-            el('h3', { text: c.name }),
-            el('div', { class: 'meta', text: summaryLine(c) }),
-          ]
-        ),
-        // A session has nothing to run, so it gets no Start — you tick it off on
-        // the calendar and that is the whole of it.
-        c.type === SESSION
-          ? null
-          : el('button', {
-              class: 'btn btn-outline btn-sm',
-              type: 'button',
-              text: 'Start',
-              disabled: moves ? null : 'disabled',
-              onclick: () => {
-                location.hash = `${c.type === INTERVALS ? '#/play' : '#/board'}/${c.id}`;
+        el('div', { class: 'circuit-row-top' }, [
+          el(
+            'a',
+            { class: 'circuit-row-main', href: `#/builder/${c.id}` },
+            [
+              el('h3', { text: c.name }),
+              el('div', { class: 'meta', text: summaryLine(c) }),
+            ]
+          ),
+          // A session has nothing to run, so it gets no Start — you tick it off
+          // on the calendar and that is the whole of it.
+          c.type === SESSION
+            ? null
+            : el('button', {
+                class: 'btn btn-outline btn-sm',
+                type: 'button',
+                text: 'Start',
+                disabled: moves ? null : 'disabled',
+                onclick: () => {
+                  location.hash = `${c.type === INTERVALS ? '#/play' : '#/board'}/${c.id}`;
+                },
+              }),
+          rowMenu(`More for ${c.name}`, [
+            {
+              text: 'Duplicate',
+              onClick: () => {
+                const copy = duplicateCircuit(c);
+                location.hash = `#/builder/${copy.id}`;
               },
-            }),
-        removeButton(`Delete ${c.name}`, () => {
-          if (confirm(`Delete “${c.name}”?`)) {
-            deleteCircuit(c.id);
-            renderCircuitList(main);
-          }
-        }),
+            },
+          ]),
+          removeButton(`Delete ${c.name}`, () => {
+            if (confirm(`Delete “${c.name}”?`)) {
+              deleteCircuit(c.id);
+              renderCircuitList(main);
+            }
+          }),
+        ]),
+        // What it actually is, without opening it — a saved circuit used to
+        // mean a name and a guess until you tapped into edit mode to check.
+        movesDisclosure(c),
       ])
     );
   }
+}
+
+/*
+ * A small popover for an action that doesn't earn a permanent button on every
+ * row. Closes on an outside click, Escape, or picking something.
+ */
+function rowMenu(label, items) {
+  const wrap = el('div', { class: 'row-menu' });
+  const toggle = el('button', {
+    class: 'btn btn-ghost btn-icon row-menu-toggle',
+    type: 'button',
+    text: '⋮',
+    'aria-haspopup': 'true',
+    'aria-expanded': 'false',
+    'aria-label': label,
+  });
+  const list = el('div', { class: 'row-menu-list', role: 'menu', hidden: true });
+
+  function close() {
+    list.hidden = true;
+    toggle.setAttribute('aria-expanded', 'false');
+    document.removeEventListener('click', onDocClick, true);
+    document.removeEventListener('keydown', onKey);
+  }
+
+  function onDocClick(e) {
+    if (!wrap.contains(e.target)) close();
+  }
+
+  function onKey(e) {
+    if (e.key === 'Escape') close();
+  }
+
+  toggle.addEventListener('click', () => {
+    if (!list.hidden) {
+      close();
+      return;
+    }
+    list.hidden = false;
+    toggle.setAttribute('aria-expanded', 'true');
+    document.addEventListener('click', onDocClick, true);
+    document.addEventListener('keydown', onKey);
+  });
+
+  for (const { text, onClick } of items) {
+    list.appendChild(
+      el('button', {
+        class: 'row-menu-item',
+        type: 'button',
+        role: 'menuitem',
+        text,
+        onclick: () => {
+          close();
+          onClick();
+        },
+      })
+    );
+  }
+
+  wrap.appendChild(toggle);
+  wrap.appendChild(list);
+  return wrap;
 }
 
 /** Each kind of circuit has its own way of saying what it is. */
@@ -124,6 +202,11 @@ export function renderCircuitEditor(main, id) {
 
   let pickerOpen = false;
   let totalsEl = null;
+  // Indexes with their card opened by hand rather than by having something
+  // worth showing. Keyed by position, so reordering can occasionally carry the
+  // open state to the wrong card — a cosmetic slip in state that is rebuilt
+  // fresh on every visit anyway.
+  const expandedIndexes = new Set();
   const persist = () => saveCircuit(circuit);
 
   function repaint() {
@@ -299,9 +382,10 @@ export function renderCircuitEditor(main, id) {
    * A rep count, and the two ways it stops being a single number: an upper
    * bound turns it into a range, and "to failure" replaces the number with an
    * instruction. The range box stays empty unless you want one, so the ordinary
-   * case is still one field with one number in it.
+   * case is still one field with one number in it. `onChange` also refreshes
+   * the collapsed headline, which reads off the same value.
    */
-  function repFields(item, min, max, fallback) {
+  function repFields(item, min, max, fallback, onChange) {
     if (item.toFailure) return [];
     return [
       field('Reps', () =>
@@ -309,6 +393,7 @@ export function renderCircuitEditor(main, id) {
           item.reps = v;
           persist();
           refreshTotals();
+          onChange();
         })
       ),
       field('Up to', () =>
@@ -316,6 +401,7 @@ export function renderCircuitEditor(main, id) {
           item.repsMax = v || null;
           persist();
           refreshTotals();
+          onChange();
         })
       ),
     ];
@@ -328,10 +414,45 @@ export function renderCircuitEditor(main, id) {
     return el('label', { class: 'checkbox' }, [box, label]);
   }
 
+  /*
+   * A card fully open for every movement was the whole problem: it left room
+   * for two on a phone before scrolling. Each one now shows just its headline
+   * number, and opens for the rest — automatically for anything already
+   * carrying a range, a to-failure flag, a claimed side or a chosen chunk size,
+   * since that is worth seeing without a tap; otherwise on request.
+   */
+  function hasCustomSecondary(item) {
+    if (circuit.type === TALLY) return item.step != null;
+    return !!(item.toFailure || item.repsMax || item.perSide);
+  }
+
+  /** The one number a collapsed card still needs to say. */
+  function headlineFor(item, ex) {
+    const eachSide = item.perSide && ex && ex.unilateral ? ' each side' : '';
+    if (circuit.type === TALLY) {
+      const perSet = item.step ? ` · +${item.step}` : '';
+      return `${item.reps || 0} reps${perSet}${eachSide}`;
+    }
+    if (circuit.type !== AMRAP && item.mode !== 'reps') {
+      return `${item.work || 40}s${eachSide}`;
+    }
+    const label = repsLabel(item);
+    return `${label}${item.toFailure ? '' : ' reps'}${eachSide}`;
+  }
+
   function itemCard(item, i) {
     const ex = exerciseById(item.exerciseId);
     const name = ex ? ex.name : `Unknown movement (${item.exerciseId})`;
     const byReps = circuit.type === AMRAP || item.mode === 'reps';
+
+    const amount = el('button', {
+      class: 'item-amount',
+      type: 'button',
+      'aria-label': `Edit ${name}`,
+    });
+    const refreshAmount = () => {
+      amount.textContent = headlineFor(item, ex);
+    };
 
     // An AMRAP movement is just "how many", so the card is one field rather
     // than the mode/work/rest set an interval needs.
@@ -339,7 +460,7 @@ export function renderCircuitEditor(main, id) {
       'div',
       { class: `item-controls${circuit.type === AMRAP ? ' is-simple' : ''}${circuit.type === TALLY ? ' is-pair' : ''}` },
       circuit.type === AMRAP
-        ? repFields(item, 1, 200, 10)
+        ? repFields(item, 1, 200, 10, refreshAmount)
         : circuit.type === TALLY
           ? [
               field('Total reps', () =>
@@ -347,6 +468,7 @@ export function renderCircuitEditor(main, id) {
                   item.reps = v;
                   persist();
                   refreshTotals();
+                  refreshAmount();
                 })
               ),
               // Blank is a real answer: it means you have not decided on a chunk
@@ -356,19 +478,21 @@ export function renderCircuitEditor(main, id) {
                 optionalNumberInput(item.step, 1, 200, 'Any', (v) => {
                   item.step = v || null;
                   persist();
+                  refreshAmount();
                 })
               ),
             ]
           : [
             field('Mode', () => modeSelect(item, repaint)),
             ...(item.mode === 'reps'
-              ? repFields(item, 1, 100, 8)
+              ? repFields(item, 1, 100, 8, refreshAmount)
               : [
                   field('Work (s)', () =>
                     numberInput(item.work || 40, 5, 600, (v) => {
                       item.work = v;
                       persist();
                       refreshTotals();
+                      refreshAmount();
                     })
                   ),
                 ]),
@@ -400,9 +524,24 @@ export function renderCircuitEditor(main, id) {
           item.perSide = on;
           persist();
           refreshTotals();
+          refreshAmount();
         })
       );
     }
+
+    refreshAmount();
+
+    const expanded = expandedIndexes.has(i) || hasCustomSecondary(item);
+    controls.hidden = !expanded;
+    amount.setAttribute('aria-expanded', String(expanded));
+
+    amount.addEventListener('click', () => {
+      const open = !controls.hidden;
+      if (open) expandedIndexes.delete(i);
+      else expandedIndexes.add(i);
+      controls.hidden = open;
+      amount.setAttribute('aria-expanded', String(!open));
+    });
 
     return el('div', { class: 'item-card' }, [
       el('div', { class: 'item-head' }, [
@@ -424,7 +563,8 @@ export function renderCircuitEditor(main, id) {
             onclick: () => move(i, 1),
           }),
         ]),
-        el('h3', { text: name }),
+        el('h3', { text: name, title: name }),
+        amount,
         // Checking what a movement actually is shouldn't mean leaving the
         // circuit you are halfway through building.
         ex

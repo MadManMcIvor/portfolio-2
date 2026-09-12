@@ -9,7 +9,7 @@
  * Bump CACHE_VERSION when the shell changes; the old cache is dropped on
  * activate.
  */
-const CACHE_VERSION = 'workout-v7';
+const CACHE_VERSION = 'workout-v8';
 
 const SHELL = [
   './',
@@ -25,6 +25,7 @@ const SHELL = [
   './js/builder.js',
   './js/calendar.js',
   './js/catalogue.js',
+  './js/movesList.js',
   './js/equipment.js',
   './js/exercises.js',
   './js/favourites.js',

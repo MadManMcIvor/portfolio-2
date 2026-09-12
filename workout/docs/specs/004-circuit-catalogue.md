@@ -118,3 +118,44 @@ The spec's three open questions all landed where it guessed: catalogue circuits
 stay visible after adopting (a duplicate is the user's problem), favourites stay
 movement-only, and there is no `catalogueVersion`. Nothing has changed to make
 any of those worth revisiting.
+
+### Follow-on: the same treatment for your own circuits
+
+The disclosure built for the catalogue's cards was worth more than the
+catalogue. Two follow-on changes, both in `js/builder.js`:
+
+- **`js/movesList.js` is now a shared module**, not catalogue-only —
+  `movementParts()` and `movesDisclosure()` moved out of `js/catalogue.js` so
+  a saved circuit's row can use the exact same collapsed line and per-movement
+  detail. `#/builder` used to mean opening a circuit to see what was in it;
+  now the row says so, and heading into the editor is for changing it. The
+  CSS classes lost their `cat-` prefix (`.moves`, `.move-list`, …) since they
+  no longer belong to the catalogue alone.
+- **A row's `⋮` opens a small menu with Duplicate** — `duplicateCircuit()` in
+  `storage.js` deep-clones with a fresh id and " copy" appended to the name
+  (adopting a catalogue circuit keeps the original name; duplicating your own
+  would otherwise leave two circuits answering to the same one). It drops you
+  straight into the copy's editor, the same as New circuit and Adopt.
+
+### Follow-on: a condensed editor
+
+Every movement card in the editor showed its full set of fields regardless —
+for AMRAP, Reps and Up To always visible plus a To Failure checkbox always in
+view, which meant two movements filled a phone screen before scrolling. Each
+card now shows one number (the "10 reps" / "10–14 reps" / "40s" pill next to
+its name) and opens for the rest on tap. It opens by itself for anything worth
+seeing without asking — a range, to failure, a claimed side, or a tally's own
+chunk size — otherwise it waits to be asked. The number stays live as you edit
+inside it, and a movement's name truncates with an ellipsis (full name on
+hover, or in its "i" sheet) rather than pushing the pill and its buttons off
+the row.
+
+This surfaced a real bug along the way: `[hidden]` loses to any author CSS
+rule that sets its own `display` on the same element — origin beats
+specificity in the cascade — and `.item-controls { display: grid }` was
+exactly such a rule. `styles.css` now carries a blanket
+`[hidden] { display: none !important; }` near the top, since toggling
+`hidden` is how every disclosure in this app opens and closes. Settings'
+"Stop filtering by kit" button turned out to have the same bug for the same
+reason (`.btn { display: inline-flex }`) and had been visible before you'd
+ever set a kit; it now actually hides until there is something to reset.

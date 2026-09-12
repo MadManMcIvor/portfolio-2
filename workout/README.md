@@ -52,7 +52,12 @@ root so the app sits at `/workout/`, exactly as it does in production.
 
   A rep count can be a single number, a range (10–14), or **to failure**. On a
   movement card, the small **i** opens its cues and targets without leaving the
-  circuit you're building.
+  circuit you're building — a movement's own card shows just its headline
+  number until tapped, so a full circuit fits on screen without scrolling.
+
+  Under **Yours**, each row's movements are one tap away too — "Push-Up 20 ·
+  Bird Dog 8 · …" opens into the same detail. The **⋮** menu on a row
+  duplicates it: a fresh, independent copy, dropped straight into its editor.
 - **Library** tab — browse the movements as cards. Filter by equipment, pattern,
   level or your starred movements; sort A–Z, by pattern, or by difficulty.
   Tapping a card shows its cues beside the grid on a wide screen, or in a sheet
@@ -157,6 +162,7 @@ node workout/tools/check-data.mjs
 │   ├── library.js        # library view + reusable exercise picker
 │   ├── builder.js        # circuits list + editor
 │   ├── catalogue.js      # the ready-made circuits, and adopting one
+│   ├── movesList.js      # a circuit's movements, collapsed with a disclosure
 │   ├── player.js         # step-by-step interval timer
 │   ├── board.js          # whole-workout-on-one-screen view
 │   └── themeToggle.js    # top-bar light/dark toggle

@@ -60,6 +60,21 @@ export function saveCircuit(circuit) {
   return circuit;
 }
 
+/**
+ * A copy with a fresh id and its own timestamps — editing one never touches
+ * the other. Named "… copy" since, unlike adopting from the catalogue, this
+ * can leave two circuits with the same name in your own list otherwise.
+ */
+export function duplicateCircuit(circuit) {
+  return saveCircuit({
+    ...structuredClone(circuit),
+    id: uuid(),
+    name: `${circuit.name} copy`,
+    created: null,
+    updated: null,
+  });
+}
+
 export function deleteCircuit(id) {
   write(
     CIRCUITS_KEY,

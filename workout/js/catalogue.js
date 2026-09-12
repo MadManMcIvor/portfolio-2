@@ -8,10 +8,10 @@
  * and nothing here can reach it again.
  */
 import { exerciseById } from './exercises.js';
-import { AMRAP, TALLY, INTERVALS, saveCircuit, uuid } from './storage.js';
+import { AMRAP, TALLY, saveCircuit, uuid } from './storage.js';
 import { ALWAYS, equipmentLabel, getKit } from './equipment.js';
-import { el, clear, fmtTime, circuitSeconds, repsLabel } from './util.js';
-import { openExerciseSheet } from './library.js';
+import { el, clear, fmtTime, circuitSeconds } from './util.js';
+import { movesDisclosure } from './movesList.js';
 
 /*
  * Fetched on first visit rather than at startup: most sessions never open the
@@ -64,19 +64,6 @@ function summaryLine(c) {
     return `Tally · ${count} · ${total} reps`;
   }
   return `Intervals · ${count} · ${c.rounds} rounds · about ${fmtTime(circuitSeconds(c))}`;
-}
-
-/* What you are actually signing up for. Without this you are adopting on the
- * strength of a name and a blurb — the collapsed line and the expanded rows
- * both read off it, so the two never drift apart. */
-function movementParts(c) {
-  return (c.items || []).map((item) => {
-    const ex = exerciseById(item.exerciseId);
-    const name = ex ? ex.name : 'Unknown movement';
-    const amount = c.type === INTERVALS && item.mode !== 'reps' ? fmtTime(item.work || 0) : repsLabel(item);
-    const eachSide = !!(item.perSide && ex && ex.unilateral);
-    return { ex, name, amount, eachSide };
-  });
 }
 
 /* ─── Adopting ─────────────────────────────────────────────────────────── */
@@ -162,51 +149,6 @@ function card(circuit) {
         ])
       : null,
   ]);
-}
-
-/*
- * The movements, collapsed to one line by default — a quiet italic caption was
- * easy to read past entirely. It is a real button now, and opens into a row per
- * movement with its own "what is this?", the same disclosure the builder uses.
- */
-function movesDisclosure(circuit) {
-  const parts = movementParts(circuit);
-
-  const toggle = el('button', {
-    class: 'cat-moves-toggle',
-    type: 'button',
-    'aria-expanded': 'false',
-    text: parts.map((p) => `${p.name} ${p.amount}${p.eachSide ? ' each side' : ''}`).join(' · '),
-  });
-
-  const list = el(
-    'ol',
-    { class: 'cat-move-list', hidden: true },
-    parts.map((p) =>
-      el('li', { class: 'cat-move-row' }, [
-        el('span', { class: 'cat-move-name', text: p.name }),
-        el('span', { class: 'cat-move-amount', text: `${p.amount}${p.eachSide ? ' each side' : ''}` }),
-        p.ex
-          ? el('button', {
-              class: 'ex-info',
-              type: 'button',
-              text: 'i',
-              title: `What is ${p.name}?`,
-              'aria-label': `What is ${p.name}?`,
-              onclick: () => openExerciseSheet(p.ex),
-            })
-          : null,
-      ])
-    )
-  );
-
-  toggle.addEventListener('click', () => {
-    const open = toggle.getAttribute('aria-expanded') === 'true';
-    toggle.setAttribute('aria-expanded', String(!open));
-    list.hidden = open;
-  });
-
-  return el('div', { class: 'cat-moves' }, [toggle, list]);
 }
 
 /*

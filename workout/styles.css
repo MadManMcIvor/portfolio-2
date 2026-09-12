@@ -513,6 +513,12 @@ button.back-link {
   color: var(--ink);
 }
 
+/* Yours/Catalogue sits above a page-head with no margin-top of its own, so
+ * without this the two are flush against each other. */
+.view-tabs {
+  margin-bottom: var(--space-5);
+}
+
 .ex-count {
   margin: 0 0 var(--space-3);
   color: var(--ink-faint);
@@ -812,12 +818,70 @@ button.ex-card-trigger:hover h3 {
   font-size: var(--text-sub);
 }
 
-/* The whole circuit on one line, so adopting is never done on the strength of
- * a name alone. Quiet, because it is a list to scan rather than read. */
 .cat-moves {
-  margin: var(--space-3) 0 0;
-  color: var(--ink-faint);
+  margin-top: var(--space-3);
+}
+
+/* The whole circuit on one line, so adopting is never done on the strength of
+ * a name alone — but a real control, not a caption: ink-muted rather than
+ * ink-faint, and a chevron that flips so its two states are obvious without a
+ * hover. */
+.cat-moves-toggle {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink-muted);
+  font: inherit;
   font-size: var(--text-small);
+  line-height: var(--leading-tight);
+  text-align: left;
+  cursor: pointer;
+}
+
+.cat-moves-toggle:hover {
+  color: var(--clay);
+}
+
+.cat-moves-toggle::after {
+  content: ' ▾ details';
+  color: var(--ink-faint);
+  font-family: var(--font-serif);
+  font-style: italic;
+  white-space: nowrap;
+}
+
+.cat-moves-toggle[aria-expanded='true']::after {
+  content: ' ▴ hide';
+}
+
+.cat-move-list {
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  border-top: 1px solid var(--paper-line);
+  list-style: none;
+}
+
+.cat-move-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--paper-line);
+}
+
+.cat-move-name {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--text-sub);
+}
+
+.cat-move-amount {
+  flex-shrink: 0;
+  color: var(--ink-muted);
+  font-size: var(--text-small);
+  font-variant-numeric: tabular-nums;
 }
 
 .cat-missing {

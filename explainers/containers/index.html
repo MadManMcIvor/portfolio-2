@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- Theme: light by default, applied before first paint. Same key as the rest of the
+     site, so the choice made on the home page carries here and back. -->
+<script>
+  (function () {
+    var KEY = 'theme';
+    var DEFAULT = 'light';
+    function apply(choice) {
+      document.documentElement.setAttribute('data-theme', choice);
+    }
+    function stored() {
+      try {
+        var v = localStorage.getItem(KEY);
+        return v === 'light' || v === 'dark' ? v : null;
+      } catch (e) {
+        return null;
+      }
+    }
+    apply(stored() || DEFAULT);
+    window.setTheme = function (choice) {
+      apply(choice);
+      try {
+        localStorage.setItem(KEY, choice);
+      } catch (e) {}
+    };
+  })();
+</script>
+<link rel="stylesheet" href="../../css/tokens.css">
+<title>Containers, explained — Alex McIvor</title>
+<meta name="description" content="Docker, Compose, Podman and Kubernetes: what a container is, how the tools stack up, and what to use when.">
+<style>
+/* Palette: mapped onto Cream & Ink (../../css/tokens.css, ../explainer.css). Each layer of
+   the stack keeps its own colour; light and dark come from the tokens. */
+:root{
+  --bg:var(--paper); --surface:var(--paper-raised); --sunk:var(--paper-sunken); --muted:var(--ink-muted); --line:var(--paper-line);
+  --img:var(--cat-ochre); --on-img:var(--on-cat);
+  --ctr:var(--cat-slate); --on-ctr:var(--on-cat);
+  --cmp:var(--cat-sage); --on-cmp:var(--on-cat);
+  --k8s:var(--cat-clay); --on-k8s:var(--on-cat);
+  --kernel:var(--cat-stone); --on-kernel:var(--on-cat);
+  --code-bg:var(--paper-sunken); --code-ink:var(--ink); --code-muted:var(--syn-comment); --code-key:var(--syn-keyword); --code-str:var(--syn-string);
+  --focus:var(--clay);
+}
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+html{ scroll-padding-top:calc(env(safe-area-inset-top,0px) + 16px); scroll-behavior:smooth; }
+@media (prefers-reduced-motion: reduce){ html{ scroll-behavior:auto; } *{ transition:none !important; animation:none !important; } }
+*,*::before,*::after{ box-sizing:inherit; }
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:var(--font-sans);
+  font-size:1.0625rem; line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+img,svg{ max-width:100%; }
+a{ color:inherit; }
+:focus-visible{ outline:3px solid var(--focus); outline-offset:3px; border-radius:2px; }
+code, pre, kbd{ font-family:var(--font-mono); }
+p code, li code, td code, dd code{
+  font-size:.86em; background:var(--sunk); padding:.08em .35em; border-radius:4px; white-space:nowrap;
+}
+
+/* ---------- Hero ---------- */
+.hero{
+  max-width:1180px; margin:0 auto; padding:clamp(2rem,6vw,4.5rem) clamp(1.1rem,4vw,2.5rem) 2.5rem;
+  display:grid; grid-template-columns:minmax(0,1.05fr) minmax(0,1fr); gap:clamp(2rem,5vw,4rem); align-items:end;
+}
+.hero h1{
+  font-family:var(--font-serif); font-weight:400;
+  font-size:clamp(2.6rem,6.5vw,4.4rem); line-height:1; letter-spacing:-.01em; margin:0 0 1.4rem;
+}
+.hero .lede{ font-size:clamp(1.08rem,1.6vw,1.22rem); max-width:36em; color:var(--muted); margin:0 0 1rem; }
+.hero .lede strong{ color:var(--ink); font-weight:600; }
+.hero .hint{ font-size:.95rem; color:var(--muted); margin:0; }
+
+.stack{ display:flex; flex-direction:column; align-items:flex-end; gap:6px; }
+.box{
+  --c:var(--ctr); --on:var(--on-ctr);
+  display:flex; justify-content:space-between; align-items:center; gap:1rem;
+  text-decoration:none; color:var(--on);
+  background:var(--c);
+  border-radius:var(--radius-sm); padding:.85rem 1.1rem;
+  transition: transform .18s ease;
+}
+.box:hover{ transform:translateX(-6px); }
+.box b{ font-weight:600; font-size:1.15rem; line-height:1.1; }
+.box span{ font-size:.86rem; opacity:.92; text-align:right; line-height:1.3; max-width:18em; }
+.box.k8s{ --c:var(--k8s); --on:var(--on-k8s); width:100%; }
+.box.cmp{ --c:var(--cmp); --on:var(--on-cmp); width:86%; }
+.box.ctr{ --c:var(--ctr); --on:var(--on-ctr); width:94%; }
+.box.img{ --c:var(--img); --on:var(--on-img); width:80%; }
+.box.krn{ --c:var(--kernel); --on:var(--on-kernel); width:100%; padding:.7rem 1.1rem; }
+.box.krn b{ font-size:1.05rem; }
+.stack-caption{ font-size:.85rem; color:var(--muted); margin:.6rem 0 0; text-align:right; max-width:30em; align-self:flex-end; }
+
+/* ---------- Layout ---------- */
+.layout{
+  max-width:1180px; margin:0 auto; padding:0 clamp(1.1rem,4vw,2.5rem) 5rem;
+  display:grid; grid-template-columns:210px minmax(0,1fr); gap:clamp(2rem,5vw,4rem);
+  border-top:1px solid var(--paper-line); padding-top:2.5rem;
+}
+nav.toc{ position:sticky; top:calc(env(safe-area-inset-top,0px) + 1.5rem); align-self:start; font-size:.92rem; }
+nav.toc p{ font-weight:700; margin:0 0 .6rem; }
+nav.toc ol{ list-style:none; margin:0; padding:0; }
+nav.toc li{ margin:0; }
+nav.toc a{
+  display:block; text-decoration:none; color:var(--muted); padding:.28rem 0 .28rem .7rem;
+  border-left:3px solid var(--line);
+}
+nav.toc a:hover{ color:var(--ink); }
+nav.toc a.active{ color:var(--ink); border-left-color:var(--sec, var(--ink)); font-weight:600; }
+nav.toc details{ display:none; }
+main{ min-width:0; }
+section{ margin:0 0 4.5rem; scroll-margin-top:1rem; }
+section > *:not(.wide){ max-width:72ch; }
+h2{
+  font-size:clamp(1.6rem,3.2vw,2.15rem); line-height:1.15; margin:0 0 1rem;
+  font-weight:650; letter-spacing:-.01em;
+  padding-left:.85rem; border-left:4px solid var(--sec, var(--ink));
+}
+h3{ font-size:1.18rem; margin:2.2rem 0 .6rem; font-weight:700; }
+p{ margin:0 0 1rem; }
+ul.plain{ padding-left:1.15rem; margin:0 0 1rem; }
+ul.plain li{ margin:.35rem 0; }
+.s-img{ --sec:var(--img); } .s-ctr{ --sec:var(--ctr); } .s-cmp{ --sec:var(--cmp); } .s-k8s{ --sec:var(--k8s); } .s-krn{ --sec:var(--kernel); } .s-ink{ --sec:var(--ink); }
+
+.callout{
+  background:var(--surface); border:1px solid var(--line); border-left:4px solid var(--sec, var(--ink));
+  padding:1rem 1.2rem; margin:1.4rem 0; border-radius:2px;
+}
+.callout p:last-child{ margin-bottom:0; }
+
+/* VM vs container diagram */
+.versus{ display:grid; grid-template-columns:1fr 1fr; gap:1.25rem; margin:1.6rem 0; max-width:none; }
+.versus figure{ margin:0; }
+.versus figcaption{ font-weight:700; margin-bottom:.5rem; }
+.versus .note{ font-size:.9rem; color:var(--muted); margin-top:.55rem; }
+.tier{ display:grid; gap:4px; }
+.tier .row{ display:grid; gap:4px; }
+.tier .cell{
+  padding:.5rem .6rem; font-size:.84rem; line-height:1.25; text-align:center; border-radius:2px;
+  background:var(--sunk); color:var(--ink); border:1px solid var(--line);
+}
+.tier .app{ background:var(--ctr); color:var(--on-ctr); border-color:transparent; }
+.tier .os{ background:color-mix(in srgb, var(--k8s) 22%, var(--surface)); }
+.tier .rt{ background:color-mix(in srgb, var(--ctr) 18%, var(--surface)); }
+.tier .hw{ background:var(--kernel); color:var(--on-kernel); border-color:transparent; }
+
+/* Definitions */
+dl.vocab{ display:grid; grid-template-columns:minmax(8.5rem,auto) 1fr; gap:0; margin:1.2rem 0; border-top:1px solid var(--line); }
+dl.vocab dt, dl.vocab dd{ padding:.75rem 0; border-bottom:1px solid var(--line); margin:0; }
+dl.vocab dt{ font-weight:700; padding-right:1.2rem; }
+dl.vocab dt i{ display:inline-block; width:.7rem; height:.7rem; margin-right:.45rem; border-radius:1px; background:var(--k); vertical-align:.02em; }
+
+/* Flow */
+ol.flow{ list-style:none; counter-reset:f; padding:0; margin:1.4rem 0; display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:4px; max-width:none; }
+ol.flow li{
+  counter-increment:f; background:var(--surface); border:1px solid var(--line); padding:1rem; position:relative;
+  border-top:5px solid var(--k);
+}
+ol.flow li::before{ content:counter(f); font-family:var(--font-serif); font-size:1.6rem; line-height:1; color:var(--k); display:block; margin-bottom:.4rem; }
+ol.flow b{ display:block; }
+ol.flow span{ font-size:.9rem; color:var(--muted); display:block; margin-top:.25rem; line-height:1.4; }
+ol.flow code{ font-size:.8rem; white-space:normal; }
+
+/* Code */
+.code{ position:relative; margin:1.2rem 0 1.4rem; max-width:none; }
+.code pre{
+  margin:0; background:var(--code-bg); color:var(--code-ink); padding:1.1rem 1.2rem; border-radius:3px;
+  overflow-x:auto; font-size:.86rem; line-height:1.6; tab-size:2;
+}
+.code .label{ display:block; font-size:.82rem; color:var(--muted); margin-bottom:.35rem; font-weight:600; }
+.code .c{ color:var(--code-muted); } .code .k{ color:var(--code-key); } .code .s{ color:var(--code-str); }
+.copy{
+  position:absolute; right:.5rem; bottom:.5rem; font:600 .78rem var(--font-sans);
+  background:color-mix(in srgb, var(--code-ink) 12%, transparent); color:var(--code-ink);
+  border:1px solid color-mix(in srgb, var(--code-ink) 25%, transparent); border-radius:3px; padding:.3rem .6rem; cursor:pointer;
+}
+.copy:hover{ background:color-mix(in srgb, var(--code-ink) 22%, transparent); }
+
+/* Annotated Dockerfile */
+.anno{ margin:1.2rem 0; border-radius:3px; overflow:hidden; border:1px solid var(--line); max-width:none; }
+.anno .ln{ display:grid; grid-template-columns:minmax(0,1.1fr) minmax(0,1fr); }
+.anno .ln + .ln{ border-top:1px solid var(--line); }
+.anno code{ display:block; background:var(--code-bg); color:var(--code-key); padding:.6rem 1rem; font-size:.84rem; white-space:pre; overflow-x:auto; }
+.anno code em{ font-style:normal; color:var(--code-ink); }
+.anno p{ margin:0; padding:.6rem 1rem; font-size:.92rem; background:var(--surface); line-height:1.45; }
+
+/* Tables */
+.tablewrap{ overflow-x:auto; margin:1.2rem 0 1.4rem; max-width:none; border:1px solid var(--line); border-radius:3px; background:var(--surface); }
+table{ border-collapse:collapse; width:100%; font-size:.93rem; }
+th, td{ text-align:left; padding:.65rem .85rem; border-bottom:1px solid var(--line); vertical-align:top; }
+tr:last-child td{ border-bottom:0; }
+th{ background:var(--sunk); font-weight:700; white-space:nowrap; }
+td code{ white-space:nowrap; }
+
+/* Layer map */
+.layers{ max-width:none; margin:1.4rem 0; overflow-x:auto; }
+.layers .grid{ display:grid; grid-template-columns:8.5rem repeat(3,minmax(10rem,1fr)); gap:4px; min-width:640px; }
+.layers .h{ font-weight:700; padding:.5rem .6rem; }
+.layers .rowlabel{ font-size:.82rem; color:var(--muted); padding:.55rem .4rem; line-height:1.3; }
+.layers .cell{ padding:.55rem .7rem; font-size:.88rem; line-height:1.35; border-radius:2px; background:var(--surface); border:1px solid var(--line); }
+.layers .cell small{ display:block; color:var(--muted); font-size:.8rem; }
+.layers .cell.none{ background:transparent; border-style:dashed; color:var(--muted); }
+.layers .cell.kern{ grid-column:2 / -1; background:var(--kernel); color:var(--on-kernel); border-color:transparent; text-align:center; }
+.layers .cell.oci{ grid-column:2 / -1; background:color-mix(in srgb, var(--img) 22%, var(--surface)); text-align:center; }
+.layers .tl{ border-top:4px solid var(--ctr); } .layers .tp{ border-top:4px solid var(--cmp); } .layers .tk{ border-top:4px solid var(--k8s); }
+
+/* Tabs */
+.tabs{ max-width:none; margin:1.4rem 0; }
+.tablist{ display:flex; flex-wrap:wrap; gap:4px; border-bottom:1px solid var(--paper-line); }
+.tablist button{
+  font:600 .95rem var(--font-sans);
+  background:var(--sunk); color:var(--ink); border:0; border-radius:3px 3px 0 0; padding:.6rem 1rem; cursor:pointer;
+  border-top:4px solid transparent;
+}
+.tablist button[aria-selected="true"]{ background:var(--surface); border-top-color:var(--k); }
+.tabpanel{ background:var(--surface); border:1px solid var(--line); border-top:0; padding:1.1rem 1.2rem .4rem; }
+.tabpanel[hidden]{ display:none; }
+.tabpanel .code{ margin-top:.6rem; }
+
+/* Chooser */
+.choose{ display:grid; gap:4px; margin:1.4rem 0; max-width:none; }
+.choose .q{ display:grid; grid-template-columns:minmax(0,1.3fr) minmax(0,1fr); background:var(--surface); border:1px solid var(--line); }
+.choose .q p{ margin:0; padding:.85rem 1rem; }
+.choose .q p + p{ border-left:4px solid var(--k); font-weight:600; background:color-mix(in srgb, var(--k) 8%, var(--surface)); }
+
+footer{ max-width:1180px; margin:0 auto; padding:0 clamp(1.1rem,4vw,2.5rem) 3rem; color:var(--muted); font-size:.88rem; }
+
+/* ---------- Responsive ---------- */
+@media (max-width: 900px){
+  .hero{ grid-template-columns:1fr; align-items:start; }
+  .stack{ align-items:stretch; }
+  .box{ width:100% !important; }
+  .stack-caption{ text-align:left; align-self:flex-start; }
+  .layout{ grid-template-columns:1fr; }
+  nav.toc{ position:static; }
+  nav.toc > p, nav.toc > ol{ display:none; }
+  nav.toc details{ display:block; background:var(--surface); border:1px solid var(--line); padding:.7rem 1rem; border-radius:3px; }
+  nav.toc summary{ font-weight:700; cursor:pointer; }
+  nav.toc details ol{ list-style:none; padding:0; margin:.6rem 0 0; }
+  ol.flow{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+@media (max-width: 620px){
+  .versus{ grid-template-columns:1fr; }
+  dl.vocab{ grid-template-columns:1fr; }
+  dl.vocab dt{ border-bottom:0; padding-bottom:0; }
+  dl.vocab dd{ padding-top:.2rem; }
+  .anno .ln{ grid-template-columns:1fr; }
+  .choose .q{ grid-template-columns:1fr; }
+  .choose .q p + p{ border-left:0; border-top:4px solid var(--k); }
+  ol.flow{ grid-template-columns:1fr; }
+  .box span{ display:none; }
+}
+</style>
+<link rel="stylesheet" href="../explainer.css">
+</head>
+<body>
+<div class="site-strip">
+  <nav class="site-strip__crumbs" aria-label="Site">
+    <a class="site-strip__home" href="../../">Alex McIvor</a>
+    <span class="site-strip__sep" aria-hidden="true">/</span>
+    <a href="../">Explainers</a>
+  </nav>
+  <button id="theme-toggle" type="button" class="site-strip__toggle" aria-label="Toggle dark mode" title="Toggle dark mode">
+    <span class="theme-icon theme-icon-sun" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path></svg></span>
+    <span class="theme-icon theme-icon-moon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg></span>
+  </button>
+</div>
+
+<header class="hero">
+  <div>
+    <h1>Containers,<br>explained</h1>
+    <p class="lede">A container is <strong>an ordinary process that the Linux kernel fences off</strong> so it sees its own files, network and process list. Docker made that easy to package and share. Compose runs several containers together on one machine. Kubernetes runs them across many machines.</p>
+    <p class="hint">The stack on the right is the map of this page. Each layer builds on the one below it; pick one to jump there.</p>
+  </div>
+  <div class="stack" aria-label="Map of the container stack">
+    <a class="box k8s" href="#k8s"><b>Kubernetes</b><span>Runs containers across a cluster of machines</span></a>
+    <a class="box cmp" href="#compose"><b>Compose</b><span>Several containers, one machine, one file</span></a>
+    <a class="box ctr" href="#idea"><b>Containers</b><span>Running, isolated processes</span></a>
+    <a class="box img" href="#flow"><b>Images</b><span>The packaged app, built from a Dockerfile</span></a>
+    <a class="box krn" href="#stack"><b>Linux kernel</b><span>Namespaces, cgroups, layered filesystems</span></a>
+    <p class="stack-caption">Docker and Podman are two different tools for working with the middle layers. Both speak the same open image format, so they’re largely interchangeable.</p>
+  </div>
+</header>
+
+<div class="layout">
+  <nav class="toc" aria-label="Contents">
+    <p>On this page</p>
+    <ol id="toc-list">
+      <li><a href="#idea" style="--sec:var(--ctr)">What a container is</a></li>
+      <li><a href="#words" style="--sec:var(--ink)">The vocabulary</a></li>
+      <li><a href="#flow" style="--sec:var(--img)">Build, ship, run</a></li>
+      <li><a href="#dockerfile" style="--sec:var(--img)">Reading a Dockerfile</a></li>
+      <li><a href="#commands" style="--sec:var(--ctr)">Everyday commands</a></li>
+      <li><a href="#data" style="--sec:var(--ctr)">Storage and networking</a></li>
+      <li><a href="#compose" style="--sec:var(--cmp)">Docker Compose</a></li>
+      <li><a href="#stack" style="--sec:var(--kernel)">How it fits together</a></li>
+      <li><a href="#podman" style="--sec:var(--cmp)">Podman and alternatives</a></li>
+      <li><a href="#k8s" style="--sec:var(--k8s)">Kubernetes</a></li>
+      <li><a href="#compare" style="--sec:var(--ink)">One app, four ways</a></li>
+      <li><a href="#choose" style="--sec:var(--ink)">What to use when</a></li>
+      <li><a href="#gotchas" style="--sec:var(--ink)">Common gotchas</a></li>
+    </ol>
+    <details>
+      <summary>On this page</summary>
+      <ol id="toc-mobile"></ol>
+    </details>
+  </nav>
+
+  <main>
+
+  <!-- IDEA -->
+  <section id="idea" class="s-ctr">
+    <h2>What a container actually is</h2>
+    <p>Before containers, “it works on my machine” was a real problem: your app depended on a specific version of Python, some system libraries and a config file in just the right place, and the server never quite matched your laptop.</p>
+    <p>A container solves this by bundling the app <em>with</em> everything it needs to run, its libraries, runtime and files, into one package called an <strong>image</strong>. When you run the image, you get a <strong>container</strong>: a normal Linux process that the kernel isolates using two features.</p>
+    <ul class="plain">
+      <li><strong>Namespaces</strong> control what the process can <em>see</em>. It gets its own view of the filesystem, its own network interfaces, its own process IDs (it thinks it’s process 1) and its own hostname.</li>
+      <li><strong>Control groups (cgroups)</strong> control what the process can <em>use</em>: how much CPU, memory and disk I/O it’s allowed.</li>
+    </ul>
+    <p>That’s the whole trick. There’s no separate operating system inside a container, which is why containers start in milliseconds and you can run dozens on a laptop.</p>
+
+    <div class="versus" role="group" aria-label="Virtual machines compared with containers">
+      <figure>
+        <figcaption>Virtual machines</figcaption>
+        <div class="tier">
+          <div class="row" style="grid-template-columns:1fr 1fr 1fr">
+            <div class="cell app">App A</div><div class="cell app">App B</div><div class="cell app">App C</div>
+          </div>
+          <div class="row" style="grid-template-columns:1fr 1fr 1fr">
+            <div class="cell os">Guest OS</div><div class="cell os">Guest OS</div><div class="cell os">Guest OS</div>
+          </div>
+          <div class="cell rt">Hypervisor</div>
+          <div class="cell hw">Host OS and hardware</div>
+        </div>
+        <p class="note">Each VM boots a full operating system. Strong isolation, but heavy: gigabytes of disk, minutes to start.</p>
+      </figure>
+      <figure>
+        <figcaption>Containers</figcaption>
+        <div class="tier">
+          <div class="row" style="grid-template-columns:1fr 1fr 1fr">
+            <div class="cell app">App A + libs</div><div class="cell app">App B + libs</div><div class="cell app">App C + libs</div>
+          </div>
+          <div class="cell rt">Container runtime (Docker, Podman…)</div>
+          <div class="cell hw">One shared Linux kernel and hardware</div>
+        </div>
+        <p class="note">Every container shares the host’s kernel. Light and fast, but the isolation is thinner than a VM’s.</p>
+      </figure>
+    </div>
+
+    <div class="callout s-ctr">
+      <p><strong>On a Mac or Windows PC?</strong> Containers need a Linux kernel, so Docker Desktop, Podman Desktop and similar tools quietly run a small Linux virtual machine and put your containers inside it. That’s why file sharing between your Mac and a container can feel slower than on a Linux machine.</p>
+    </div>
+  </section>
+
+  <!-- VOCAB -->
+  <section id="words" class="s-ink">
+    <h2>The vocabulary</h2>
+    <p>Most confusion comes from mixing up a handful of terms. The colored marks match the layers in the map at the top.</p>
+    <dl class="vocab">
+      <dt><i style="--k:var(--img)"></i>Image</dt>
+      <dd>A read-only package containing an app and everything it needs. Think of it as a template or a recipe’s finished, frozen meal. Images are made of stacked <strong>layers</strong>, one per build step, and identical layers are shared between images to save space.</dd>
+      <dt><i style="--k:var(--ctr)"></i>Container</dt>
+      <dd>A running (or stopped) instance of an image. You can start many containers from one image, just as you can create many objects from one class. Each gets its own thin writable layer on top of the image.</dd>
+      <dt><i style="--k:var(--img)"></i>Dockerfile</dt>
+      <dd>A text file of instructions for building an image: start from this base, copy these files, run this command. Podman reads the same file (it also accepts the name <code>Containerfile</code>).</dd>
+      <dt><i style="--k:var(--img)"></i>Tag</dt>
+      <dd>A human-friendly label on an image, like <code>postgres:16</code> or <code>myapp:1.4.2</code>. The full name is <code>registry/namespace/name:tag</code>; if you leave out the tag you get <code>latest</code>, which is just a name, not a guarantee of anything new.</dd>
+      <dt><i style="--k:var(--img)"></i>Registry</dt>
+      <dd>A server that stores and serves images. Docker Hub is the default public one; others include GitHub Container Registry (<code>ghcr.io</code>), Quay, and the registries built into AWS, Google Cloud and Azure.</dd>
+      <dt><i style="--k:var(--ctr)"></i>Volume</dt>
+      <dd>Storage that lives outside a container so data survives when the container is deleted. Essential for databases.</dd>
+      <dt><i style="--k:var(--ctr)"></i>Port mapping</dt>
+      <dd>Connecting a port on your machine to a port inside a container. <code>-p 8080:80</code> means “traffic to my port 8080 goes to the container’s port 80.” Host first, container second.</dd>
+      <dt><i style="--k:var(--ctr)"></i>Network</dt>
+      <dd>A virtual network that containers join so they can talk to each other by name.</dd>
+      <dt><i style="--k:var(--kernel)"></i>OCI</dt>
+      <dd>The Open Container Initiative, the standards body that defines the image format and how runtimes start containers. It’s the reason an image built with Docker runs on Podman and Kubernetes without changes.</dd>
+    </dl>
+  </section>
+
+  <!-- FLOW -->
+  <section id="flow" class="s-img">
+    <h2>Build, ship, run</h2>
+    <p>Every container workflow follows the same path, whichever tool you use. This is a genuine sequence: each step needs the one before it.</p>
+    <ol class="flow">
+      <li style="--k:var(--img)"><b>Write</b><span>Describe your app’s environment in a Dockerfile.</span></li>
+      <li style="--k:var(--img)"><b>Build</b><span>Turn the Dockerfile into an image.<br><code>docker build -t myapp:1.0 .</code></span></li>
+      <li style="--k:var(--img)"><b>Push</b><span>Upload the image to a registry so other machines can get it.<br><code>docker push ghcr.io/me/myapp:1.0</code></span></li>
+      <li style="--k:var(--ctr)"><b>Run</b><span>Any machine pulls the image and starts a container.<br><code>docker run ghcr.io/me/myapp:1.0</code></span></li>
+    </ol>
+    <p>On your own laptop you often skip pushing: you build and run locally. Pushing matters once a server, a teammate or a CI pipeline needs the image.</p>
+  </section>
+
+  <!-- DOCKERFILE -->
+  <section id="dockerfile" class="s-img">
+    <h2>Reading a Dockerfile</h2>
+    <p>Here’s a typical Dockerfile for a small Node.js web app, one instruction at a time.</p>
+    <div class="anno" role="list">
+      <div class="ln" role="listitem"><code>FROM <em>node:22-alpine</em></code><p>Start from an existing image that already has Node installed. <code>alpine</code> is a tiny Linux base, which keeps the image small.</p></div>
+      <div class="ln" role="listitem"><code>WORKDIR <em>/app</em></code><p>Create <code>/app</code> inside the image and make it the current folder for the steps that follow.</p></div>
+      <div class="ln" role="listitem"><code>COPY <em>package*.json ./</em></code><p>Copy only the dependency list first. This is deliberate, and the next line explains why.</p></div>
+      <div class="ln" role="listitem"><code>RUN <em>npm ci --omit=dev</em></code><p>Install dependencies. Because this layer only depends on <code>package.json</code>, Docker can reuse it from cache when you change your code but not your dependencies, which makes rebuilds fast.</p></div>
+      <div class="ln" role="listitem"><code>COPY <em>. .</em></code><p>Now copy the rest of your source code. A <code>.dockerignore</code> file keeps things like <code>node_modules</code> and <code>.git</code> out.</p></div>
+      <div class="ln" role="listitem"><code>EXPOSE <em>3000</em></code><p>Documents which port the app listens on. It doesn’t publish anything by itself; you still need <code>-p</code> when you run it.</p></div>
+      <div class="ln" role="listitem"><code>USER <em>node</em></code><p>Run as an unprivileged user instead of root, a cheap and worthwhile security habit.</p></div>
+      <div class="ln" role="listitem"><code>CMD <em>["node", "server.js"]</em></code><p>The command that runs when a container starts. When this process exits, the container stops.</p></div>
+    </div>
+
+    <h3>Multi-stage builds</h3>
+    <p>For compiled languages or front-end builds, use one stage with all the build tools and a second, slim stage that only receives the finished output. The final image ships without compilers or source code.</p>
+    <div class="code">
+<pre><code><span class="k">FROM</span> golang:1.23 <span class="k">AS</span> build
+<span class="k">WORKDIR</span> /src
+<span class="k">COPY</span> . .
+<span class="k">RUN</span> go build -o /out/server .
+
+<span class="k">FROM</span> gcr.io/distroless/static
+<span class="k">COPY</span> --from=build /out/server /server
+<span class="k">CMD</span> [<span class="s">"/server"</span>]</code></pre>
+    </div>
+  </section>
+
+  <!-- COMMANDS -->
+  <section id="commands" class="s-ctr">
+    <h2>Everyday commands</h2>
+    <p>These cover the vast majority of day-to-day use. Swap <code>docker</code> for <code>podman</code> and nearly all of them work unchanged.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Command</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td><code>docker run -d -p 8080:80 --name web nginx</code></td><td>Start a container in the background (<code>-d</code>), map port 8080 to 80, and give it a name.</td></tr>
+          <tr><td><code>docker run -it --rm alpine sh</code></td><td>Start an interactive shell in a throwaway container that deletes itself on exit.</td></tr>
+          <tr><td><code>docker ps</code> / <code>docker ps -a</code></td><td>List running containers / all containers, including stopped ones.</td></tr>
+          <tr><td><code>docker logs -f web</code></td><td>Show and follow a container’s output.</td></tr>
+          <tr><td><code>docker exec -it web sh</code></td><td>Open a shell inside an already running container, great for poking around.</td></tr>
+          <tr><td><code>docker stop web</code> / <code>docker start web</code></td><td>Stop or restart a container without deleting it.</td></tr>
+          <tr><td><code>docker rm web</code></td><td>Delete a stopped container (add <code>-f</code> to force-stop it first).</td></tr>
+          <tr><td><code>docker build -t myapp:1.0 .</code></td><td>Build an image from the Dockerfile in the current folder.</td></tr>
+          <tr><td><code>docker images</code></td><td>List images stored locally.</td></tr>
+          <tr><td><code>docker pull</code> / <code>docker push</code></td><td>Download an image from, or upload one to, a registry.</td></tr>
+          <tr><td><code>docker inspect web</code></td><td>Show every detail about a container or image as JSON.</td></tr>
+          <tr><td><code>docker system df</code></td><td>See how much disk images, containers and volumes are using.</td></tr>
+          <tr><td><code>docker system prune</code></td><td>Remove stopped containers, unused networks and dangling images. Add <code>-a</code> to remove all unused images too.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- DATA -->
+  <section id="data" class="s-ctr">
+    <h2>Storage and networking</h2>
+    <h3>Containers are disposable, your data isn’t</h3>
+    <p>Anything a container writes to its own filesystem disappears when the container is removed. That’s a feature: you can throw a container away and start a fresh one from the image at any time. To keep data, put it somewhere outside the container.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Type</th><th>Example</th><th>Use it for</th></tr></thead>
+        <tbody>
+          <tr><td>Named volume</td><td><code>-v pgdata:/var/lib/postgresql/data</code></td><td>Database files and anything the app owns. Docker manages where it lives.</td></tr>
+          <tr><td>Bind mount</td><td><code>-v ./src:/app/src</code></td><td>Development: your editor changes files on your machine and the container sees them instantly.</td></tr>
+          <tr><td>tmpfs</td><td><code>--tmpfs /tmp</code></td><td>Scratch space kept only in memory.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>How containers find each other</h3>
+    <p>When containers join the same user-defined network, they can reach each other <strong>by container name</strong>, thanks to built-in DNS. Your web app connects to <code>db:5432</code>, not to an IP address.</p>
+    <div class="code">
+<pre><code>docker network create appnet
+docker run -d --name db  --network appnet -e POSTGRES_PASSWORD=secret postgres:16
+docker run -d --name web --network appnet -p 8080:3000 myapp:1.0
+<span class="c"># inside "web", the database is reachable at db:5432</span></code></pre>
+    </div>
+    <p>Port mapping (<code>-p</code>) is only needed for traffic coming from <em>outside</em>, such as your browser. Containers on the same network talk to each other directly on their internal ports. Typing all of this by hand gets old fast, which is exactly what Compose fixes.</p>
+  </section>
+
+  <!-- COMPOSE -->
+  <section id="compose" class="s-cmp">
+    <h2>Docker Compose</h2>
+    <p>Real apps are rarely one container. A web app usually needs a database, maybe a cache and a background worker. Compose lets you describe all of them, plus their networks and volumes, in a single <code>compose.yaml</code> file, then start or stop the whole set with one command.</p>
+    <div class="code">
+      <span class="label">compose.yaml</span>
+<pre><code><span class="k">services:</span>
+  <span class="k">web:</span>
+    <span class="k">build:</span> .                          <span class="c"># build from the Dockerfile here</span>
+    <span class="k">ports:</span>
+      - <span class="s">"8080:3000"</span>
+    <span class="k">environment:</span>
+      <span class="k">DATABASE_URL:</span> postgres://app:secret@db:5432/app
+    <span class="k">depends_on:</span>
+      <span class="k">db:</span>
+        <span class="k">condition:</span> service_healthy     <span class="c"># wait until the db is actually ready</span>
+    <span class="k">develop:</span>
+      <span class="k">watch:</span>                          <span class="c"># auto-sync code with "docker compose watch"</span>
+        - <span class="k">action:</span> sync
+          <span class="k">path:</span> ./src
+          <span class="k">target:</span> /app/src
+
+  <span class="k">db:</span>
+    <span class="k">image:</span> postgres:16
+    <span class="k">environment:</span>
+      <span class="k">POSTGRES_USER:</span> app
+      <span class="k">POSTGRES_PASSWORD:</span> secret
+      <span class="k">POSTGRES_DB:</span> app
+    <span class="k">volumes:</span>
+      - db-data:/var/lib/postgresql/data
+    <span class="k">healthcheck:</span>
+      <span class="k">test:</span> [<span class="s">"CMD-SHELL"</span>, <span class="s">"pg_isready -U app"</span>]
+      <span class="k">interval:</span> 5s
+      <span class="k">retries:</span> 5
+
+<span class="k">volumes:</span>
+  <span class="k">db-data:</span></code></pre>
+    </div>
+    <p>Compose automatically creates a private network for the project, so <code>web</code> reaches the database simply as <code>db</code>. Each service name becomes a hostname.</p>
+
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Command</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td><code>docker compose up -d</code></td><td>Build if needed and start everything in the background.</td></tr>
+          <tr><td><code>docker compose up -d --build</code></td><td>Force a rebuild of images first, after you’ve changed the Dockerfile or code.</td></tr>
+          <tr><td><code>docker compose ps</code></td><td>Status of this project’s containers.</td></tr>
+          <tr><td><code>docker compose logs -f web</code></td><td>Follow one service’s logs (leave off the name for all of them).</td></tr>
+          <tr><td><code>docker compose exec db psql -U app</code></td><td>Run a command inside a running service.</td></tr>
+          <tr><td><code>docker compose watch</code></td><td>Sync or rebuild automatically as you edit files.</td></tr>
+          <tr><td><code>docker compose down</code></td><td>Stop and remove the containers and network. Volumes are kept.</td></tr>
+          <tr><td><code>docker compose down -v</code></td><td>Same, but also delete volumes. This wipes the database.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout s-cmp">
+      <p><strong>Two small things that trip people up.</strong> The modern command is <code>docker compose</code> (a space, built into Docker). The older standalone <code>docker-compose</code> with a hyphen is retired. And the <code>version:</code> line you’ll see at the top of old examples is no longer needed; you can delete it.</p>
+    </div>
+    <p>Compose is ideal for local development, test environments and small single-server deployments. Its limit is right there in the description: it manages containers on <em>one</em> machine. If that machine dies, everything does.</p>
+  </section>
+
+  <!-- STACK -->
+  <section id="stack" class="s-krn">
+    <h2>How the pieces fit together</h2>
+    <p>“Docker” is really several programs stacked on top of each other, and other tools swap out different layers. Reading each column top to bottom shows what happens when you start a container.</p>
+
+    <div class="layers wide" role="table" aria-label="Container tool layers">
+      <div class="grid">
+        <div role="columnheader"></div>
+        <div class="h" role="columnheader">Docker</div>
+        <div class="h" role="columnheader">Podman</div>
+        <div class="h" role="columnheader">Kubernetes</div>
+
+        <div class="rowlabel">What you type</div>
+        <div class="cell tl"><code>docker</code> CLI</div>
+        <div class="cell tp"><code>podman</code> CLI</div>
+        <div class="cell tk"><code>kubectl</code> sends YAML to the API server</div>
+
+        <div class="rowlabel">Manager</div>
+        <div class="cell">dockerd<small>A background daemon, traditionally running as root</small></div>
+        <div class="cell none">No daemon<small>Each container is a child of your own user session</small></div>
+        <div class="cell">kubelet<small>An agent on every node, told what to run by the control plane</small></div>
+
+        <div class="rowlabel">Container runtime</div>
+        <div class="cell">containerd</div>
+        <div class="cell">conmon<small>A tiny monitor per container</small></div>
+        <div class="cell">containerd or CRI-O<small>Plugged in via the Container Runtime Interface</small></div>
+
+        <div class="rowlabel">Low-level runtime</div>
+        <div class="cell">runc</div>
+        <div class="cell">crun or runc</div>
+        <div class="cell">runc or crun</div>
+
+        <div class="rowlabel">Shared standard</div>
+        <div class="cell oci">OCI image and runtime specifications, the common format every column reads and writes</div>
+
+        <div class="rowlabel">Foundation</div>
+        <div class="cell kern">Linux kernel: namespaces, cgroups, overlay filesystem</div>
+      </div>
+    </div>
+
+    <p>A few things become clear from this picture.</p>
+    <ul class="plain">
+      <li><strong>Images are portable across all three.</strong> Because everyone follows the OCI format, you can build with Docker, test with Podman and deploy to Kubernetes using the very same image.</li>
+      <li><strong>Kubernetes doesn’t need Docker.</strong> It talks directly to containerd or CRI-O. When you heard “Kubernetes dropped Docker” around 2022, it meant only this: Kubernetes stopped using the Docker daemon as a middleman. Images built with Docker still run fine.</li>
+      <li><strong>The real work is done at the bottom.</strong> <code>runc</code> and <code>crun</code> are small programs that ask the kernel to set up namespaces and cgroups, then start your process. Everything above them is management and convenience.</li>
+    </ul>
+  </section>
+
+  <!-- PODMAN -->
+  <section id="podman" class="s-cmp">
+    <h2>Podman and other alternatives</h2>
+    <p><strong>Podman</strong>, backed by Red Hat, is the best-known alternative to Docker. It was designed as a drop-in replacement, so many people simply run <code>alias docker=podman</code>. The differences that matter:</p>
+    <ul class="plain">
+      <li><strong>No daemon.</strong> There’s no always-running background service. Containers are ordinary child processes, which is simpler and removes a single point of failure.</li>
+      <li><strong>Rootless by default.</strong> Containers run under your normal user account. If something escapes a container, it lands as you, not as root. Docker can run rootless too, but it’s an extra setup step.</li>
+      <li><strong>Pods.</strong> Podman can group containers into a <em>pod</em> that shares a network, the same idea Kubernetes uses. It can even export them as Kubernetes YAML with <code>podman generate kube</code> and run Kubernetes YAML locally with <code>podman kube play</code>.</li>
+      <li><strong>systemd integration.</strong> On Linux servers, Podman’s <em>Quadlet</em> files let you run containers as regular system services that start on boot and restart on failure.</li>
+      <li><strong>Compose.</strong> <code>podman compose</code> works with the same <code>compose.yaml</code> files, by handing off to a Compose provider installed on your system.</li>
+    </ul>
+    <p>Image names are one small difference: Podman prefers fully qualified names like <code>docker.io/library/nginx</code> rather than assuming Docker Hub.</p>
+
+    <h3>The wider landscape</h3>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Tool</th><th>What it is</th><th>Why you might pick it</th></tr></thead>
+        <tbody>
+          <tr><td>Docker Desktop</td><td>Docker’s official app for Mac, Windows and Linux, with a GUI and built-in Compose and Kubernetes.</td><td>The most polished, most documented option. Free for personal use and small businesses; larger companies need a paid subscription.</td></tr>
+          <tr><td>Podman Desktop</td><td>A free GUI for Podman on Mac, Windows and Linux.</td><td>Docker Desktop–style experience with no licensing questions.</td></tr>
+          <tr><td>Rancher Desktop</td><td>A free desktop app from SUSE that bundles a container engine and a local Kubernetes.</td><td>Free alternative when you also want Kubernetes on your laptop.</td></tr>
+          <tr><td>OrbStack</td><td>A commercial macOS app that runs Docker containers and Linux VMs.</td><td>Very fast and light on Macs; free for personal use.</td></tr>
+          <tr><td>Colima</td><td>A command-line tool that runs a container engine in a VM on macOS or Linux.</td><td>Minimal and free if you don’t need a GUI.</td></tr>
+          <tr><td>nerdctl</td><td>A Docker-compatible CLI that talks straight to containerd.</td><td>Working directly with containerd, the same runtime Kubernetes uses.</td></tr>
+          <tr><td>Buildah</td><td>A tool focused purely on building OCI images, from the Podman family.</td><td>Scripted or daemonless builds in CI pipelines.</td></tr>
+          <tr><td>LXC / Incus</td><td>“System containers” that behave like lightweight full Linux machines.</td><td>When you want a long-lived mini-server rather than one app per container.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- K8S -->
+  <section id="k8s" class="s-k8s">
+    <h2>Kubernetes</h2>
+    <p>Compose runs containers on one machine. <strong>Kubernetes</strong> (often written <em>K8s</em>) runs them across a <em>cluster</em> of machines and keeps them running. Instead of telling it “start this container,” you describe the state you want, such as “three copies of my web app, reachable on port 80,” and Kubernetes works continuously to make reality match. If a machine fails, it reschedules the containers elsewhere. If traffic grows, it can add copies.</p>
+    <p>That power comes with real complexity: many new concepts, more YAML, and a cluster that itself needs care. That’s why many teams use a managed service such as Amazon EKS, Google GKE or Azure AKS, where the cloud provider runs the control plane for you.</p>
+
+    <h3>The core objects</h3>
+    <dl class="vocab">
+      <dt>Cluster</dt><dd>The whole system: a <em>control plane</em> that makes decisions, plus <em>nodes</em> that run your workloads.</dd>
+      <dt>Node</dt><dd>One machine (physical or virtual) in the cluster. Each node runs the kubelet and a container runtime.</dd>
+      <dt>Pod</dt><dd>The smallest unit Kubernetes runs: one or more containers that share an IP address and storage. Usually one main container per pod. Pods are disposable and get replaced, not repaired.</dd>
+      <dt>Deployment</dt><dd>Says “keep N identical pods running from this image.” It handles rolling updates and rollbacks when you change the image version.</dd>
+      <dt>Service</dt><dd>A stable name and IP in front of a changing set of pods, with load balancing. Pods come and go; the Service stays put. This is Kubernetes’ version of Compose’s service-name DNS.</dd>
+      <dt>Ingress / Gateway</dt><dd>Routes outside HTTP traffic to Services, for example by domain name or URL path.</dd>
+      <dt>ConfigMap / Secret</dt><dd>Configuration and sensitive values kept separate from images and injected into pods.</dd>
+      <dt>PersistentVolumeClaim</dt><dd>A request for storage that outlives any pod. The equivalent of a named volume.</dd>
+      <dt>Namespace</dt><dd>A way to divide one cluster into separate areas, such as per team or per environment.</dd>
+    </dl>
+
+    <h3>A minimal example</h3>
+    <p>This runs three copies of a web app and gives them one stable address inside the cluster.</p>
+    <div class="code">
+      <span class="label">web.yaml</span>
+<pre><code><span class="k">apiVersion:</span> apps/v1
+<span class="k">kind:</span> Deployment
+<span class="k">metadata:</span>
+  <span class="k">name:</span> web
+<span class="k">spec:</span>
+  <span class="k">replicas:</span> 3
+  <span class="k">selector:</span>
+    <span class="k">matchLabels:</span> { <span class="k">app:</span> web }
+  <span class="k">template:</span>
+    <span class="k">metadata:</span>
+      <span class="k">labels:</span> { <span class="k">app:</span> web }
+    <span class="k">spec:</span>
+      <span class="k">containers:</span>
+        - <span class="k">name:</span> web
+          <span class="k">image:</span> ghcr.io/me/myapp:1.0
+          <span class="k">ports:</span>
+            - <span class="k">containerPort:</span> 3000
+---
+<span class="k">apiVersion:</span> v1
+<span class="k">kind:</span> Service
+<span class="k">metadata:</span>
+  <span class="k">name:</span> web
+<span class="k">spec:</span>
+  <span class="k">selector:</span> { <span class="k">app:</span> web }
+  <span class="k">ports:</span>
+    - <span class="k">port:</span> 80
+      <span class="k">targetPort:</span> 3000</code></pre>
+    </div>
+    <div class="code">
+<pre><code>kubectl apply -f web.yaml          <span class="c"># create or update everything in the file</span>
+kubectl get pods                   <span class="c"># see the three pods</span>
+kubectl logs deploy/web            <span class="c"># logs from the deployment's pods</span>
+kubectl port-forward svc/web 8080:80   <span class="c"># reach it from your laptop</span>
+kubectl delete -f web.yaml         <span class="c"># remove it all</span></code></pre>
+    </div>
+
+    <h3>Trying it locally</h3>
+    <p>You don’t need cloud servers to learn. <strong>kind</strong> runs a cluster inside Docker containers, <strong>minikube</strong> runs one in a VM or container, <strong>k3d</strong> runs the lightweight <strong>k3s</strong> distribution in Docker, and Docker Desktop and Rancher Desktop each have a single-node cluster you can switch on. <strong>Helm</strong> is the common package manager for installing ready-made apps onto a cluster.</p>
+
+    <div class="callout s-k8s">
+      <p><strong>Other orchestrators exist.</strong> Docker Swarm is built into Docker and uses Compose-style files; it’s simpler than Kubernetes but much less widely adopted. HashiCorp Nomad is another option. Many apps also skip orchestration entirely by using a managed container platform such as Google Cloud Run, AWS Fargate or Azure Container Apps, where you hand over an image and the provider runs it.</p>
+    </div>
+  </section>
+
+  <!-- COMPARE -->
+  <section id="compare" class="s-ink">
+    <h2>One app, four ways</h2>
+    <p>The same task, running the nginx web server so it’s reachable on port 8080, expressed in each tool. Notice how the image name stays the same throughout.</p>
+    <div class="tabs wide">
+      <div class="tablist" role="tablist" aria-label="Tool">
+        <button role="tab" id="t-docker" aria-controls="p-docker" aria-selected="true" style="--k:var(--ctr)">Docker</button>
+        <button role="tab" id="t-podman" aria-controls="p-podman" aria-selected="false" tabindex="-1" style="--k:var(--cmp)">Podman</button>
+        <button role="tab" id="t-compose" aria-controls="p-compose" aria-selected="false" tabindex="-1" style="--k:var(--cmp)">Compose</button>
+        <button role="tab" id="t-k8s" aria-controls="p-k8s" aria-selected="false" tabindex="-1" style="--k:var(--k8s)">Kubernetes</button>
+      </div>
+      <div class="tabpanel" role="tabpanel" id="p-docker" aria-labelledby="t-docker">
+        <p>One command. Good for trying things out and single containers.</p>
+        <div class="code"><pre><code>docker run -d --name web -p 8080:80 nginx:1.27
+<span class="c"># open http://localhost:8080</span></code></pre></div>
+      </div>
+      <div class="tabpanel" role="tabpanel" id="p-podman" aria-labelledby="t-podman" hidden>
+        <p>Identical apart from the command name and the fully qualified image. Runs as your user, with no daemon.</p>
+        <div class="code"><pre><code>podman run -d --name web -p 8080:80 docker.io/library/nginx:1.27
+<span class="c"># open http://localhost:8080</span></code></pre></div>
+      </div>
+      <div class="tabpanel" role="tabpanel" id="p-compose" aria-labelledby="t-compose" hidden>
+        <p>The same settings written down in a file, so they’re repeatable and easy to extend with more services.</p>
+        <div class="code"><pre><code><span class="c"># compose.yaml</span>
+<span class="k">services:</span>
+  <span class="k">web:</span>
+    <span class="k">image:</span> nginx:1.27
+    <span class="k">ports:</span>
+      - <span class="s">"8080:80"</span>
+
+<span class="c"># then run:</span>
+docker compose up -d</code></pre></div>
+      </div>
+      <div class="tabpanel" role="tabpanel" id="p-k8s" aria-labelledby="t-k8s" hidden>
+        <p>You declare the desired state and Kubernetes keeps it that way, here with two copies behind a Service.</p>
+        <div class="code"><pre><code><span class="c"># nginx.yaml</span>
+<span class="k">apiVersion:</span> apps/v1
+<span class="k">kind:</span> Deployment
+<span class="k">metadata:</span> { <span class="k">name:</span> web }
+<span class="k">spec:</span>
+  <span class="k">replicas:</span> 2
+  <span class="k">selector:</span> { <span class="k">matchLabels:</span> { <span class="k">app:</span> web } }
+  <span class="k">template:</span>
+    <span class="k">metadata:</span> { <span class="k">labels:</span> { <span class="k">app:</span> web } }
+    <span class="k">spec:</span>
+      <span class="k">containers:</span>
+        - { <span class="k">name:</span> web, <span class="k">image:</span> nginx:1.27, <span class="k">ports:</span> [{ <span class="k">containerPort:</span> 80 }] }
+---
+<span class="k">apiVersion:</span> v1
+<span class="k">kind:</span> Service
+<span class="k">metadata:</span> { <span class="k">name:</span> web }
+<span class="k">spec:</span>
+  <span class="k">selector:</span> { <span class="k">app:</span> web }
+  <span class="k">ports:</span> [{ <span class="k">port:</span> 80 }]
+
+<span class="c"># then run:</span>
+kubectl apply -f nginx.yaml
+kubectl port-forward svc/web 8080:80</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CHOOSE -->
+  <section id="choose" class="s-ink">
+    <h2>What to use when</h2>
+    <p>Most people don’t need everything on this page. Start at the simplest level that solves the problem and move up only when you feel the pain.</p>
+    <div class="choose">
+      <div class="q" style="--k:var(--ctr)"><p>I want to try a tool or database without installing it.</p><p>A single <code>docker run</code> or <code>podman run</code>.</p></div>
+      <div class="q" style="--k:var(--cmp)"><p>My app has a few parts (web, database, cache) and I develop it locally.</p><p>Docker Compose.</p></div>
+      <div class="q" style="--k:var(--cmp)"><p>I want daemonless, rootless containers, or I’m on Fedora or RHEL.</p><p>Podman, which works with your existing Dockerfiles and Compose files.</p></div>
+      <div class="q" style="--k:var(--cmp)"><p>I’m hosting a small app on one server.</p><p>Compose on that server, or Podman with Quadlet as a system service.</p></div>
+      <div class="q" style="--k:var(--k8s)"><p>I just want my container running in the cloud without managing servers.</p><p>A managed platform such as Cloud Run, Fargate or Azure Container Apps.</p></div>
+      <div class="q" style="--k:var(--k8s)"><p>Many services, several machines, zero-downtime deploys, autoscaling, a team to look after it.</p><p>Kubernetes, ideally a managed one (EKS, GKE, AKS).</p></div>
+    </div>
+  </section>
+
+  <!-- GOTCHAS -->
+  <section id="gotchas" class="s-ink">
+    <h2>Common gotchas</h2>
+    <dl class="vocab">
+      <dt>“My container exits immediately”</dt>
+      <dd>A container lives exactly as long as its main process. If your <code>CMD</code> finishes or crashes, the container stops. Check <code>docker logs</code> to see why.</dd>
+      <dt>“I can’t reach my app”</dt>
+      <dd>Inside a container, <code>localhost</code> means the container itself. Make your app listen on <code>0.0.0.0</code>, not <code>127.0.0.1</code>, and make sure you published the port with <code>-p</code>.</dd>
+      <dt>“My data vanished”</dt>
+      <dd>Data written inside a container is deleted with it. Use a volume for anything you care about, and be careful with <code>docker compose down -v</code>.</dd>
+      <dt>“The image works on my Mac but not on the server”</dt>
+      <dd>Apple Silicon Macs build <code>arm64</code> images by default, while most servers are <code>amd64</code>. Build for the target with <code>--platform linux/amd64</code>, or build for both with <code>docker buildx</code>.</dd>
+      <dt>“Every build is slow”</dt>
+      <dd>Put steps that rarely change (installing dependencies) before steps that change often (copying source code), and add a <code>.dockerignore</code>.</dd>
+      <dt>“Which version is <code>latest</code>?”</dt>
+      <dd>Whatever was last pushed under that name. Pin specific tags like <code>postgres:16</code> so builds are predictable.</dd>
+      <dt>“My disk is full”</dt>
+      <dd>Old images and build cache pile up. Check with <code>docker system df</code> and clean up with <code>docker system prune</code>.</dd>
+      <dt>“I put a password in the Dockerfile”</dt>
+      <dd>Anyone with the image can read it, even if a later step deletes the file, because earlier layers are kept. Pass secrets at run time through environment variables, Compose secrets or Kubernetes Secrets.</dd>
+    </dl>
+  </section>
+
+  </main>
+</div>
+
+<footer>
+  <p>A reference guide to containers, covering Docker, Compose, Podman and Kubernetes. Command examples use current conventions; check each tool’s documentation for the latest details.</p>
+</footer>
+
+<script>
+(function(){
+  // Mobile TOC copy
+  var list = document.getElementById('toc-list');
+  var mobile = document.getElementById('toc-mobile');
+  if (list && mobile) {
+    mobile.innerHTML = list.innerHTML;
+    mobile.addEventListener('click', function(e){
+      if (e.target.closest('a')) { var d = mobile.closest('details'); if (d) d.open = false; }
+    });
+  }
+
+  // Active section in TOC
+  var links = Array.prototype.slice.call(document.querySelectorAll('#toc-list a'));
+  if ('IntersectionObserver' in window) {
+    var obs = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){
+        if (en.isIntersecting) {
+          var id = en.target.id;
+          links.forEach(function(a){ a.classList.toggle('active', a.getAttribute('href') === '#' + id); });
+        }
+      });
+    }, { rootMargin: '-15% 0px -70% 0px' });
+    document.querySelectorAll('main section[id]').forEach(function(s){ obs.observe(s); });
+  }
+
+  // Copy buttons
+  document.querySelectorAll('.code pre').forEach(function(pre){
+    var btn = document.createElement('button');
+    btn.className = 'copy'; btn.type = 'button'; btn.textContent = 'Copy';
+    btn.addEventListener('click', function(){
+      var text = pre.innerText;
+      function done(){ btn.textContent = 'Copied'; setTimeout(function(){ btn.textContent = 'Copy'; }, 1500); }
+      function fallback(){
+        try {
+          var r = document.createRange(); r.selectNodeContents(pre);
+          var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
+          if (document.execCommand && document.execCommand('copy')) { done(); } else { btn.textContent = 'Selected'; }
+        } catch(e) { btn.textContent = 'Selected'; }
+      }
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(done, fallback);
+        } else { fallback(); }
+      } catch(e) { fallback(); }
+    });
+    pre.parentNode.appendChild(btn);
+  });
+
+  // Tabs
+  var tabs = Array.prototype.slice.call(document.querySelectorAll('[role="tab"]'));
+  function select(tab){
+    tabs.forEach(function(t){
+      var on = t === tab;
+      t.setAttribute('aria-selected', on ? 'true' : 'false');
+      t.tabIndex = on ? 0 : -1;
+      document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
+    });
+    try { localStorage.setItem('containers-guide-tab', tab.id); } catch(e) {}
+  }
+  tabs.forEach(function(t, i){
+    t.addEventListener('click', function(){ select(t); });
+    t.addEventListener('keydown', function(e){
+      var n = null;
+      if (e.key === 'ArrowRight') n = tabs[(i + 1) % tabs.length];
+      if (e.key === 'ArrowLeft') n = tabs[(i - 1 + tabs.length) % tabs.length];
+      if (e.key === 'Home') n = tabs[0];
+      if (e.key === 'End') n = tabs[tabs.length - 1];
+      if (n) { e.preventDefault(); select(n); n.focus(); }
+    });
+  });
+  try {
+    var saved = localStorage.getItem('containers-guide-tab');
+    var st = saved && document.getElementById(saved);
+    if (st) select(st);
+  } catch(e) {}
+})();
+</script>
+<script type="module" src="../explainer.js"></script>
+</body>
+</html>

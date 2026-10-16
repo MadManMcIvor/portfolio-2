@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- Theme: light by default, applied before first paint. Same key as the rest of the
+     site, so the choice made on the home page carries here and back. -->
+<script>
+  (function () {
+    var KEY = 'theme';
+    var DEFAULT = 'light';
+    function apply(choice) {
+      document.documentElement.setAttribute('data-theme', choice);
+    }
+    function stored() {
+      try {
+        var v = localStorage.getItem(KEY);
+        return v === 'light' || v === 'dark' ? v : null;
+      } catch (e) {
+        return null;
+      }
+    }
+    apply(stored() || DEFAULT);
+    window.setTheme = function (choice) {
+      apply(choice);
+      try {
+        localStorage.setItem(KEY, choice);
+      } catch (e) {}
+    };
+  })();
+</script>
+<link rel="stylesheet" href="../../css/tokens.css">
+<title>Auth field guide — Alex McIvor</title>
+<meta name="description" content="Authentication and authorization, from hashing and TLS through sessions, JWTs, OAuth, OIDC and passkeys, with hands-on labs.">
+<style>
+/* Palette: mapped onto Cream & Ink (../../css/tokens.css, ../explainer.css). Clay leads
+   (authentication, links, actions); slate is authorization; plum warns; ochre tips. */
+:root{
+  --surface:var(--paper-raised); --muted:var(--ink-muted); --rule:var(--paper-line);
+  --teal:var(--clay); --navy:var(--cat-slate); --red:var(--cat-plum); --gold:var(--cat-ochre);
+  --code-bg:var(--paper-sunken); --teal-soft:var(--clay-tint); --red-soft:var(--cat-plum-tint); --gold-soft:var(--cat-ochre-tint);
+  --display:var(--font-sans);
+  --body:var(--font-sans);
+  --mono:var(--font-mono);
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 1rem);scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:1.0625rem;line-height:1.6;-webkit-font-smoothing:antialiased}
+img,svg{max-width:100%}
+a{color:var(--teal);text-underline-offset:.18em}
+:focus-visible{outline:2px solid var(--teal);outline-offset:3px;border-radius:2px}
+
+/* Hero */
+.hero{position:relative;overflow:hidden;border-bottom:1px solid var(--rule)}
+.hero-inner{max-width:74rem;margin:0 auto;padding:4.5rem 1.5rem 3.5rem;display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:2rem;align-items:center}
+.hero h1{font-family:var(--font-serif);font-weight:400;font-size:clamp(2.4rem,5.5vw,4rem);line-height:1.05;letter-spacing:-.01em;margin:0 0 1.25rem}
+.hero p.lede{font-size:1.2rem;max-width:34rem;color:var(--muted);margin:0 0 2rem}
+.rosette{width:100%;max-width:26rem;justify-self:end;color:var(--teal)}
+.rosette path{fill:none;stroke:currentColor;stroke-width:.55;opacity:.75}
+.rosette path.alt{stroke:var(--navy);opacity:.55}
+@media (prefers-reduced-motion: no-preference){
+  .rosette path{stroke-dasharray:var(--len);stroke-dashoffset:var(--len);animation:draw 2.6s cubic-bezier(.6,.05,.3,1) forwards}
+  .rosette path:nth-child(2n){animation-delay:.25s}
+  .rosette path:nth-child(3n){animation-delay:.5s}
+}
+@keyframes draw{to{stroke-dashoffset:0}}
+.questions{display:grid;grid-template-columns:1fr 1fr;gap:1rem;max-width:36rem}
+.q{border:1px solid currentColor;border-radius:var(--radius);padding:.9rem 1rem;position:relative}
+.q.authn{color:var(--teal)} .q.authz{color:var(--navy)}
+.q strong{display:block;font-family:var(--display);font-size:1.1rem;font-weight:600}
+.q span{color:var(--ink);font-size:.95rem;display:block}
+.q code{position:absolute;top:.7rem;right:.8rem;font-size:.75rem;background:none;padding:0;color:currentColor;opacity:.9}
+
+/* Shell */
+.shell{max-width:74rem;margin:0 auto;padding:0 1.5rem 5rem;display:grid;grid-template-columns:14.5rem minmax(0,1fr);gap:3.5rem}
+nav.toc{position:sticky;top:calc(env(safe-area-inset-top,0px) + 1.5rem);align-self:start;max-height:calc(100vh - 3rem);overflow:auto;padding-top:2.5rem;font-size:.92rem}
+nav.toc summary{display:none}
+nav.toc h2{font-family:var(--display);font-size:.95rem;font-weight:700;margin:1.25rem 0 .35rem;color:var(--muted)}
+nav.toc h2:first-of-type{margin-top:0}
+nav.toc ul{list-style:none;margin:0;padding:0}
+nav.toc a{display:block;padding:.22rem 0 .22rem .75rem;border-left:2px solid var(--rule);color:var(--ink);text-decoration:none}
+nav.toc a:hover{color:var(--teal)}
+nav.toc a.active{border-left-color:var(--teal);color:var(--teal);font-weight:700}
+main{max-width:45rem;padding-top:2.5rem;min-width:0}
+
+/* Sections */
+.part{font-family:var(--display);font-weight:700;font-size:1rem;color:var(--muted);margin:4rem 0 0;padding-top:1rem;border-top:3px double var(--rule)}
+.part:first-child{margin-top:0}
+section{padding-top:1.5rem}
+section h2{font-family:var(--display);font-weight:650;font-size:clamp(1.6rem,3vw,2rem);line-height:1.15;letter-spacing:-.01em;margin:.25rem 0 .75rem}
+section h3{font-family:var(--display);font-weight:700;font-size:1.22rem;margin:2rem 0 .5rem}
+p{margin:0 0 1rem}
+.gist{font-size:1.15rem;color:var(--muted);margin-bottom:1.25rem}
+ul.plain,ol.plain{padding-left:1.25rem;margin:0 0 1rem}
+ul.plain li,ol.plain li{margin-bottom:.4rem}
+code{font-family:var(--mono);font-size:.86em;background:var(--code-bg);padding:.1em .35em;border-radius:.25rem;overflow-wrap:anywhere}
+pre.code{font-family:var(--mono);font-size:.85rem;line-height:1.55;background:var(--code-bg);padding:1rem 1.1rem;border-radius:.5rem;overflow-x:auto;margin:0 0 1.25rem;border-left:3px solid var(--teal)}
+pre.code code{background:none;padding:0;font-size:inherit;overflow-wrap:normal}
+.cm{color:var(--muted)}
+.diagram{background:var(--surface);border:1px solid var(--rule);border-radius:.6rem;padding:1rem;margin:0 0 1.5rem;overflow-x:auto}
+.diagram figcaption{font-size:.88rem;color:var(--muted);margin-top:.5rem}
+pre.mermaid{margin:0;background:none;font-family:var(--body);text-align:center}
+
+.note{border-radius:.5rem;padding:.85rem 1rem;margin:0 0 1.25rem;font-size:.98rem}
+.note b{font-family:var(--display);display:block;margin-bottom:.15rem}
+.note p:last-child{margin:0}
+.warn{background:var(--red-soft);border-left:3px solid var(--red)} .warn b{color:var(--red)}
+.tip{background:var(--gold-soft);border-left:3px solid var(--gold)} .tip b{color:var(--gold)}
+.key{background:var(--teal-soft);border-left:3px solid var(--teal)} .key b{color:var(--teal)}
+
+.table-wrap{overflow-x:auto;margin:0 0 1.5rem;border:1px solid var(--rule);border-radius:.5rem;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.93rem;min-width:32rem}
+th,td{text-align:left;vertical-align:top;padding:.6rem .8rem;border-bottom:1px solid var(--rule)}
+th{font-family:var(--display);font-weight:700;background:var(--teal-soft)}
+tr:last-child td{border-bottom:0}
+td:first-child{font-weight:700}
+
+.compare{display:grid;grid-template-columns:repeat(auto-fit,minmax(13rem,1fr));gap:1rem;margin:0 0 1.5rem}
+.compare > div{background:var(--surface);border:1px solid var(--rule);border-top:3px solid var(--teal);border-radius:.4rem;padding:.9rem 1rem}
+.compare > div:nth-child(2){border-top-color:var(--navy)}
+.compare > div:nth-child(3){border-top-color:var(--gold)}
+.compare > div:nth-child(4){border-top-color:var(--red)}
+.compare h4{font-family:var(--display);margin:0 0 .3rem;font-size:1.05rem}
+.compare p{font-size:.93rem;margin:0 0 .4rem}
+.compare p:last-child{margin:0;color:var(--muted)}
+
+/* Labs */
+.lab{background:var(--surface);border:1.5px dashed var(--teal);border-radius:.7rem;padding:1.15rem 1.2rem 1.25rem;margin:0 0 1.75rem}
+.lab h4{font-family:var(--display);margin:0 0 .2rem;font-size:1.1rem;color:var(--teal)}
+.lab > p{font-size:.95rem;color:var(--muted)}
+.lab label{display:block;font-size:.88rem;font-weight:700;margin:.8rem 0 .3rem}
+.lab input[type=text],.lab textarea{width:100%;font-family:var(--mono);font-size:.85rem;padding:.55rem .65rem;border:1px solid var(--rule);border-radius:.35rem;background:var(--paper);color:var(--ink)}
+.lab textarea{min-height:5.5rem;resize:vertical}
+.out{font-family:var(--mono);font-size:.82rem;background:var(--code-bg);padding:.55rem .65rem;border-radius:.35rem;overflow-wrap:anywhere;min-height:2.3rem;white-space:pre-wrap}
+.row{display:flex;gap:.6rem;flex-wrap:wrap;margin-top:.8rem;align-items:center}
+button{font-family:var(--body);font-weight:700;font-size:.92rem;padding:.5rem .9rem;border-radius:.35rem;border:1.5px solid var(--teal);background:var(--teal);color:var(--surface);cursor:pointer}
+button.ghost{background:transparent;color:var(--teal)}
+button:hover{filter:brightness(1.08)}
+.verdict{font-weight:700;font-size:.95rem}
+.verdict.ok{color:var(--teal)} .verdict.bad{color:var(--red)}
+.tok{font-family:var(--mono);font-size:.82rem;overflow-wrap:anywhere;line-height:1.5;padding:.6rem .7rem;background:var(--code-bg);border-radius:.35rem}
+.tok .h{color:var(--red)} .tok .p{color:var(--navy)} .tok .s{color:var(--teal)} .tok .dot{color:var(--muted)}
+.jwt-parts{display:grid;grid-template-columns:repeat(auto-fit,minmax(12rem,1fr));gap:.75rem;margin-top:.75rem}
+.jwt-parts > div{border-top:3px solid;padding-top:.35rem}
+.jwt-parts .ph{border-color:var(--red)} .jwt-parts .pp{border-color:var(--navy)} .jwt-parts .ps{border-color:var(--teal)}
+.jwt-parts h5{margin:0 0 .3rem;font-family:var(--display);font-size:.95rem}
+.jwt-parts pre{margin:0;font-family:var(--mono);font-size:.78rem;white-space:pre-wrap;overflow-wrap:anywhere}
+
+dl.gloss{margin:0}
+dl.gloss dt{font-family:var(--display);font-weight:700;margin-top:1rem}
+dl.gloss dd{margin:.15rem 0 0;color:var(--ink)}
+footer{max-width:74rem;margin:0 auto;padding:2rem 1.5rem 3rem;color:var(--muted);font-size:.9rem;border-top:1px solid var(--rule)}
+
+@media (max-width: 900px){
+  .hero-inner{grid-template-columns:1fr;padding-top:3rem}
+  .rosette{position:absolute;right:-6rem;top:-3rem;width:22rem;opacity:.35;pointer-events:none}
+  .shell{grid-template-columns:1fr;gap:0}
+  nav.toc{position:static;max-height:none;padding-top:1.5rem}
+  nav.toc details{border:1px solid var(--rule);border-radius:.5rem;background:var(--surface);padding:.6rem .9rem}
+  nav.toc summary{display:list-item;font-family:var(--display);font-weight:700;cursor:pointer}
+  nav.toc details[open] summary{margin-bottom:.5rem}
+  main{padding-top:1rem}
+}
+@media (max-width: 520px){ .questions{grid-template-columns:1fr} }
+</style>
+<link rel="stylesheet" href="../explainer.css">
+</head>
+<body>
+<div class="site-strip">
+  <nav class="site-strip__crumbs" aria-label="Site">
+    <a class="site-strip__home" href="../../">Alex McIvor</a>
+    <span class="site-strip__sep" aria-hidden="true">/</span>
+    <a href="../">Explainers</a>
+  </nav>
+  <button id="theme-toggle" type="button" class="site-strip__toggle" aria-label="Toggle dark mode" title="Toggle dark mode">
+    <span class="theme-icon theme-icon-sun" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path></svg></span>
+    <span class="theme-icon theme-icon-moon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg></span>
+  </button>
+</div>
+
+<header class="hero">
+  <div class="hero-inner">
+    <div>
+      <h1>Who are you, and what are you allowed to do?</h1>
+      <p class="lede">Every login screen, API key and “Sign in with Google” button is answering one of those two questions. This is a field guide to how they do it, and to the cryptography that makes the answers trustworthy.</p>
+      <div class="questions">
+        <div class="q authn"><code>401</code><strong>Authentication</strong><span>Proving identity. “You are Ada.”</span></div>
+        <div class="q authz"><code>403</code><strong>Authorization</strong><span>Granting permission. “Ada may edit this file.”</span></div>
+      </div>
+    </div>
+    <svg class="rosette" id="rosette" viewBox="-110 -110 220 220" aria-hidden="true"></svg>
+  </div>
+</header>
+
+<div class="shell">
+  <nav class="toc" aria-label="Contents">
+    <details id="tocDetails" open>
+      <summary>Contents</summary>
+      <h2>Foundations</h2>
+      <ul>
+        <li><a href="#questions">The two questions</a></li>
+        <li><a href="#crypto">Encoding, hashing, encryption</a></li>
+        <li><a href="#keys">Public and private keys</a></li>
+        <li><a href="#tls">TLS and HTTPS</a></li>
+        <li><a href="#passwords">Storing passwords</a></li>
+      </ul>
+      <h2>Proving who you are</h2>
+      <ul>
+        <li><a href="#basic">Basic auth</a></li>
+        <li><a href="#apikeys">API keys</a></li>
+        <li><a href="#sessions">Sessions and cookies</a></li>
+        <li><a href="#jwt">Tokens and JWT</a></li>
+        <li><a href="#storage">Where to keep tokens</a></li>
+        <li><a href="#mfa">MFA and passkeys</a></li>
+        <li><a href="#mtls">Mutual TLS</a></li>
+      </ul>
+      <h2>Delegation and federation</h2>
+      <ul>
+        <li><a href="#oauth">OAuth 2.0</a></li>
+        <li><a href="#oidc">OpenID Connect</a></li>
+        <li><a href="#sso">Single sign-on</a></li>
+      </ul>
+      <h2>Permissions</h2>
+      <ul>
+        <li><a href="#authz">Authorization models</a></li>
+      </ul>
+      <h2>Reference</h2>
+      <ul>
+        <li><a href="#choose">Choosing an approach</a></li>
+        <li><a href="#glossary">Glossary</a></li>
+      </ul>
+    </details>
+  </nav>
+
+  <main>
+    <div class="part">Foundations</div>
+
+    <section id="questions">
+      <h2>The two questions</h2>
+      <p class="gist">Authentication (AuthN) establishes identity. Authorization (AuthZ) decides what that identity can do. They’re separate steps, and confusing them is the root of a lot of bugs.</p>
+      <p>Think of an airport. Showing your passport at security is authentication: someone checks that you are who you claim to be. Your boarding pass is authorization: it says which flight you may board and which lounge you can enter. A valid passport doesn’t get you onto every plane.</p>
+      <p>Authentication always comes first, and it usually produces some kind of <em>credential you carry afterwards</em>, such as a session cookie or a token, so you don’t have to show your passport at every gate. Authorization is then checked on every request, using that credential to look up who you are.</p>
+      <div class="note key"><b>The status codes are misnamed</b><p>HTTP <code>401 Unauthorized</code> actually means <em>unauthenticated</em>: “I don’t know who you are, please log in.” <code>403 Forbidden</code> means “I know who you are, and you’re not allowed.” Returning the right one helps clients react correctly (redirect to login versus show an error).</p></div>
+      <h3>The vocabulary you’ll see everywhere</h3>
+      <ul class="plain">
+        <li><b>Principal</b>: the thing being authenticated. A user, a service, a device.</li>
+        <li><b>Credential</b>: what the principal presents as proof. A password, a key, a certificate, a token.</li>
+        <li><b>Factor</b>: a category of proof. Something you know (password), have (phone, security key) or are (fingerprint).</li>
+        <li><b>Identity provider (IdP)</b>: a system whose job is authenticating people and vouching for them to other apps. Google, Okta, Microsoft Entra ID, Auth0.</li>
+      </ul>
+    </section>
+
+    <section id="crypto">
+      <h2>Encoding, hashing, encryption</h2>
+      <p class="gist">Four tools that look similar in a hex dump but do completely different jobs. Mixing them up is the most common auth mistake.</p>
+      <div class="compare">
+        <div><h4>Encoding</h4><p>Reformats data so it travels safely (Base64, URL encoding). Anyone can reverse it.</p><p>Provides zero secrecy.</p></div>
+        <div><h4>Hashing</h4><p>A one-way fingerprint of fixed length (SHA-256). Same input, same output; you can’t go backwards.</p><p>Integrity checks, password storage.</p></div>
+        <div><h4>Encryption</h4><p>Scrambles data so only someone with the key can unscramble it (AES, RSA).</p><p>Confidentiality.</p></div>
+        <div><h4>Signing</h4><p>Attaches proof of who produced the data and that it hasn’t changed (HMAC, RSA, ECDSA).</p><p>Authenticity and integrity, not secrecy.</p></div>
+      </div>
+      <div class="lab" id="hashLab">
+        <h4>Try it: the same input, three ways</h4>
+        <p>Type anything. Notice that Base64 is obviously reversible, a single character change scrambles the whole SHA-256 hash, and the HMAC changes again because it mixes in a secret key the server holds.</p>
+        <label for="hashIn">Input</label>
+        <input type="text" id="hashIn" value="ada:correct horse battery staple" autocomplete="off" spellcheck="false">
+        <label>Base64 (encoding, reversible)</label><div class="out" id="outB64"></div>
+        <label>SHA-256 (hash, one-way)</label><div class="out" id="outSha"></div>
+        <label>HMAC-SHA256 with key “server-secret” (keyed hash)</label><div class="out" id="outHmac"></div>
+      </div>
+      <h3>Symmetric versus asymmetric</h3>
+      <p><b>Symmetric</b> cryptography uses one shared secret for both directions. AES encrypts and decrypts with the same key; HMAC signs and verifies with the same key. It’s fast, but both sides must already share the secret, and anyone who can verify can also forge.</p>
+      <p><b>Asymmetric</b> (public-key) cryptography uses a mathematically linked pair: a private key you never share and a public key you can hand to anyone. It’s slower, but it solves the “how do we share a secret with a stranger” problem. RSA and elliptic-curve algorithms (ECDSA, Ed25519, ECDH) are the common families.</p>
+      <p>Real systems combine both: asymmetric crypto to authenticate and agree on a key, then symmetric crypto for the bulk of the data. TLS works exactly this way.</p>
+    </section>
+
+    <section id="keys">
+      <h2>Public and private keys</h2>
+      <p class="gist">The pair does two different things depending on which key you start with.</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Goal</th><th>You use</th><th>They use</th><th>What it proves</th></tr></thead>
+        <tbody>
+          <tr><td>Encrypt a message to someone</td><td>Their public key</td><td>Their private key to decrypt</td><td>Only the key owner can read it</td></tr>
+          <tr><td>Sign something</td><td>Your private key</td><td>Your public key to verify</td><td>You produced it, and it wasn’t changed</td></tr>
+        </tbody>
+      </table></div>
+      <p>A useful image: the public key is an open padlock you hand out freely. Anyone can snap it shut on a box (encrypt), but only your private key opens it. Signing runs the other way: you press a seal only you own into wax, and anyone holding a picture of your seal (the public key) can confirm it’s genuine.</p>
+      <p>In auth, <b>signing is the workhorse</b>. An identity provider signs tokens with its private key and publishes its public keys (often at a JWKS URL) so any app can verify those tokens without ever being able to mint one. Passkeys, SSH keys, SAML assertions and TLS certificates all rest on signatures.</p>
+      <div class="lab" id="keyLab">
+        <h4>Try it: sign and verify with a real key pair</h4>
+        <p>This generates an ECDSA P-256 key pair in your browser. The private key is marked non-exportable, so even this page can’t read it; it can only use it to sign.</p>
+        <div class="row"><button id="genKey">Generate key pair</button><span class="verdict" id="keyStatus"></span></div>
+        <label>Public key (safe to share, shown as JWK)</label><div class="out" id="pubKey">No key yet.</div>
+        <label for="signMsg">Message to sign</label>
+        <input type="text" id="signMsg" value="Transfer $50 to Sam" autocomplete="off">
+        <div class="row"><button id="signBtn">Sign with private key</button></div>
+        <label>Signature</label><div class="out" id="sigOut"></div>
+        <label for="verifyMsg">Message the receiver got (try changing it)</label>
+        <input type="text" id="verifyMsg" value="Transfer $50 to Sam" autocomplete="off">
+        <div class="row"><button class="ghost" id="verifyBtn">Verify with public key</button><span class="verdict" id="verifyOut" aria-live="polite"></span></div>
+      </div>
+      <div class="note warn"><b>Signed is not secret</b><p>A signature proves origin and integrity. It doesn’t hide anything. A signed JWT is readable by anyone who holds it.</p></div>
+    </section>
+
+    <section id="tls">
+      <h2>TLS and HTTPS</h2>
+      <p class="gist">Almost every auth method on this page assumes the connection is already encrypted. TLS is what makes that true.</p>
+      <p>When your browser connects, the server presents a <b>certificate</b>: its public key plus a statement, signed by a certificate authority (CA), that the key belongs to that domain. Your browser trusts a built-in list of CAs, so it can verify the chain. Then both sides run an ephemeral key exchange (ECDHE) to derive shared symmetric keys, and the rest of the conversation is encrypted with those.</p>
+      <figure class="diagram">
+<pre class="mermaid">
+sequenceDiagram
+  participant C as Browser
+  participant S as Server
+  C->>S: ClientHello, supported ciphers, key share
+  S->>C: ServerHello, key share, certificate
+  S->>C: Signature proving it holds the private key
+  Note over C: Verify certificate chain against trusted CAs
+  Note over C,S: Both derive the same symmetric session keys
+  C->>S: Encrypted HTTP request
+  S->>C: Encrypted HTTP response
+</pre>
+        <figcaption>TLS 1.3, simplified. Asymmetric crypto authenticates the server; symmetric crypto carries the data.</figcaption>
+      </figure>
+      <p>TLS normally authenticates only the server. The client still has to prove who it is with one of the methods below, unless you use <a href="#mtls">mutual TLS</a>.</p>
+    </section>
+
+    <section id="passwords">
+      <h2>Storing passwords</h2>
+      <p class="gist">Never store passwords, and never encrypt them. Store a slow, salted hash.</p>
+      <p>If passwords are encrypted, whoever gets the key gets every password. If they’re hashed with a fast algorithm like SHA-256, an attacker with a GPU can try billions of guesses per second against a stolen database. Password hashing algorithms are deliberately slow and memory-hungry to make each guess expensive.</p>
+      <ul class="plain">
+        <li><b>Use</b> Argon2id (the current recommendation), scrypt, or bcrypt. Use your language’s well-maintained library; don’t implement these yourself.</li>
+        <li><b>Salt</b>: a random value unique to each user, stored beside the hash. It ensures two people with the same password get different hashes and defeats precomputed lookup tables. Modern libraries handle salting for you.</li>
+        <li><b>Pepper</b> (optional): an extra secret kept outside the database, so a database leak alone isn’t enough.</li>
+      </ul>
+<pre class="code"><code><span class="cm"># What a stored bcrypt hash looks like: algorithm, cost, salt and hash in one string</span>
+$2b$12$R9h/cIPz0gi.URNNX3kh2OPST9/PgBkqquzi.Ss7KIUgO2t0jWMUW
+
+<span class="cm"># Login check (pseudocode)</span>
+user = db.find(email)
+if user and argon2.verify(user.password_hash, submitted_password):
+    start_session(user)</code></pre>
+      <div class="note tip"><b>Good practice</b><p>Return the same generic message (“Email or password is incorrect”) whether the account exists or not, rate-limit login attempts, and check new passwords against known-breached lists.</p></div>
+    </section>
+
+    <div class="part">Proving who you are</div>
+
+    <section id="basic">
+      <h2>Basic auth</h2>
+      <p class="gist">Send the username and password with every single request, Base64-encoded in a header.</p>
+<pre class="code"><code><span class="cm"># "ada:s3cret" in Base64</span>
+GET /reports HTTP/1.1
+Host: api.example.com
+Authorization: Basic YWRhOnMzY3JldA==</code></pre>
+      <figure class="diagram">
+<pre class="mermaid">
+sequenceDiagram
+  participant B as Client
+  participant S as Server
+  B->>S: GET /reports
+  S-->>B: 401 with WWW-Authenticate Basic realm=api
+  Note over B: Browser shows a login prompt
+  B->>S: GET /reports with Authorization Basic base64(user:pass)
+  S->>S: Decode, look up user, verify password hash
+  S-->>B: 200 OK
+  B->>S: Every later request repeats the header
+</pre>
+        <figcaption>The credentials travel on every request. There is no session.</figcaption>
+      </figure>
+      <p><b>Good for</b> internal tools, scripts, quick prototypes and some machine-to-machine APIs. It’s built into every HTTP client and needs no extra infrastructure.</p>
+      <p><b>Weaknesses</b>: the real password crosses the wire constantly; there’s no clean logout (browsers cache the credentials); no MFA; no expiry; and the server must run a slow password hash on every request.</p>
+      <div class="note warn"><b>Base64 is not encryption</b><p>Anyone who sees that header can decode it in a second. Basic auth is only acceptable over HTTPS.</p></div>
+      <p>A cousin, <b>Digest auth</b>, hashes the credentials with a server challenge. It’s rarely used now, because HTTPS plus Basic is simpler and better.</p>
+    </section>
+
+    <section id="apikeys">
+      <h2>API keys</h2>
+      <p class="gist">A long random string that identifies an application or account, sent with each request.</p>
+<pre class="code"><code>GET /v1/forecast?city=sacramento HTTP/1.1
+Authorization: Bearer sk_live_51Hx...k9Q
+<span class="cm"># or, by convention on some APIs</span>
+X-API-Key: sk_live_51Hx...k9Q</code></pre>
+      <p>API keys are effectively long-lived passwords for software. They usually identify a <em>project or account</em> rather than an individual person, which makes them ideal for developer-facing APIs, billing and rate limiting, and a poor fit for “act on behalf of this user.” For that, use <a href="#oauth">OAuth</a>.</p>
+      <ul class="plain">
+        <li>Send them in a header, not the URL. URLs end up in logs, browser history and analytics.</li>
+        <li>Store only a hash of the key on the server, like a password. Show the full key to the user once.</li>
+        <li>Give keys scopes (read-only, specific resources), expiry and easy rotation. Prefixes like <code>sk_live_</code> help secret scanners catch leaks.</li>
+        <li>Never ship a secret key inside a mobile app or browser JavaScript. Anything on the client is public.</li>
+      </ul>
+    </section>
+
+    <section id="sessions">
+      <h2>Sessions and cookies</h2>
+      <p class="gist">Log in once, and the server remembers you. The browser holds only a random ticket number; the server holds what it means.</p>
+      <figure class="diagram">
+<pre class="mermaid">
+sequenceDiagram
+  participant B as Browser
+  participant S as Server
+  participant D as Session store
+  B->>S: POST /login with email and password
+  S->>S: Verify password hash
+  S->>D: Save session abc123 for user 42, expires in 8h
+  S-->>B: Set-Cookie sid=abc123 HttpOnly Secure SameSite=Lax
+  B->>S: GET /dashboard, Cookie sid=abc123
+  S->>D: Look up abc123
+  D-->>S: user 42
+  S-->>B: 200 OK, dashboard for user 42
+  B->>S: POST /logout
+  S->>D: Delete abc123
+</pre>
+        <figcaption>Stateful sessions: the cookie is just a pointer to server-side data.</figcaption>
+      </figure>
+      <p>This is the classic, battle-tested approach for websites. Because the session lives on the server, you can revoke it instantly (logout, “sign out of all devices,” banning a user). The trade-off is that every server needs access to the session store, which usually means Redis or a database once you have more than one server.</p>
+      <h3>Cookies are just a transport</h3>
+      <p>A cookie is a small value the browser stores per site and attaches automatically to matching requests. It can hold a session ID, a JWT, or anything else. Its attributes are where the security lives:</p>
+<pre class="code"><code>Set-Cookie: __Host-sid=abc123; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age=28800</code></pre>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Attribute</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td><code>HttpOnly</code></td><td>JavaScript can’t read the cookie, so an XSS bug can’t steal it directly.</td></tr>
+          <tr><td><code>Secure</code></td><td>Only sent over HTTPS.</td></tr>
+          <tr><td><code>SameSite</code></td><td><code>Strict</code>: never sent on cross-site requests. <code>Lax</code>: sent on top-level navigations (clicking a link) but not on cross-site form posts or fetches; most browsers default to this. <code>None</code>: always sent; requires <code>Secure</code>. This is your main CSRF defense.</td></tr>
+          <tr><td><code>Domain</code></td><td>Which hosts receive it. Omit it to lock the cookie to the exact host; setting it widens it to subdomains.</td></tr>
+          <tr><td><code>Path</code></td><td>Which URL paths receive it.</td></tr>
+          <tr><td><code>Max-Age</code> / <code>Expires</code></td><td>When it dies. Without either, it’s a “session cookie” that ends when the browser closes (though browsers that restore tabs may keep it).</td></tr>
+          <tr><td><code>__Host-</code> prefix</td><td>Browser enforces Secure, Path=/ and no Domain, preventing subdomains from overwriting it.</td></tr>
+        </tbody>
+      </table></div>
+      <div class="note tip"><b>Good practice</b><p>Generate a fresh session ID at login (prevents session fixation), use long cryptographically random IDs, set an idle timeout and an absolute timeout, and delete the server record on logout.</p></div>
+    </section>
+
+    <section id="jwt">
+      <h2>Tokens and JWT</h2>
+      <p class="gist">Instead of a pointer to server data, hand the client a signed note that carries the data itself.</p>
+      <p>A <b>bearer token</b> is any credential where possession equals access, like cash: whoever bears it can use it. It’s sent in a header:</p>
+<pre class="code"><code>Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOi...</code></pre>
+      <p>A token can be <b>opaque</b> (a random string the server looks up, much like a session ID) or <b>self-contained</b>. A <b>JSON Web Token</b> (JWT, said “jot”) is the common self-contained format: three Base64URL-encoded parts joined by dots.</p>
+      <ol class="plain">
+        <li><b>Header</b>: which algorithm signed it, and often a <code>kid</code> (key ID) saying which key.</li>
+        <li><b>Payload</b>: the claims, which are facts about the subject and the token.</li>
+        <li><b>Signature</b>: computed over the first two parts. Change one byte and verification fails.</li>
+      </ol>
+      <div class="lab" id="jwtLab">
+        <h4>Try it: decode and verify a JWT</h4>
+        <p>This page signed a token for you with HS256 and the secret <code>demo-secret</code>. Paste any JWT to decode it; decoding needs no key at all, which is the point.</p>
+        <label for="jwtIn">Token</label>
+        <textarea id="jwtIn" spellcheck="false"></textarea>
+        <div class="tok" id="jwtColor" aria-hidden="true"></div>
+        <div class="jwt-parts">
+          <div class="ph"><h5>Header</h5><pre id="jwtH"></pre></div>
+          <div class="pp"><h5>Payload</h5><pre id="jwtP"></pre></div>
+          <div class="ps"><h5>Signature</h5><pre id="jwtS"></pre></div>
+        </div>
+        <p id="jwtExp" style="margin:.75rem 0 0;font-size:.92rem"></p>
+        <label for="jwtSecret">Secret to verify with (HS256 only)</label>
+        <input type="text" id="jwtSecret" value="demo-secret" autocomplete="off" spellcheck="false">
+        <div class="row">
+          <button id="jwtVerify">Verify signature</button>
+          <button class="ghost" id="jwtTamper">Tamper: make me an admin</button>
+          <button class="ghost" id="jwtReset">New token</button>
+          <span class="verdict" id="jwtVerdict" aria-live="polite"></span>
+        </div>
+      </div>
+      <h3>Standard claims</h3>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Claim</th><th>Meaning</th><th>Why you check it</th></tr></thead>
+        <tbody>
+          <tr><td><code>iss</code></td><td>Issuer: who minted the token</td><td>Reject tokens from anyone but your auth server</td></tr>
+          <tr><td><code>sub</code></td><td>Subject: who it’s about (a stable user ID)</td><td>This is your user identifier, not the email</td></tr>
+          <tr><td><code>aud</code></td><td>Audience: who it’s meant for</td><td>A token for API A shouldn’t work on API B</td></tr>
+          <tr><td><code>exp</code></td><td>Expiry time (Unix seconds)</td><td>Reject expired tokens</td></tr>
+          <tr><td><code>nbf</code> / <code>iat</code></td><td>Not before / issued at</td><td>Reject tokens from the future; reason about age</td></tr>
+          <tr><td><code>jti</code></td><td>Unique token ID</td><td>Enables deny-lists and replay detection</td></tr>
+          <tr><td><code>scope</code></td><td>Permissions granted (OAuth)</td><td>Authorization decisions</td></tr>
+        </tbody>
+      </table></div>
+      <h3>HS256 versus RS256 / ES256</h3>
+      <p><b>HS256</b> uses HMAC with one shared secret. Anything that can verify can also forge, so it only suits a single service signing tokens for itself. <b>RS256</b> (RSA) and <b>ES256</b> (ECDSA) sign with a private key and verify with a public key, so the auth server signs and many APIs verify safely. Public keys are typically published at a <code>/.well-known/jwks.json</code> URL and matched by <code>kid</code>.</p>
+      <h3>Access and refresh tokens</h3>
+      <p>Since a self-contained JWT is valid until it expires, and you can’t easily un-issue it, keep access tokens short-lived (5 to 15 minutes). Pair them with a longer-lived <b>refresh token</b>, stored more carefully, that the client trades for new access tokens. Rotate refresh tokens on each use so a stolen one is detectable.</p>
+      <figure class="diagram">
+<pre class="mermaid">
+sequenceDiagram
+  participant C as Client
+  participant A as Auth server
+  participant R as API
+  C->>A: Log in
+  A-->>C: Access token (15 min) and refresh token (days)
+  C->>R: Request with Authorization Bearer access_token
+  R->>R: Verify signature, iss, aud, exp locally
+  R-->>C: 200 OK
+  Note over C,R: 15 minutes later
+  C->>R: Request with expired token
+  R-->>C: 401 token expired
+  C->>A: POST /token with refresh_token
+  A-->>C: New access token and rotated refresh token
+</pre>
+        <figcaption>The API verifies tokens with no database lookup. That’s the main appeal of JWTs.</figcaption>
+      </figure>
+      <div class="compare">
+        <div><h4>Sessions</h4><p>Easy to revoke, small cookie, server holds the truth.</p><p>Needs a shared store across servers.</p></div>
+        <div><h4>JWTs</h4><p>Stateless verification, works across services and domains.</p><p>Hard to revoke, larger, easy to misuse.</p></div>
+      </div>
+      <div class="note warn"><b>JWT pitfalls</b><p>Always verify the signature with an algorithm you choose, never the one the token’s header claims (this blocks <code>alg: none</code> and key-confusion attacks). Check <code>exp</code>, <code>iss</code> and <code>aud</code>. Don’t put secrets or sensitive personal data in the payload; it’s only encoded. If you need the contents hidden, that’s JWE, a different format.</p></div>
+    </section>
+
+    <section id="storage">
+      <h2>Where to keep tokens</h2>
+      <p class="gist">There’s no perfect spot in a browser. Each option trades one attack for another.</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Location</th><th>Readable by JS</th><th>Sent automatically</th><th>Lifetime</th><th>Main risk</th></tr></thead>
+        <tbody>
+          <tr><td>HttpOnly cookie</td><td>No</td><td>Yes, to its site</td><td>You choose</td><td>CSRF (mitigated by SameSite and CSRF tokens)</td></tr>
+          <tr><td>localStorage</td><td>Yes</td><td>No</td><td>Until cleared, shared by all tabs</td><td>Any XSS can read and exfiltrate it</td></tr>
+          <tr><td>sessionStorage</td><td>Yes</td><td>No</td><td>One tab, gone when it closes</td><td>Same XSS risk, slightly smaller window</td></tr>
+          <tr><td>JS memory (a variable)</td><td>Only your code</td><td>No</td><td>Lost on refresh</td><td>XSS can still use it while the page is open</td></tr>
+          <tr><td>Native Keychain / Keystore</td><td>App only</td><td>No</td><td>Persistent</td><td>Device compromise</td></tr>
+        </tbody>
+      </table></div>
+      <h3>The two attacks behind the trade-off</h3>
+      <p><b>XSS (cross-site scripting)</b>: an attacker gets their JavaScript running on your page. It can read anything JavaScript can read, including localStorage, sessionStorage and non-HttpOnly cookies. Defenses: output escaping, a Content Security Policy, and keeping tokens out of JS reach.</p>
+      <p><b>CSRF (cross-site request forgery)</b>: a malicious site makes the victim’s browser send a request to your site, and the browser helpfully attaches your cookies. Defenses: <code>SameSite=Lax</code> or <code>Strict</code>, anti-CSRF tokens on state-changing requests, and checking the <code>Origin</code> header.</p>
+      <div class="note tip"><b>The usual recommendation</b><p>For browser apps, keep credentials in <code>HttpOnly; Secure; SameSite</code> cookies. If a single-page app needs OAuth tokens, a “backend for frontend” (BFF) holds them server-side and gives the browser only a session cookie. Avoid putting long-lived tokens in localStorage.</p></div>
+    </section>
+
+    <section id="mfa">
+      <h2>MFA and passkeys</h2>
+      <p class="gist">Passwords leak and get phished. A second factor, or no password at all, closes most of that gap.</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Method</th><th>How it works</th><th>Phishing-resistant?</th></tr></thead>
+        <tbody>
+          <tr><td>SMS / email codes</td><td>A code is sent to you</td><td>No. Vulnerable to SIM swaps and fake login pages</td></tr>
+          <tr><td>TOTP apps</td><td>App and server share a secret; both compute HMAC(secret, current 30-second window) into a 6-digit code</td><td>No. Codes can be relayed by a fake site</td></tr>
+          <tr><td>Push approval</td><td>Tap “Approve” on your phone</td><td>Partly. Prone to “MFA fatigue” spam; number matching helps</td></tr>
+          <tr><td>Security keys / passkeys (WebAuthn)</td><td>Public-key signature bound to the site’s origin</td><td>Yes</td></tr>
+        </tbody>
+      </table></div>
+      <h3>Passkeys (WebAuthn / FIDO2)</h3>
+      <p>At registration, your device creates a key pair just for that website and sends the server only the public key. At login, the server sends a random challenge; your device asks for your fingerprint, face or PIN, then signs the challenge with the private key. The browser includes the site’s origin in what gets signed, so a look-alike phishing domain gets a signature that’s useless on the real site.</p>
+      <figure class="diagram">
+<pre class="mermaid">
+sequenceDiagram
+  participant U as Device and browser
+  participant S as Website
+  U->>S: I want to sign in
+  S-->>U: Random challenge
+  Note over U: User unlocks with biometric or PIN
+  U->>U: Sign challenge plus origin with private key
+  U->>S: Signature and credential ID
+  S->>S: Verify with stored public key
+  S-->>U: Signed in, session cookie set
+</pre>
+        <figcaption>The server never holds a secret worth stealing, only public keys.</figcaption>
+      </figure>
+      <p>Passkeys can sync across a person’s devices through their platform (Apple, Google, Microsoft, or a password manager), while hardware security keys keep the private key on one physical device.</p>
+    </section>
+
+    <section id="mtls">
+      <h2>Mutual TLS</h2>
+      <p class="gist">Normal TLS proves the server’s identity. Mutual TLS makes the client present a certificate too.</p>
+      <p>With mTLS, both sides hold a private key and a certificate signed by a CA the other side trusts, usually a private internal CA. It’s common for service-to-service traffic inside a company, service meshes (Istio, Linkerd), banking APIs and IoT devices. It’s strong because the credential is a private key that never crosses the network, but issuing, rotating and revoking certificates is real operational work, and it’s awkward for end users in browsers.</p>
+      <p>OAuth can also bind tokens to a client certificate (or to a key via DPoP) so a stolen token is useless without the matching private key.</p>
+    </section>
+
+    <div class="part">Delegation and federation</div>
+
+    <section id="oauth">
+      <h2>OAuth 2.0</h2>
+      <p class="gist">A way to let one app act on your behalf at another service, without giving it your password.</p>
+      <p>The classic example: a printing app wants your Google Photos. Instead of asking for your Google password, it sends you to Google, you approve “view your photos,” and Google gives the app a token limited to that permission. That’s <b>delegated authorization</b>. OAuth by itself doesn’t tell the app who you are; that’s what <a href="#oidc">OpenID Connect</a> adds.</p>
+      <h3>The four roles</h3>
+      <ul class="plain">
+        <li><b>Resource owner</b>: you, the user who owns the data.</li>
+        <li><b>Client</b>: the app that wants access (the printing app).</li>
+        <li><b>Authorization server</b>: authenticates you and issues tokens (Google’s login and consent screens).</li>
+        <li><b>Resource server</b>: the API holding the data (Google Photos API). It accepts access tokens.</li>
+      </ul>
+      <h3>Authorization code flow with PKCE</h3>
+      <p>This is the recommended flow for nearly every app with a user: web, mobile and single-page. PKCE (“pixie,” Proof Key for Code Exchange) stops someone who intercepts the short-lived code from redeeming it.</p>
+      <figure class="diagram">
+<pre class="mermaid">
+sequenceDiagram
+  participant U as User browser
+  participant C as Client app
+  participant A as Authorization server
+  participant R as Resource server
+  C->>C: Create random code_verifier, code_challenge = SHA256 of it
+  C->>U: Redirect to /authorize with client_id, redirect_uri, scope, state, code_challenge
+  U->>A: GET /authorize
+  A->>U: Login and consent screen
+  U->>A: User logs in and approves
+  A->>U: Redirect to redirect_uri with code and state
+  U->>C: Deliver code and state
+  C->>C: Check state matches
+  C->>A: POST /token with code and code_verifier
+  A->>A: Hash verifier and compare to challenge
+  A-->>C: access_token, refresh_token, id_token if OIDC
+  C->>R: API call with Authorization Bearer access_token
+  R-->>C: Data
+</pre>
+        <figcaption>The token never passes through the browser’s address bar; only a one-time code does.</figcaption>
+      </figure>
+<pre class="code"><code><span class="cm"># Step 1: send the user here</span>
+https://auth.example.com/authorize
+  ?response_type=code
+  &amp;client_id=print-app
+  &amp;redirect_uri=https://print.app/callback
+  &amp;scope=photos.read
+  &amp;state=xyz123                     <span class="cm"># CSRF protection, checked on return</span>
+  &amp;code_challenge=E9Melhoa2Owv...   <span class="cm"># BASE64URL(SHA256(code_verifier))</span>
+  &amp;code_challenge_method=S256
+
+<span class="cm"># Step 2: back-channel exchange, server to server</span>
+POST /token
+grant_type=authorization_code&amp;code=SplxlOB...&amp;redirect_uri=...&amp;code_verifier=dBjftJeZ4CVP...</code></pre>
+      <h3>Other grant types</h3>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Grant</th><th>Use when</th></tr></thead>
+        <tbody>
+          <tr><td>Client credentials</td><td>A service calls an API as itself, with no user involved (cron jobs, backend services). It posts its client ID and secret to <code>/token</code> and gets an access token.</td></tr>
+          <tr><td>Device authorization</td><td>Devices without a good keyboard: smart TVs, CLIs. The device shows a short code; you approve on your phone.</td></tr>
+          <tr><td>Refresh token</td><td>Trading a refresh token for a new access token.</td></tr>
+          <tr><td>Implicit <span style="color:var(--red)">(deprecated)</span></td><td>Returned tokens directly in the URL. Replaced by code flow with PKCE.</td></tr>
+          <tr><td>Password / ROPC <span style="color:var(--red)">(deprecated)</span></td><td>The app collects your password itself, defeating the point. OAuth 2.1 drops both of these.</td></tr>
+        </tbody>
+      </table></div>
+      <p><b>Scopes</b> are the permission strings the client requests (<code>photos.read</code>, <code>calendar.write</code>). The user sees them on the consent screen, and the resource server checks them on each call.</p>
+      <div class="note warn"><b>Common OAuth mistakes</b><p>Loose redirect URI matching (register exact URIs), skipping the <code>state</code> check, putting client secrets in mobile or browser apps (they’re “public clients” and rely on PKCE instead), and using an access token as proof of login. An access token is meant for the API, not for the client to learn who the user is.</p></div>
+    </section>
+
+    <section id="oidc">
+      <h2>OpenID Connect</h2>
+      <p class="gist">A thin identity layer on top of OAuth 2.0. It’s what “Sign in with Google” or “Sign in with Apple” actually uses.</p>
+      <p>The flow is the same authorization code flow above, with <code>openid</code> added to the scope. The token response then includes an <b>ID token</b>: a signed JWT, meant for the client, stating who authenticated, when and how.</p>
+<pre class="code"><code>{
+  "iss": "https://accounts.google.com",
+  "sub": "110169484474386276334",     <span class="cm">// stable user ID: key your accounts on this</span>
+  "aud": "your-client-id",
+  "exp": 1760650000,
+  "iat": 1760646400,
+  "nonce": "n-0S6_WzA2Mj",            <span class="cm">// echoes your request, prevents replay</span>
+  "email": "ada@example.com",
+  "email_verified": true,
+  "name": "Ada Lovelace"
+}</code></pre>
+      <div class="compare">
+        <div><h4>ID token</h4><p>For the client. Says who the user is.</p><p>Verify signature, iss, aud, exp and nonce.</p></div>
+        <div><h4>Access token</h4><p>For the API. Says what the bearer may do.</p><p>The client should treat it as opaque.</p></div>
+      </div>
+      <p>OIDC also standardizes a <b>discovery document</b> at <code>/.well-known/openid-configuration</code> (listing endpoints and the JWKS URL), a <code>/userinfo</code> endpoint, and standard scopes like <code>profile</code> and <code>email</code>.</p>
+    </section>
+
+    <section id="sso">
+      <h2>Single sign-on</h2>
+      <p class="gist">Log in once with a central identity provider, then get into many apps without logging in again.</p>
+      <p>SSO is a pattern, not a protocol. A company runs one IdP (Okta, Microsoft Entra ID, Google Workspace), and every app trusts it. When you open an app, it sends you to the IdP; if you already have a session there, you’re bounced straight back with a signed statement of who you are. Each app then creates its own local session. This is also called <b>federation</b>.</p>
+      <figure class="diagram">
+<pre class="mermaid">
+sequenceDiagram
+  participant U as Browser
+  participant SP as App (service provider)
+  participant IdP as Identity provider
+  U->>SP: Open app
+  SP-->>U: Redirect to IdP with an authentication request
+  U->>IdP: Authentication request
+  alt No IdP session yet
+    IdP->>U: Login page with MFA
+    U->>IdP: Credentials
+  end
+  IdP-->>U: Signed assertion or ID token, posted back to app
+  U->>SP: Assertion
+  SP->>SP: Verify signature with IdP public key
+  SP-->>U: Local session cookie, logged in
+  Note over U,IdP: Opening a second app repeats this, but skips the login page
+</pre>
+        <figcaption>Service-provider-initiated SSO. The login page appears only once per IdP session.</figcaption>
+      </figure>
+      <div class="table-wrap"><table>
+        <thead><tr><th></th><th>SAML 2.0</th><th>OpenID Connect</th></tr></thead>
+        <tbody>
+          <tr><td>Era</td><td>2005, enterprise standard</td><td>2014, built on OAuth 2.0</td></tr>
+          <tr><td>Format</td><td>XML assertions, signed with XML Signature</td><td>JSON, JWT ID tokens</td></tr>
+          <tr><td>Transport</td><td>Browser form posts and redirects</td><td>Redirects plus back-channel HTTPS</td></tr>
+          <tr><td>Best fit</td><td>Workforce SSO into SaaS apps, legacy enterprise</td><td>New apps, mobile, consumer logins, APIs</td></tr>
+          <tr><td>Gives API access?</td><td>No, identity only</td><td>Yes, alongside OAuth access tokens</td></tr>
+        </tbody>
+      </table></div>
+      <p>Related pieces you’ll meet in enterprise SSO: <b>SCIM</b> automatically creates and removes user accounts in apps when HR adds or removes people in the IdP, and <b>single logout</b>, which tries to end every app’s session at once, is notoriously unreliable, so short app sessions matter.</p>
+    </section>
+
+    <div class="part">Permissions</div>
+
+    <section id="authz">
+      <h2>Authorization models</h2>
+      <p class="gist">Once you know who someone is, how do you decide what they can do?</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Model</th><th>The rule looks like</th><th>Good for</th></tr></thead>
+        <tbody>
+          <tr><td>ACL (access control list)</td><td>File 9 lists Ada: read, write</td><td>Per-object sharing, file systems</td></tr>
+          <tr><td>RBAC (role-based)</td><td>Editors can publish posts; Ada is an editor</td><td>Most business apps; easy to reason about</td></tr>
+          <tr><td>ABAC (attribute-based)</td><td>Allow if user.department = doc.department and time is in business hours</td><td>Fine-grained, context-aware policies</td></tr>
+          <tr><td>ReBAC (relationship-based)</td><td>Ada can view a doc if she’s a member of a team that owns the folder containing it</td><td>Google Docs-style sharing (see Google’s Zanzibar, OpenFGA, SpiceDB)</td></tr>
+          <tr><td>OAuth scopes</td><td>This token may call <code>photos.read</code></td><td>Limiting what a delegated app can do; coarse by design</td></tr>
+        </tbody>
+      </table></div>
+      <p>Scopes and roles combine: a token’s scopes cap what the <em>app</em> may do, and the user’s roles cap what the <em>user</em> may do. The effective permission is the overlap.</p>
+<pre class="code"><code><span class="cm"># Check authorization on every request, on the server, against the specific object</span>
+def update_invoice(user, invoice_id, changes):
+    invoice = db.get_invoice(invoice_id)
+    if invoice.org_id != user.org_id:       <span class="cm"># object-level check</span>
+        raise Forbidden()                   <span class="cm"># 403</span>
+    if "invoices:write" not in user.permissions:
+        raise Forbidden()
+    invoice.apply(changes)</code></pre>
+      <div class="note warn"><b>The most common authorization bug</b><p>Checking that a user is logged in but not that they own the record. If changing <code>/invoices/1001</code> to <code>/invoices/1002</code> shows someone else’s invoice, that’s an IDOR (insecure direct object reference). Hiding a button in the UI is not authorization; the server must check.</p></div>
+      <div class="note tip"><b>Principles</b><p>Deny by default. Grant the least privilege needed. Centralize policy logic rather than scattering <code>if</code> checks. Log authorization failures.</p></div>
+    </section>
+
+    <div class="part">Reference</div>
+
+    <section id="choose">
+      <h2>Choosing an approach</h2>
+      <p class="gist">Most real systems mix several of these. Start from what you’re building.</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>You’re building</th><th>Typical choice</th></tr></thead>
+        <tbody>
+          <tr><td>Server-rendered website</td><td>Session cookies (HttpOnly, Secure, SameSite), passwords hashed with Argon2id, optional passkeys and MFA</td></tr>
+          <tr><td>Single-page app with its own backend</td><td>Session cookie on the same site, or a BFF that holds OAuth tokens server-side</td></tr>
+          <tr><td>Mobile or desktop app</td><td>OAuth authorization code with PKCE via the system browser; tokens in Keychain or Keystore</td></tr>
+          <tr><td>“Sign in with Google / Apple / GitHub”</td><td>OpenID Connect</td></tr>
+          <tr><td>Letting third-party apps access users’ data</td><td>Be an OAuth 2.0 authorization server with scopes and consent</td></tr>
+          <tr><td>Employee access to many internal and SaaS apps</td><td>SSO through a corporate IdP, using SAML or OIDC, plus SCIM provisioning</td></tr>
+          <tr><td>Service-to-service calls</td><td>OAuth client credentials, mTLS, or cloud workload identity</td></tr>
+          <tr><td>Public developer API</td><td>API keys for the developer’s account; OAuth when acting for end users</td></tr>
+          <tr><td>CLI or smart TV app</td><td>OAuth device authorization grant</td></tr>
+          <tr><td>Quick internal tool or script</td><td>Basic auth over HTTPS, or put it behind an SSO proxy</td></tr>
+        </tbody>
+      </table></div>
+      <div class="note key"><b>Don’t roll your own</b><p>Use a mature framework or identity service (your web framework’s auth module, Auth0, Okta, Keycloak, Cognito, Firebase Auth, Clerk and similar) and spend your effort on configuring it well and on authorization logic, which is specific to your app.</p></div>
+    </section>
+
+    <section id="glossary">
+      <h2>Glossary</h2>
+      <dl class="gloss">
+        <dt>Access token</dt><dd>Short-lived credential an API accepts to authorize requests.</dd>
+        <dt>Assertion</dt><dd>A signed statement from an IdP about a user, especially in SAML.</dd>
+        <dt>Audience (aud)</dt><dd>The intended recipient of a token. Services should reject tokens not addressed to them.</dd>
+        <dt>Bearer token</dt><dd>Any token where possession alone grants access.</dd>
+        <dt>Certificate authority (CA)</dt><dd>An entity that signs certificates binding public keys to names.</dd>
+        <dt>Claim</dt><dd>A single fact in a token, such as <code>sub</code> or <code>email</code>.</dd>
+        <dt>Client ID / client secret</dt><dd>An OAuth app’s username and password. Public clients (mobile, SPA) have no secret.</dd>
+        <dt>CORS</dt><dd>Browser rules for which origins may read cross-site responses. It isn’t an authentication mechanism and doesn’t protect your server from non-browser callers.</dd>
+        <dt>CSRF</dt><dd>Tricking a browser into sending an authenticated request the user didn’t intend.</dd>
+        <dt>DPoP</dt><dd>Demonstrating Proof of Possession: binds an OAuth token to a client-held key.</dd>
+        <dt>HMAC</dt><dd>A hash mixed with a secret key, proving integrity and authenticity to anyone sharing the key.</dd>
+        <dt>ID token</dt><dd>OIDC JWT telling the client who the user is.</dd>
+        <dt>IdP / SP / RP</dt><dd>Identity provider; service provider (SAML’s name for the app); relying party (OIDC’s name for the app).</dd>
+        <dt>Introspection</dt><dd>An endpoint an API calls to ask the auth server whether an opaque token is active.</dd>
+        <dt>JWKS</dt><dd>JSON Web Key Set: a published list of public keys for verifying tokens.</dd>
+        <dt>Nonce</dt><dd>A one-time random value that ties a response to a specific request and prevents replay.</dd>
+        <dt>PKCE</dt><dd>Proof Key for Code Exchange: ties an OAuth code to the app that requested it.</dd>
+        <dt>Refresh token</dt><dd>Longer-lived credential used only to obtain new access tokens.</dd>
+        <dt>Salt / pepper</dt><dd>Per-user random value / app-wide secret mixed into password hashes.</dd>
+        <dt>Scope</dt><dd>A named permission requested by and granted to an OAuth client.</dd>
+        <dt>SCIM</dt><dd>Standard API for provisioning and deprovisioning users from an IdP.</dd>
+        <dt>Session fixation</dt><dd>An attacker plants a known session ID before login. Prevented by issuing a new ID at login.</dd>
+        <dt>State</dt><dd>OAuth parameter that guards the redirect back to your app against CSRF.</dd>
+        <dt>Subject (sub)</dt><dd>The stable, unique identifier of the principal a token describes.</dd>
+        <dt>XSS</dt><dd>Injected script running on your page with your page’s privileges.</dd>
+        <dt>Zero trust</dt><dd>A security stance where every request is authenticated and authorized, regardless of network location.</dd>
+      </dl>
+    </section>
+  </main>
+</div>
+
+<footer>The labs on this page run entirely in your browser using the Web Crypto API. Nothing you type is sent anywhere.</footer>
+
+<script>
+(function(){
+  // Rosette (guilloche) for the hero
+  const svg = document.getElementById('rosette');
+  const NS = 'http://www.w3.org/2000/svg';
+  const rings = [
+    {R:78,a:22,k:13,ph:0},{R:78,a:22,k:13,ph:Math.PI/13},
+    {R:56,a:16,k:17,ph:0,alt:true},{R:56,a:16,k:17,ph:Math.PI/17,alt:true},
+    {R:34,a:10,k:11,ph:0},{R:96,a:8,k:29,ph:0,alt:true}
+  ];
+  rings.forEach(r=>{
+    let d='';
+    for(let i=0;i<=720;i++){
+      const t=i/720*Math.PI*2;
+      const rad=r.R + r.a*Math.cos(r.k*t + r.ph);
+      const x=(rad*Math.cos(t)).toFixed(2), y=(rad*Math.sin(t)).toFixed(2);
+      d += (i?'L':'M')+x+' '+y;
+    }
+    const p=document.createElementNS(NS,'path');
+    p.setAttribute('d',d+'Z');
+    if(r.alt) p.setAttribute('class','alt');
+    svg.appendChild(p);
+    try{ p.style.setProperty('--len', Math.ceil(p.getTotalLength())); }catch(e){}
+  });
+
+  // Collapse contents by default on small screens
+  const det = document.getElementById('tocDetails');
+  const mq = window.matchMedia('(max-width: 900px)');
+  const syncToc = () => { det.open = !mq.matches; };
+  syncToc();
+  mq.addEventListener ? mq.addEventListener('change', syncToc) : mq.addListener(syncToc);
+  det.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>{ if(mq.matches) det.open=false; }));
+
+  // Highlight current section in the contents
+  const links = new Map();
+  det.querySelectorAll('a').forEach(a=>links.set(a.getAttribute('href').slice(1), a));
+  if('IntersectionObserver' in window){
+    const io = new IntersectionObserver(entries=>{
+      entries.forEach(e=>{
+        if(e.isIntersecting){
+          links.forEach(l=>l.classList.remove('active'));
+          const l = links.get(e.target.id); if(l) l.classList.add('active');
+        }
+      });
+    },{rootMargin:'-20% 0px -70% 0px'});
+    document.querySelectorAll('main section[id]').forEach(s=>io.observe(s));
+  }
+
+  // Crypto helpers
+  const enc = new TextEncoder(), dec = new TextDecoder();
+  const subtle = window.crypto && window.crypto.subtle;
+  const toHex = b => Array.from(b, x=>x.toString(16).padStart(2,'0')).join('');
+  const bytesToB64 = b => { let s=''; b.forEach(x=>s+=String.fromCharCode(x)); return btoa(s); };
+  const b64url = b => bytesToB64(b).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+  const b64urlDecode = str => { str=str.replace(/-/g,'+').replace(/_/g,'/'); while(str.length%4) str+='='; const bin=atob(str); return Uint8Array.from(bin, c=>c.charCodeAt(0)); };
+  async function hmac(keyStr, data){
+    const key = await subtle.importKey('raw', enc.encode(keyStr), {name:'HMAC',hash:'SHA-256'}, false, ['sign']);
+    return new Uint8Array(await subtle.sign('HMAC', key, enc.encode(data)));
+  }
+  const noCrypto = 'Web Crypto isn’t available here. Open the page over HTTPS in a modern browser.';
+
+  // Hash lab
+  const hashIn = document.getElementById('hashIn');
+  async function updateHash(){
+    const v = hashIn.value;
+    document.getElementById('outB64').textContent = bytesToB64(enc.encode(v)) || ' ';
+    if(!subtle){ document.getElementById('outSha').textContent = noCrypto; document.getElementById('outHmac').textContent = noCrypto; return; }
+    const sha = new Uint8Array(await subtle.digest('SHA-256', enc.encode(v)));
+    document.getElementById('outSha').textContent = toHex(sha);
+    document.getElementById('outHmac').textContent = toHex(await hmac('server-secret', v));
+  }
+  hashIn.addEventListener('input', updateHash); updateHash();
+
+  // Key lab
+  let kp=null, sig=null;
+  const keyStatus=document.getElementById('keyStatus'), verifyOut=document.getElementById('verifyOut');
+  document.getElementById('genKey').addEventListener('click', async ()=>{
+    if(!subtle){ keyStatus.textContent=noCrypto; return; }
+    kp = await subtle.generateKey({name:'ECDSA', namedCurve:'P-256'}, false, ['sign','verify']);
+    const jwk = await subtle.exportKey('jwk', kp.publicKey);
+    document.getElementById('pubKey').textContent = JSON.stringify({kty:jwk.kty, crv:jwk.crv, x:jwk.x, y:jwk.y}, null, 1);
+    sig=null; document.getElementById('sigOut').textContent=''; verifyOut.textContent='';
+    keyStatus.className='verdict ok'; keyStatus.textContent='Key pair ready. Private key stays locked in the browser.';
+  });
+  document.getElementById('signBtn').addEventListener('click', async ()=>{
+    if(!kp){ keyStatus.className='verdict bad'; keyStatus.textContent='Generate a key pair first.'; return; }
+    sig = new Uint8Array(await subtle.sign({name:'ECDSA',hash:'SHA-256'}, kp.privateKey, enc.encode(document.getElementById('signMsg').value)));
+    document.getElementById('sigOut').textContent = b64url(sig);
+    document.getElementById('verifyMsg').value = document.getElementById('signMsg').value;
+    verifyOut.textContent='';
+  });
+  document.getElementById('verifyBtn').addEventListener('click', async ()=>{
+    if(!kp || !sig){ verifyOut.className='verdict bad'; verifyOut.textContent='Sign a message first.'; return; }
+    const ok = await subtle.verify({name:'ECDSA',hash:'SHA-256'}, kp.publicKey, sig, enc.encode(document.getElementById('verifyMsg').value));
+    verifyOut.className = 'verdict ' + (ok?'ok':'bad');
+    verifyOut.textContent = ok ? 'Valid. The holder of the private key signed exactly this message.' : 'Invalid. The message was changed, or a different key signed it.';
+  });
+
+  // JWT lab
+  const jwtIn=document.getElementById('jwtIn'), verdict=document.getElementById('jwtVerdict');
+  const esc = s => s.replace(/[&<>]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  const jsonPart = obj => b64url(enc.encode(JSON.stringify(obj)));
+  async function makeToken(){
+    const now=Math.floor(Date.now()/1000);
+    const header={alg:'HS256',typ:'JWT'};
+    const payload={iss:'https://auth.example.com',sub:'user_8f3a21',aud:'api.example.com',name:'Ada Lovelace',role:'editor',scope:'reports.read reports.write',iat:now,exp:now+900};
+    const signingInput = jsonPart(header)+'.'+jsonPart(payload);
+    if(!subtle) return signingInput+'.signature-unavailable';
+    return signingInput+'.'+b64url(await hmac('demo-secret', signingInput));
+  }
+  function decodePart(p){ try{ return JSON.stringify(JSON.parse(dec.decode(b64urlDecode(p))), null, 2); }catch(e){ return null; } }
+  function renderJwt(){
+    const t=jwtIn.value.trim(); const parts=t.split('.');
+    verdict.textContent='';
+    const color=document.getElementById('jwtColor');
+    if(parts.length!==3){
+      color.textContent = t ? 'A JWT has exactly three dot-separated parts.' : 'Paste a token above.';
+      ['jwtH','jwtP','jwtS'].forEach(id=>document.getElementById(id).textContent='');
+      document.getElementById('jwtExp').textContent=''; return;
+    }
+    color.innerHTML = '<span class="h">'+esc(parts[0])+'</span><span class="dot">.</span><span class="p">'+esc(parts[1])+'</span><span class="dot">.</span><span class="s">'+esc(parts[2])+'</span>';
+    const h=decodePart(parts[0]), p=decodePart(parts[1]);
+    document.getElementById('jwtH').textContent = h || 'Not valid Base64URL JSON';
+    document.getElementById('jwtP').textContent = p || 'Not valid Base64URL JSON';
+    document.getElementById('jwtS').textContent = parts[2] + '\n\n(binary; only checkable with the key)';
+    const expEl=document.getElementById('jwtExp'); expEl.textContent='';
+    try{
+      const pl=JSON.parse(p);
+      if(pl.exp){
+        const d=new Date(pl.exp*1000), left=Math.round((pl.exp*1000-Date.now())/60000);
+        expEl.innerHTML = 'Expires '+esc(d.toLocaleString())+', '+(left>0 ? '<span style="color:var(--teal)">valid for about '+left+' more minute'+(left===1?'':'s')+'</span>' : '<span style="color:var(--red)">already expired</span>')+'.';
+      }
+    }catch(e){}
+  }
+  jwtIn.addEventListener('input', renderJwt);
+  async function resetJwt(){ jwtIn.value = await makeToken(); renderJwt(); }
+  document.getElementById('jwtReset').addEventListener('click', resetJwt);
+  document.getElementById('jwtTamper').addEventListener('click', ()=>{
+    const parts=jwtIn.value.trim().split('.');
+    if(parts.length!==3) return;
+    try{
+      const pl=JSON.parse(dec.decode(b64urlDecode(parts[1])));
+      pl.role='admin';
+      parts[1]=jsonPart(pl);
+      jwtIn.value=parts.join('.'); renderJwt();
+      verdict.className='verdict'; verdict.style.color='var(--muted)';
+      verdict.textContent='Payload changed to role “admin”, old signature kept. Now verify.';
+    }catch(e){}
+  });
+  document.getElementById('jwtVerify').addEventListener('click', async ()=>{
+    verdict.style.color='';
+    if(!subtle){ verdict.className='verdict bad'; verdict.textContent=noCrypto; return; }
+    const parts=jwtIn.value.trim().split('.');
+    if(parts.length!==3){ verdict.className='verdict bad'; verdict.textContent='That isn’t a three-part JWT.'; return; }
+    let alg; try{ alg=JSON.parse(dec.decode(b64urlDecode(parts[0]))).alg; }catch(e){}
+    if(alg!=='HS256'){ verdict.className='verdict bad'; verdict.textContent='This demo verifies HS256 only. This token says “'+(alg||'unknown')+'”; RS256 and ES256 need the issuer’s public key.'; return; }
+    const expected = b64url(await hmac(document.getElementById('jwtSecret').value, parts[0]+'.'+parts[1]));
+    const ok = expected===parts[2];
+    verdict.className='verdict '+(ok?'ok':'bad');
+    verdict.textContent = ok ? 'Signature valid. Header and payload are exactly what the key holder signed.' : 'Signature invalid. The token was altered, or the secret is wrong. Reject it.';
+  });
+  resetJwt();
+})();
+</script>
+
+<!--claude-mermaid-runtime-begin:3477-->
+<style>.mermaid-diagram{margin-block:4px}.mermaid-diagram svg{display:block;margin:0 auto;max-width:100%;height:auto}</style>
+<script src="../vendor/mermaid.min.js"></script>
+<script>(function(){
+var CFG={"palettes":{"light":{"surface":"#fdfbf7","text":"#1c1917","line":"#857d70","border":"#5f584e","bg":"#f8f4ec"},"dark":{"surface":"#232019","text":"#f2ede3","line":"#aba294","border":"#7d7568","bg":"#1a1714"}}};
+if(typeof mermaid==='undefined')return;
+var pres=Array.prototype.slice.call(document.querySelectorAll('pre.mermaid')).filter(function(p){if(p.hasAttribute('data-claude-mermaid-claimed'))return false;p.setAttribute('data-claude-mermaid-claimed','1');return true;});
+if(!pres.length)return;
+var mq=window.matchMedia?window.matchMedia('(prefers-color-scheme: dark)'):null;
+var root=document.documentElement;
+var items=pres.map(function(pre){
+var mount=document.createElement('div');mount.className='mermaid-diagram';
+return {pre:pre,mount:mount,src:pre.textContent||''};
+});
+var seq=0;
+var renderGen=0;
+var lastKey='';
+function pageBg(fallback){
+var els=[document.body,document.documentElement];
+for(var i=0;i<els.length;i++){
+var c=els[i]&&getComputedStyle(els[i]).backgroundColor;
+if(c&&c!=='transparent'&&c!=='rgba(0, 0, 0, 0)')return c;
+}
+return fallback;
+}
+function render(){
+var theme=root.getAttribute('data-theme');
+var dark=theme==='dark'||(!!(mq&&mq.matches)&&theme!=='light');
+var pal=dark?CFG.palettes.dark:CFG.palettes.light;
+var bg=pageBg(pal.bg);
+var key=(dark?'d':'l')+'|'+bg;
+if(key===lastKey)return;
+lastKey=key;
+var gen=++renderGen;
+var font=getComputedStyle(document.body).fontFamily||'sans-serif';
+var nat={useMaxWidth:false};
+mermaid.initialize({
+startOnLoad:false,securityLevel:'strict',theme:'base',
+flowchart:nat,sequence:nat,er:nat,state:nat,class:nat,pie:nat,
+gantt:nat,journey:nat,timeline:nat,gitGraph:nat,mindmap:nat,xyChart:nat,
+quadrantChart:nat,sankey:nat,c4:nat,requirement:nat,block:nat,
+packet:nat,kanban:nat,architecture:nat,radar:nat,
+themeVariables:{background:bg,mainBkg:pal.surface,primaryColor:pal.surface,
+primaryTextColor:pal.text,lineColor:pal.line,primaryBorderColor:pal.border,
+nodeBorder:pal.border,clusterBorder:pal.border,edgeLabelBackground:bg,
+clusterBkg:'rgba(127,127,127,0.07)',titleColor:pal.text,
+darkMode:dark,rowOdd:bg,rowEven:'rgba(127,127,127,0.07)',
+attributeBackgroundColorOdd:bg,attributeBackgroundColorEven:'rgba(127,127,127,0.07)',
+fontSize:'16px',fontFamily:font},
+themeCSS:'.node rect, .node circle, .node polygon, .node path, .cluster rect { stroke-width: 2px; }'
+});
+items.forEach(function(it){
+var id='claude-mermaid-'+seq++;
+mermaid.render(id,it.src).then(function(r){
+if(gen!==renderGen)return;
+var prev=it.pre.previousElementSibling;
+if(prev&&prev.className==='mermaid-diagram'&&prev!==it.mount)return;
+it.mount.innerHTML=r.svg;
+if(!it.mount.parentNode)it.pre.parentNode.insertBefore(it.mount,it.pre);
+it.pre.style.display='none';
+},function(){
+var scratch=document.getElementById(id);
+if(scratch)scratch.parentNode.removeChild(scratch);
+scratch=document.getElementById('d'+id);
+if(scratch)scratch.parentNode.removeChild(scratch);
+if(gen!==renderGen)return;
+if(it.mount.parentNode)it.mount.parentNode.removeChild(it.mount);
+it.pre.style.display='';
+});
+});
+}
+render();
+if(mq&&mq.addEventListener)mq.addEventListener('change',render);
+if(typeof MutationObserver!=='undefined')new MutationObserver(render).observe(root,{attributes:true,attributeFilter:['data-theme']});
+})();</script>
+<!--claude-mermaid-runtime-end-->
+<script type="module" src="../explainer.js"></script>
+</body>
+</html>

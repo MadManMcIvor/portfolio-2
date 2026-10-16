@@ -1,0 +1,2212 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- Theme: light by default, applied before first paint. Same key as the rest of the
+     site, so the choice made on the home page carries here and back. -->
+<script>
+  (function () {
+    var KEY = 'theme';
+    var DEFAULT = 'light';
+    function apply(choice) {
+      document.documentElement.setAttribute('data-theme', choice);
+    }
+    function stored() {
+      try {
+        var v = localStorage.getItem(KEY);
+        return v === 'light' || v === 'dark' ? v : null;
+      } catch (e) {
+        return null;
+      }
+    }
+    apply(stored() || DEFAULT);
+    window.setTheme = function (choice) {
+      apply(choice);
+      try {
+        localStorage.setItem(KEY, choice);
+      } catch (e) {}
+    };
+  })();
+</script>
+<link rel="stylesheet" href="../../css/tokens.css">
+<title>JS / TS field guide — Alex McIvor</title>
+<meta name="description" content="JavaScript and TypeScript for programmers who already know a language: how they work underneath, with step-through visuals and side-by-side Python, Java and Go.">
+<style>
+/* Palette: mapped onto Cream & Ink (../../css/tokens.css, ../explainer.css). Slate blue
+   is the type layer; a soft yellow marks what's running in the step-throughs. */
+:root{
+  --bg:var(--paper); --surface:var(--paper-raised); --surface2:var(--paper-sunken); --muted:var(--ink-muted); --rule:var(--paper-line);
+  --blue:var(--cat-slate); --type-bg:var(--cat-slate-tint); --type-ink:var(--cat-slate);
+  --run-bg:#f2e3ad; --run-ink:#3b2f06; --run-edge:#c9a641;
+  --code-bg:var(--paper-raised); --kw:var(--syn-keyword); --str:var(--syn-string); --com:var(--syn-comment); --num:var(--syn-number);
+  --ok:var(--sage); --bad:var(--clay-strong);
+  --font-body:var(--font-sans);
+  --font-head:var(--font-sans);
+  --bar:56px; --side:268px;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+:root[data-theme="dark"]{
+  --run-bg:#4a3d17; --run-ink:#f3e3b0; --run-edge:#c9a641;
+  --bad:var(--clay);
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:calc(var(--bar) + 16px + env(safe-area-inset-top,0px));-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.6 var(--font-body)}
+a{color:var(--clay)}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:60;background:var(--surface)}
+:focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-radius:3px}
+h1,h2,h3,h4{font-family:var(--font-head);line-height:1.15;margin:0}
+h2{font-size:clamp(1.6rem,3vw,2rem);font-weight:650;letter-spacing:-.01em}
+h3{font-size:1.2rem;font-weight:700;margin:2rem 0 .6rem}
+h4{font-size:1rem;font-weight:700;margin:1.2rem 0 .4rem}
+p{margin:.6rem 0}
+code{font-family:var(--font-mono);font-size:.86em;background:var(--surface2);padding:.08em .32em;border-radius:4px}
+p code,li code,.explain code,.hint code,.why code,.callout code{overflow-wrap:anywhere}
+ul,ol{padding-left:1.25rem;margin:.5rem 0}
+li{margin:.25rem 0}
+table{border-collapse:collapse;width:100%;font-size:.92rem}
+th,td{text-align:left;vertical-align:top;padding:.5rem .65rem;border-bottom:1px solid var(--rule)}
+th{font-family:var(--font-head);font-weight:700;background:var(--surface2)}
+td code{white-space:nowrap}
+.scroll{overflow-x:auto;margin:1rem 0;border:1px solid var(--rule);border-radius:8px;background:var(--surface)}
+.scroll table{min-width:620px}
+
+/* top bar */
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:50;height:var(--bar);display:flex;align-items:center;gap:.75rem;padding:0 1rem;background:var(--surface);border-bottom:1px solid var(--rule)}
+.brand{font-family:var(--font-head);font-weight:700;font-size:1.1rem;white-space:nowrap}
+.brand .slash{color:var(--muted);font-weight:500}
+.bar .spacer{flex:1}
+.btn{font:inherit;font-size:.9rem;color:var(--ink);background:var(--surface2);border:1px solid var(--rule);border-radius:7px;padding:.38rem .7rem;cursor:pointer;line-height:1.2;min-height:34px}
+.btn:hover{border-color:var(--muted)}
+.btn[aria-pressed="true"]{background:var(--type-bg);color:var(--type-ink);border-color:var(--blue)}
+.menu-btn{display:none}
+.erase .lbl-erased{display:none}
+html.erased .erase .lbl-shown{display:none}
+html.erased .erase .lbl-erased{display:inline}
+
+/* layout */
+.layout{display:grid;grid-template-columns:var(--side) minmax(0,1fr)}
+.side{position:sticky;top:calc(var(--bar) + env(safe-area-inset-top,0px));height:calc(100vh - var(--bar) - env(safe-area-inset-top,0px));overflow-y:auto;border-right:1px solid var(--rule);padding:1rem .6rem 2rem;background:var(--bg)}
+.side h2{font-size:.95rem;color:var(--muted);margin:.2rem .6rem .5rem;font-weight:500}
+.side ol{list-style:none;padding:0;margin:0;counter-reset:t}
+.side li{margin:0}
+.side a{display:flex;gap:.55rem;align-items:baseline;padding:.36rem .6rem;border-radius:6px;color:var(--ink);text-decoration:none;font-size:.95rem;line-height:1.3}
+.side a::before{counter-increment:t;content:counter(t);font-family:var(--font-mono);font-size:.72rem;color:var(--muted);min-width:1.3rem;text-align:right}
+.side a.cheat::before{content:"✦"}
+.side a:hover{background:var(--surface2)}
+.side a[aria-current="true"]{background:var(--surface);box-shadow:inset 3px 0 0 var(--blue);font-weight:700}
+.side .meta{margin:1.2rem .6rem 0;font-size:.82rem;color:var(--muted);line-height:1.45}
+.scrim{display:none}
+main{padding:0 clamp(1rem,4vw,3.5rem) 6rem;min-width:0}
+.topic{max-width:820px;padding-top:3.2rem;margin-bottom:1rem;border-bottom:1px solid var(--rule);padding-bottom:3rem}
+.topic > .lede{font-size:1.12rem;color:var(--muted);max-width:68ch;margin-top:.7rem}
+.prose{max-width:70ch}
+
+/* hero */
+.hero{max-width:900px;padding:3rem 0 2.4rem;border-bottom:1px solid var(--rule)}
+.hero h1{font-family:var(--font-serif);font-size:clamp(2.4rem,5.5vw,4rem);font-weight:400;letter-spacing:-.01em;line-height:1.05;max-width:20ch}
+.hero p{max-width:62ch;font-size:1.1rem}
+.legend{display:flex;flex-wrap:wrap;gap:.6rem 1.4rem;margin:1rem 0 0;font-size:.92rem;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:.45rem}
+.sw{display:inline-block;width:1.5rem;height:.95rem;border-radius:3px}
+.sw.t{background:var(--type-bg);border:1px solid var(--blue)}
+.sw.r{background:var(--run-bg);border:1px solid var(--run-edge)}
+.hero-demo{margin-top:1.6rem}
+.hero-demo .row{display:flex;flex-wrap:wrap;align-items:center;gap:.8rem;margin-bottom:.4rem}
+.hero-demo .row p{margin:0;font-size:.95rem;color:var(--muted);flex:1;min-width:220px}
+
+/* code */
+.codeblock{position:relative;margin:1rem 0;border:1px solid var(--rule);border-radius:8px;background:var(--code-bg);overflow:hidden}
+.codehead{display:flex;align-items:center;gap:.5rem;padding:.3rem .4rem .3rem .8rem;border-bottom:1px solid var(--rule);font-size:.8rem;color:var(--muted);background:var(--surface)}
+.codehead .title{flex:1;font-family:var(--font-mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.copy{font:inherit;font-size:.78rem;padding:.2rem .55rem;border-radius:5px;border:1px solid var(--rule);background:var(--surface2);color:var(--ink);cursor:pointer;min-height:28px}
+pre{margin:0;padding:.85rem 1rem;overflow-x:auto;font:13.5px/1.6 var(--font-mono);tab-size:2}
+pre code{background:none;padding:0;font-size:inherit}
+.k{color:var(--kw)} .s{color:var(--str)} .c{color:var(--com);font-style:italic} .n{color:var(--num)}
+.ty{background:var(--type-bg);color:var(--type-ink);border-radius:2px;box-shadow:0 0 0 1px color-mix(in srgb,var(--blue) 25%,transparent)}
+.ty .k,.ty .s,.ty .n{color:inherit}
+html.erased .ty,html.erased .tygap{display:none}
+.tabs{margin:1rem 0;border:1px solid var(--rule);border-radius:8px;overflow:hidden;background:var(--code-bg)}
+.tabbar{display:flex;flex-wrap:wrap;gap:0;background:var(--surface);border-bottom:1px solid var(--rule)}
+.tabbar button{font:inherit;font-size:.85rem;padding:.45rem .9rem;border:0;border-right:1px solid var(--rule);background:transparent;color:var(--muted);cursor:pointer;min-height:36px}
+.tabbar button[aria-selected="true"]{color:var(--ink);background:var(--code-bg);font-weight:700;box-shadow:inset 0 -2px 0 var(--blue)}
+.tabs .codeblock{margin:0;border:0;border-radius:0}
+.tabs .why{padding:.6rem 1rem .8rem;font-size:.92rem;border-top:1px solid var(--rule);background:var(--surface);color:var(--ink)}
+
+/* lists */
+.uses{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin:1.6rem 0 1rem}
+.uses > div{border-top:3px solid var(--blue);background:var(--surface);padding:.8rem 1rem .9rem;border-radius:0 0 8px 8px}
+.uses > div.watch{border-top-color:var(--run-edge)}
+.uses h4{margin:0 0 .35rem}
+.uses ul{margin:0}
+.uses li{font-size:.95rem}
+.examples li{margin:.4rem 0}
+
+/* notes */
+.notes{margin-top:1.6rem}
+.notes label{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--font-head);font-weight:700;font-size:.95rem;margin-bottom:.35rem}
+.notes .status{font-family:var(--font-body);font-weight:400;font-size:.8rem;color:var(--muted)}
+.notes textarea{width:100%;min-height:96px;resize:vertical;font:15px/1.5 var(--font-body);color:var(--ink);background:var(--surface);border:1px dashed var(--rule);border-radius:8px;padding:.7rem .8rem}
+.notes textarea:focus{border-style:solid;border-color:var(--blue);outline:none}
+
+/* visuals */
+.viz{margin:1.4rem 0;border:1px solid var(--rule);border-radius:10px;background:var(--surface);padding:1rem}
+.viz > h4{margin:0 0 .25rem}
+.viz .hint{font-size:.88rem;color:var(--muted);margin:0 0 .8rem}
+.ctrl{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem;margin-top:.8rem}
+.ctrl .stepinfo{font-size:.88rem;color:var(--muted);margin-left:auto}
+.explain{margin-top:.7rem;padding:.6rem .8rem;background:var(--surface2);border-radius:7px;font-size:.95rem;min-height:3.2em}
+.lines{font:13px/1.65 var(--font-mono);background:var(--code-bg);border:1px solid var(--rule);border-radius:7px;padding:.5rem 0;overflow-x:auto}
+.lines div{padding:0 .8rem;white-space:pre;border-left:3px solid transparent}
+.lines div.on{background:var(--run-bg);color:var(--run-ink);border-left-color:var(--run-edge)}
+.lines .tyhint{float:right;margin-left:1rem;font-size:12px;background:var(--type-bg);color:var(--type-ink);padding:0 .4rem;border-radius:3px}
+.grid2{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:1rem}
+.lanes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.6rem}
+.lane{border:1px solid var(--rule);border-radius:7px;padding:.45rem .55rem;min-height:5.2rem;background:var(--bg)}
+.lane h5{margin:0 0 .35rem;font:700 .78rem var(--font-head);color:var(--muted)}
+.chip{display:block;font:12.5px/1.35 var(--font-mono);padding:.22rem .45rem;margin:.22rem 0;border-radius:4px;background:var(--surface2);border:1px solid var(--rule);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chip.hot{background:var(--run-bg);color:var(--run-ink);border-color:var(--run-edge)}
+.lane.out .chip{background:transparent;border-style:dashed;display:inline-block;margin-right:.3rem}
+.mem{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:.8rem;position:relative}
+.mem .box{border:1px solid var(--rule);border-radius:7px;padding:.5rem;background:var(--bg);min-height:9rem}
+.mem .box h5{margin:0 0 .4rem;font:700 .78rem var(--font-head);color:var(--muted)}
+.slot{display:flex;justify-content:space-between;gap:.5rem;font:12.5px var(--font-mono);padding:.3rem .5rem;margin:.25rem 0;border-radius:4px;background:var(--surface);border:1px solid var(--rule)}
+.slot .v{color:var(--blue);font-weight:600}
+.obj{font:12.5px/1.45 var(--font-mono);padding:.35rem .5rem;margin:.3rem 0;border-radius:5px;background:var(--surface);border:1px solid var(--rule);transition:opacity .25s}
+.obj .id{font-weight:600;color:var(--muted)}
+.obj.hot,.slot.hot{background:var(--run-bg);color:var(--run-ink);border-color:var(--run-edge)}
+.obj.dead{opacity:.35;text-decoration:line-through}
+.chain{display:flex;flex-wrap:wrap;align-items:stretch;gap:.4rem}
+.chain .obj{min-width:150px;flex:1}
+.chain .arrow{align-self:center;color:var(--muted);font-family:var(--font-mono)}
+.picker{display:flex;flex-wrap:wrap;gap:.4rem;margin:.4rem 0}
+.picker .btn{font-family:var(--font-mono);font-size:.8rem}
+.picker .btn[aria-pressed="true"]{background:var(--run-bg);color:var(--run-ink);border-color:var(--run-edge)}
+.eqres{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.6rem;margin-top:.7rem}
+.eqres div{background:var(--bg);border:1px solid var(--rule);border-radius:7px;padding:.5rem .6rem;font:13px var(--font-mono)}
+.eqres b{display:block;font-size:1.05rem}
+.yes{color:var(--ok)} .no{color:var(--bad)}
+select{font:inherit;font-size:.9rem;padding:.3rem .4rem;border-radius:6px;border:1px solid var(--rule);background:var(--surface);color:var(--ink);min-height:34px}
+
+/* cheat sheet */
+.cheatgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1rem;margin-top:1.4rem}
+.cheatgrid section{background:var(--surface);border:1px solid var(--rule);border-radius:8px;padding:.7rem .85rem}
+.cheatgrid h3{margin:0 0 .4rem;font-size:1rem}
+.cheatgrid pre{padding:.2rem 0;font-size:12.5px;line-height:1.55}
+#cheatsheet{max-width:1200px}
+.filetree{font:13px/1.6 var(--font-mono);background:var(--code-bg);border:1px solid var(--rule);border-radius:8px;padding:.7rem 1rem;white-space:pre;overflow-x:auto}
+.foot{max-width:820px;color:var(--muted);font-size:.9rem;padding-top:2rem}
+.callout{border-left:3px solid var(--blue);padding:.4rem 0 .4rem 1rem;margin:1rem 0;color:var(--ink)}
+
+@media (max-width: 960px){
+  .layout{grid-template-columns:minmax(0,1fr)}
+  .menu-btn{display:inline-block}
+  .side{position:fixed;z-index:70;top:0;left:0;bottom:0;height:auto;width:min(86vw,320px);transform:translateX(-102%);transition:transform .22s ease;background:var(--surface);padding-top:calc(1rem + env(safe-area-inset-top,0px));padding-bottom:calc(2rem + env(safe-area-inset-bottom,0px));box-shadow:0 0 0 1px var(--rule)}
+  body.drawer .side{transform:none}
+  body.drawer .scrim{display:block;position:fixed;inset:0;z-index:65;background:rgba(10,15,25,.45)}
+  .uses,.grid2,.mem{grid-template-columns:minmax(0,1fr)}
+  .brand .full{display:none}
+}
+@media (max-width: 520px){
+  body{font-size:16px}
+  .eqres{grid-template-columns:1fr}
+  .lanes{grid-template-columns:1fr 1fr}
+  .bar{gap:.4rem;padding:0 .6rem}
+  .btn{padding:.35rem .5rem;font-size:.82rem}
+}
+@media (prefers-reduced-motion: reduce){ *{transition:none!important;animation:none!important} }
+@media print{ .bar,.side,.notes,.ctrl,.copy{display:none!important} .layout{display:block} }
+</style>
+<link rel="stylesheet" href="../explainer.css">
+</head>
+<body>
+<div class="site-strip">
+  <nav class="site-strip__crumbs" aria-label="Site">
+    <a class="site-strip__home" href="../../">Alex McIvor</a>
+    <span class="site-strip__sep" aria-hidden="true">/</span>
+    <a href="../">Explainers</a>
+  </nav>
+  <button id="theme-toggle" type="button" class="site-strip__toggle" aria-label="Toggle dark mode" title="Toggle dark mode">
+    <span class="theme-icon theme-icon-sun" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path></svg></span>
+    <span class="theme-icon theme-icon-moon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg></span>
+  </button>
+</div>
+<header class="bar">
+  <button class="btn menu-btn" id="menuBtn" aria-controls="side" aria-expanded="false">Topics</button>
+  <div class="brand">JS <span class="slash">/</span> TS <span class="full">field guide</span></div>
+  <div class="spacer"></div>
+  <button class="btn erase" data-erase aria-pressed="false" title="Hide every TypeScript-only part of the code, the way the compiler does"><span class="lbl-shown">Erase types</span><span class="lbl-erased">Show types</span></button>
+</header>
+<div class="scrim" id="scrim"></div>
+<div class="layout">
+<nav class="side" id="side" aria-label="Topics">
+  <h2>Topics</h2>
+  <ol>
+    <li><a href="#philosophy">Philosophy and trade-offs</a></li>
+    <li><a href="#toolchain">Toolchain</a></li>
+    <li><a href="#syntax">Syntax and the type system</a></li>
+    <li><a href="#collections">Collections</a></li>
+    <li><a href="#functions">Functions, closures, generics</a></li>
+    <li><a href="#errors">Error handling</a></li>
+    <li><a href="#objects">Objects and code reuse</a></li>
+    <li><a href="#concurrency">Concurrency</a></li>
+    <li><a href="#memory">Memory model</a></li>
+    <li><a href="#modules">Modules and visibility</a></li>
+    <li><a href="#idioms">Idiomatic style</a></li>
+    <li><a href="#gotchas">Gotchas</a></li>
+    <li><a href="#stdlib">Standard library and ecosystem</a></li>
+    <li><a href="#coming-from">Comparison with other languages</a></li>
+    <li><a href="#project">End-to-end project</a></li>
+    <li><a href="#cheatsheet" class="cheat">Cheat sheet</a></li>
+  </ol>
+  <p class="meta">Reflects TypeScript 7.0, Node.js 24 LTS and 26, ECMAScript 2025 and 2026. Written October 2026. Your notes are saved in this browser only.</p>
+  <p class="meta"><button class="btn" id="copyNotes" style="font-size:.8rem">Copy all my notes</button></p>
+</nav>
+<main id="main">
+
+<section class="hero">
+  <h1>JavaScript and TypeScript: a working reference</h1>
+  <p>A quick-reference guide for programmers who already know at least one language. It covers how JavaScript and TypeScript work underneath, what changed in recent versions, and where they behave differently from other mainstream languages. Comparisons use Python, Java and Go as reference points, with equivalent code side by side.</p>
+  <div class="legend">
+    <span><i class="sw t"></i>Blue is the type layer. It exists only at compile time and is erased before the code runs.</span>
+    <span><i class="sw r"></i>Yellow marks what is running right now in the step-throughs.</span>
+  </div>
+  <div class="hero-demo">
+    <div class="row"><button class="btn erase" data-erase aria-pressed="false"><span class="lbl-shown">Erase types</span><span class="lbl-erased">Show types</span></button><p>This is literally what <code>node app.ts</code> and the TypeScript compiler do: delete the blue parts and run the JavaScript that is left. Nothing about types survives to runtime. The switch applies to every TypeScript snippet on the page, and the copy buttons copy whichever version you are looking at.</p></div>
+<script type="text/x-code" data-lang="ts" data-title="greet.ts">
+⟦type Role = "admin" | "member";
+⟧⟦interface User { name: string; role: Role; tags?: string[] }
+⟧
+function describe(u⟦: User⟧)⟦: string⟧ {
+  const tagList = u.tags?.join(", ") ?? "no tags";
+  return `${u.name} (${u.role}): ${tagList}`;
+}
+
+const users = [{ name: "Ada", role: "admin" }] ⟦satisfies User[]⟧;
+console.log(users.map(describe));
+</script>
+  </div>
+</section>
+
+<!-- ============ 1 PHILOSOPHY ============ -->
+<section class="topic" id="philosophy">
+  <h2>Philosophy, trade-offs, and where it's used</h2>
+  <p class="lede">JavaScript is a dynamic language that can never break old code, because the web would break with it. TypeScript is a static type checker that describes that JavaScript without changing what it does at runtime.</p>
+  <div class="prose">
+  <h3>The idea in plain words</h3>
+  <p>JavaScript was built in 1995 to script web pages. Its core design is small: dynamic types, first-class functions, objects that inherit from other objects (prototypes), and a single thread driven by an event loop. Everything since has been added on top through the ECMAScript standard, which TC39 publishes yearly. A feature lands in an edition once it reaches Stage 4, and engines like V8 (Chrome, Node, Deno), JavaScriptCore (Safari, Bun) and SpiderMonkey (Firefox) usually ship it before the edition is final.</p>
+  <p>The rule that explains most of JavaScript's quirks is <strong>"don't break the web"</strong>. Bad decisions from 1995, like <code>==</code> coercion or <code>typeof null === "object"</code>, can never be removed, only made avoidable with new syntax (<code>===</code>, <code>let</code>, classes, modules). Compare Python 3, which broke Python 2 code to fix the language; JavaScript will never have that moment.</p>
+  <p>TypeScript adds a type system on top. Its design goals matter because they explain its behavior:</p>
+  <ul>
+    <li><strong>Types are erased.</strong> There is no runtime type information. You cannot ask "is this a <code>User</code>?" at runtime the way Java's <code>instanceof</code> works on interfaces. You check shapes yourself or with a validation library.</li>
+    <li><strong>Structural, not nominal.</strong> A value is a <code>User</code> if it has the right shape, like Go interfaces but applied to every type, not just interfaces.</li>
+    <li><strong>Deliberately unsound.</strong> The type system is designed to describe real-world JavaScript idioms, and soundness was an explicit non-goal. A few holes are left open on purpose (more under Syntax and Gotchas).</li>
+    <li><strong>Gradual.</strong> <code>any</code> lets typed and untyped code mix, which is how huge JS codebases migrated.</li>
+  </ul>
+  <h3>What changed recently</h3>
+  <p><strong>TypeScript 7.0</strong> (July 2026) is the compiler and language server ported from TypeScript to Go. The type-checking logic was ported structurally, so semantics match 6.0, but builds are roughly ten times faster and checking runs in parallel. TypeScript 6.0 (March 2026) was the bridge release that turned on modern defaults such as <code>strict</code> and ESM output and removed legacy options. Separately, Node.js can now run <code>.ts</code> files directly by stripping types, and Node 26 brought the Temporal date API as a stable global.</p>
+  <h3>The trade-offs</h3>
+  </div>
+  <div class="scroll"><table>
+    <tr><th>You get</th><th>You pay</th></tr>
+    <tr><td>One language for browser, server, edge, desktop and mobile</td><td>Every environment has slightly different globals and APIs (DOM vs <code>node:fs</code>)</td></tr>
+    <tr><td>Very fast startup and JIT-compiled performance far beyond CPython</td><td>Single-threaded by default; CPU-heavy work needs workers</td></tr>
+    <tr><td>A type system expressive enough to model almost any JS pattern</td><td>Types can get clever enough to be unreadable, and they vanish at runtime</td></tr>
+    <tr><td>The largest package registry in existence</td><td>Deep dependency trees and real supply-chain risk</td></tr>
+    <tr><td>Backward compatibility forever</td><td>Legacy footguns stay in the language forever</td></tr>
+  </table></div>
+  <h3>Real-world examples</h3>
+  <ul class="examples">
+    <li><strong>Front end:</strong> essentially every web UI: React, Vue, Svelte, Angular, plus frameworks like Next.js and Astro.</li>
+    <li><strong>Back end:</strong> HTTP APIs with Fastify, Hono, Express or NestJS; BFF (backend-for-frontend) layers; GraphQL servers.</li>
+    <li><strong>Edge and serverless:</strong> Cloudflare Workers, Vercel and Netlify functions, AWS Lambda; V8 isolates start in milliseconds.</li>
+    <li><strong>Desktop and mobile:</strong> VS Code, Slack and Discord desktop (Electron); React Native apps.</li>
+    <li><strong>Infrastructure as code:</strong> AWS CDK and Pulumi programs are commonly written in TypeScript.</li>
+  </ul>
+  <div class="uses">
+    <div><h4>Reach for it when</h4><ul><li>The work touches a browser, or shares types between front and back end</li><li>The service is I/O-bound: APIs, proxies, glue, webhooks</li><li>You need fast cold starts at the edge</li></ul></div>
+    <div class="watch"><h4>Watch out for</h4><ul><li>CPU-bound number crunching (reach for Go, Rust or a worker pool)</li><li>Assuming types protect you from bad input at runtime; they don't</li><li>Blindly adding dependencies for small utilities</li></ul></div>
+  </div>
+  <div class="notes" data-id="philosophy"></div>
+</section>
+
+<!-- ============ 2 TOOLCHAIN ============ -->
+<section class="topic" id="toolchain">
+  <h2>Toolchain</h2>
+  <p class="lede">The runtime runs JavaScript; the TypeScript compiler only checks types. Since 2025, running and checking are fully separate steps, which is a big shift for anyone used to compiled languages like Java or Go.</p>
+  <div class="prose">
+  <h3>The idea in plain words</h3>
+  <p>In Go, <code>go build</code> type-checks and compiles in one step and won't produce a binary from broken code. In TypeScript, the program runs fine even if it has type errors, because the runtime simply deletes the types. Type checking is a separate gate you run in your editor and CI, much like running <code>mypy</code> on Python code.</p>
+  <h3>Install and run</h3>
+  </div>
+<script type="text/x-code" data-lang="sh" data-title="shell">
+# Install Node with a version manager (fnm, nvm, mise or volta), then:
+fnm install 24 && fnm default 24     # 24 is Active LTS; 26 becomes LTS in late October 2026
+node --version
+
+mkdir links && cd links
+npm init -y
+npm pkg set type=module              # use ES modules everywhere
+npm i -D typescript @types/node      # TypeScript 7 installs as plain "typescript"
+
+node src/main.ts                     # Node strips the types and runs it
+node --watch src/main.ts             # rerun on save
+npx tsc --noEmit                     # type check only; this is your "compile" step
+</script>
+  <div class="prose">
+  <p><strong>Type stripping caveat:</strong> <code>node file.ts</code> only works for <em>erasable</em> syntax: annotations, interfaces, type aliases, generics. Features that generate runtime code, such as <code>enum</code>, <code>namespace</code> and constructor parameter properties, are rejected. Set <code>"erasableSyntaxOnly": true</code> so the compiler flags them for you. If you need those features, use <code>tsx</code>, Bun or Deno, which transpile everything.</p>
+  <h3>Project layout</h3>
+  </div>
+<div class="filetree">links/
+├── package.json        name, "type": "module", scripts, dependencies
+├── package-lock.json   exact resolved versions; commit it
+├── tsconfig.json       compiler options (checking only, here)
+├── eslint.config.js    lint rules (flat config)
+├── src/
+│   ├── main.ts         entry point
+│   └── check.ts
+└── test/
+    └── check.test.ts</div>
+<script type="text/x-code" data-lang="json" data-title="tsconfig.json — strict, modern, check-only">
+{
+  "compilerOptions": {
+    "target": "es2024",
+    "module": "nodenext",              // follow Node's real ESM/CJS rules
+    "strict": true,                    // default since TS 6, but be explicit
+    "noUncheckedIndexedAccess": true,  // arr[i] is T | undefined
+    "exactOptionalPropertyTypes": true,
+    "verbatimModuleSyntax": true,      // forces `import type` for type-only imports
+    "erasableSyntaxOnly": true,        // only syntax Node can strip
+    "allowImportingTsExtensions": true, // write imports as "./util.ts"
+    "noEmit": true,                    // Node runs the .ts directly
+    "types": ["node"],
+    "skipLibCheck": true
+  },
+  "include": ["src", "test"]
+}
+</script>
+<script type="text/x-code" data-lang="json" data-title="package.json — scripts are your Makefile">
+{
+  "name": "links",
+  "type": "module",
+  "scripts": {
+    "start": "node src/main.ts",
+    "check": "tsc --noEmit",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "test": "node --test"
+  }
+}
+</script>
+  <div class="prose">
+  <h3>The rest of the tools</h3>
+  </div>
+  <div class="scroll"><table>
+    <tr><th>Job</th><th>Common choice</th><th>Alternatives</th><th>Equivalent elsewhere</th></tr>
+    <tr><td>Package manager</td><td><code>npm</code></td><td><code>pnpm</code> (strict, disk-efficient), Bun, Yarn</td><td>pip/uv, Maven/Gradle, <code>go mod</code></td></tr>
+    <tr><td>Formatter</td><td>Prettier</td><td>Biome (formatter + linter in one Rust binary)</td><td>black/ruff, google-java-format, <code>gofmt</code></td></tr>
+    <tr><td>Linter</td><td>ESLint with typescript-eslint (flat config)</td><td>Biome, Oxlint (much faster)</td><td>ruff, Checkstyle/SpotBugs, <code>go vet</code>/staticcheck</td></tr>
+    <tr><td>Tests</td><td>Vitest</td><td>built-in <code>node:test</code>, Jest (older projects)</td><td>pytest, JUnit, <code>go test</code></td></tr>
+    <tr><td>Bundler / dev server</td><td>Vite</td><td>esbuild, Rolldown, Rspack</td><td>(no real equivalent)</td></tr>
+    <tr><td>Debugger</td><td><code>node --inspect</code> + Chrome DevTools or VS Code</td><td><code>debugger;</code> statement</td><td>pdb, jdb/IDE, Delve</td></tr>
+  </table></div>
+<script type="text/x-code" data-lang="sh" data-title="debugging">
+node --inspect-brk src/main.ts   # pause on line 1, then open chrome://inspect
+# or in VS Code: "JavaScript Debug Terminal", then run your script normally
+# put `debugger;` anywhere in code to break there when a debugger is attached
+</script>
+  <div class="uses">
+    <div><h4>Reach for it when</h4><ul><li><code>node file.ts</code> for scripts and services with erasable-only TypeScript</li><li><code>node:test</code> for libraries with zero dev dependencies; Vitest for apps</li><li>pnpm in monorepos, where its strict linking catches undeclared deps</li></ul></div>
+    <div class="watch"><h4>Watch out for</h4><ul><li>Forgetting <code>tsc --noEmit</code> in CI: code with type errors still runs</li><li>Supply-chain attacks: commit lockfiles, use <code>npm ci</code> in CI, review install scripts, and consider a minimum release age for new versions</li><li>Global installs; prefer <code>npx</code>/<code>pnpm dlx</code> and per-project dev deps</li></ul></div>
+  </div>
+  <div class="notes" data-id="toolchain"></div>
+</section>
+
+<!-- ============ 3 SYNTAX & TYPES ============ -->
+<section class="topic" id="syntax">
+  <h2>Syntax essentials and the type system</h2>
+  <p class="lede">Runtime JavaScript has eight value types. TypeScript layers a structural, set-based type system on top, where types describe which values are allowed and narrowing follows your control flow.</p>
+  <div class="prose">
+  <h3>Declarations and scope</h3>
+  <p>Variables are declared with <code>let</code> and constants with <code>const</code>. A <code>const</code> binding can't be reassigned, but if it holds an object, that object can still be changed, so <code>const</code> behaves like Java's <code>final</code> rather than a true constant. Both are block-scoped (visible only inside the nearest <code>{ }</code>) and can't be read before the line that declares them. The older <code>var</code> is function-scoped and hoisted, meaning it exists as <code>undefined</code> before its declaration; modern code doesn't use it. Convention is <code>const</code> by default and <code>let</code> only when the value is reassigned.</p>
+  <p>Naming is camelCase for variables and functions and PascalCase for classes and types; UPPER_SNAKE_CASE is sometimes used for module-level constants. In TypeScript, a type annotation goes after the name (<code>let count: number = 0</code>) and is usually left off when the type can be inferred from the value.</p>
+  <h3>Statements and control flow</h3>
+  <p>The statement syntax is C-family, like Java and Go: braces for blocks, <code>if</code>/<code>else</code>, <code>switch</code>, <code>for</code>, <code>while</code>, <code>do…while</code>, the ternary <code>a ? b : c</code>, and <code>//</code> and <code>/* */</code> comments. Semicolons are technically optional because the parser inserts them automatically, but most style guides and formatters include them. <code>switch</code> falls through between cases unless you <code>break</code> or <code>return</code>, unlike Go.</p>
+  </div>
+<script type="text/x-code" data-lang="ts" data-title="declarations.ts">
+let total⟦: number⟧ = 0;                // variable: can be reassigned
+const MAX_RETRIES = 3;               // constant binding
+const user = { name: "Ada" };
+user.name = "Grace";                 // allowed: the object itself is mutable
+// user = { name: "Lin" };           // error: a const can't be reassigned
+
+if (total > 10) {
+  console.log("big");
+} else if (total === 0) {
+  console.log("empty");
+} else {
+  console.log("small");
+}
+
+switch (status) {
+  case "ok":   handle(); break;      // without break, execution falls into the next case
+  case "retry": retry(); break;
+  default:     fail();
+}
+
+for (let i = 0; i < MAX_RETRIES; i++) {}   // classic counting loop
+while (queue.length > 0) queue.pop();
+const label = total > 0 ? "some" : "none";   // ternary expression
+</script>
+  <div class="prose">
+  <h3>Runtime values</h3>
+  <p>Seven primitives, all immutable and copied by value: <code>number</code> (always a 64-bit float, like Python's <code>float</code>; there is no int), <code>bigint</code> (<code>10n</code>, arbitrary precision like Python's <code>int</code>), <code>string</code> (immutable, UTF-16), <code>boolean</code>, <code>undefined</code>, <code>null</code>, and <code>symbol</code>. Everything else is an object, including arrays, functions, dates and maps.</p>
+  <p>Two "nothing" values exist: <code>undefined</code> means "never set" (missing property, missing argument, function with no return), and <code>null</code> means "deliberately empty". Python and Java have one; Go uses zero values instead. Most modern code treats them together using <code>?.</code> and <code>??</code>.</p>
+  </div>
+<script type="text/x-code" data-lang="ts" data-title="essentials.ts">
+const limit = 10;               // can't be reassigned (the object inside can still mutate)
+let count = 0;                  // block-scoped and reassignable; never use `var`
+
+const { id, name = "anon", ...rest } = user;   // destructuring with default and rest
+const [first, , third] = list;                  // array destructuring, skip index 1
+const merged = { ...defaults, ...overrides };   // shallow merge; later keys win
+
+const city = order?.customer?.address?.city;    // undefined if any link is null/undefined
+const port = config.port ?? 8080;               // only replaces null/undefined
+const label = input || "default";              // replaces ANY falsy value: 0, "", NaN too
+
+const msg = `Hello ${name}, you have ${count} items`;   // template literal
+for (const item of list) {}                     // values (like Python's for x in list)
+for (const key in obj) {}                       // keys, including inherited ones; avoid
+for (const [k, v] of Object.entries(obj)) {}    // the safe way to walk an object
+
+const big = 2n ** 64n;                          // bigint; can't mix with number
+Number.isInteger(5.0);                          // true: 5 and 5.0 are the same value
+</script>
+  <div class="prose">
+  <h3>Types as sets of values</h3>
+  <p>The most useful mental model: a TypeScript type is the set of values it allows. <code>string</code> is every string, <code>"admin"</code> is a set with one value, <code>"admin" | "member"</code> is the union of two sets, <code>unknown</code> is every value, and <code>never</code> is the empty set. Assignability means "is this set a subset of that one". Because sets are judged by contents, two differently named types with the same shape are the same type. That's structural typing, and it's the biggest difference from Java.</p>
+  </div>
+<script type="text/x-code" data-lang="ts" data-title="types.ts">
+⟦type Point = { x: number; y: number };
+⟧⟦interface Named { name: string }          // interface: extendable, mergeable; prefer for object shapes
+⟧⟦type Status = "draft" | "live" | "archived";   // literal union, the idiomatic "enum"
+⟧
+const p⟦: Point⟧ = { x: 1, y: 2 };
+const q = { x: 3, y: 4, label: "extra" };
+const r⟦: Point⟧ = q;   // fine: q has at least the shape of Point (structural)
+
+// `satisfies` checks against a type without widening the inferred type
+const routes = { home: "/", post: "/p/:id" } ⟦satisfies Record<string, string>⟧;
+
+// `as const` freezes literals: readonly ["a", "b"] instead of string[]
+const MODES = ["fast", "safe"] as const;
+⟦type Mode = (typeof MODES)[number];        // "fast" | "safe", derived from a runtime value
+⟧
+// unknown forces you to check; any switches checking off. Prefer unknown.
+function parse(json⟦: string⟧)⟦: unknown⟧ { return JSON.parse(json); }
+
+// Utility types build new types from old ones
+⟦type Draft = Partial<Point>;                 // all optional
+⟧⟦type Public = Omit<User, "passwordHash">;   // drop a key
+⟧⟦type ById = Record<string, User>;
+⟧</script>
+  <div class="prose">
+  <h3>Narrowing: types that follow control flow</h3>
+  <p>A variable's type changes as the checker learns more from your <code>if</code>, <code>typeof</code>, <code>in</code>, <code>instanceof</code>, equality checks and early returns. The idiomatic way to model "one of several shapes" is a <strong>discriminated union</strong>: every member has a literal tag field, and switching on the tag narrows to that member. It replaces class hierarchies and visitor patterns in a lot of TypeScript code.</p>
+  </div>
+  <div class="viz" id="viz-narrow"></div>
+  <div class="tabs">
+<script type="text/x-code" data-lang="ts" data-tab="TypeScript" data-title="shape.ts">
+⟦type Shape =
+  | { kind: "circle"; r: number }
+  | { kind: "rect"; w: number; h: number };
+⟧
+function area(s⟦: Shape⟧)⟦: number⟧ {
+  switch (s.kind) {
+    case "circle": return Math.PI * s.r ** 2;
+    case "rect":   return s.w * s.h;
+    default: {
+      const never⟦: never⟧ = s;   // compile error if a new kind is added and not handled
+      throw new Error(`unhandled: ${JSON.stringify(never)}`);
+    }
+  }
+}
+</script>
+<script type="text/x-code" data-lang="py" data-tab="Python" data-title="shape.py">
+from dataclasses import dataclass
+import math
+
+@dataclass
+class Circle: r: float
+@dataclass
+class Rect: w: float; h: float
+
+def area(s: Circle | Rect) -> float:
+    match s:
+        case Circle(r=r): return math.pi * r ** 2
+        case Rect(w=w, h=h): return w * h
+</script>
+<script type="text/x-code" data-lang="java" data-tab="Java" data-title="Shape.java">
+sealed interface Shape permits Circle, Rect {}
+record Circle(double r) implements Shape {}
+record Rect(double w, double h) implements Shape {}
+
+static double area(Shape s) {
+    return switch (s) {                 // exhaustive: compiler knows the sealed set
+        case Circle c -> Math.PI * c.r() * c.r();
+        case Rect r   -> r.w() * r.h();
+    };
+}
+</script>
+<script type="text/x-code" data-lang="go" data-tab="Go" data-title="shape.go">
+type Shape interface{ isShape() }
+type Circle struct{ R float64 }
+type Rect struct{ W, H float64 }
+func (Circle) isShape() {}
+func (Rect) isShape()   {}
+
+func Area(s Shape) float64 {
+	switch v := s.(type) {   // not exhaustive: no compile error for a missing case
+	case Circle: return math.Pi * v.R * v.R
+	case Rect:   return v.W * v.H
+	}
+	panic("unhandled shape")
+}
+</script>
+    <div class="why"><strong>What's different and why:</strong> Java and Python dispatch on a runtime class. TypeScript can't, because types are erased, so the tag is an ordinary string property that exists at runtime. The <code>never</code> trick gives you Java's exhaustiveness checking; Go has none without a linter.</div>
+  </div>
+  <div class="prose">
+  <h3>Where the type system is unsound on purpose</h3>
+  <ul>
+    <li><code>as</code> assertions and <code>!</code> (non-null assertion) are unchecked promises to the compiler.</li>
+    <li>Arrays are covariant: a <code>Dog[]</code> can be passed where <code>Animal[]</code> is expected and then have a <code>Cat</code> pushed into it. Java throws <code>ArrayStoreException</code> at runtime here; TypeScript says nothing.</li>
+    <li>Without <code>noUncheckedIndexedAccess</code>, <code>arr[99]</code> is typed as <code>T</code>, not <code>T | undefined</code>.</li>
+    <li>Data from <code>JSON.parse</code>, <code>fetch</code> and other I/O is only as typed as you claim it is. Validate at the boundary (with Zod, Valibot or hand-written guards).</li>
+  </ul>
+  </div>
+  <div class="uses">
+    <div><h4>Reach for it when</h4><ul><li>Literal unions instead of <code>enum</code></li><li>Discriminated unions for state machines, API results and events</li><li><code>satisfies</code> for config objects you want checked but precisely inferred</li><li><code>unknown</code> at every untrusted boundary</li></ul></div>
+    <div class="watch"><h4>Watch out for</h4><ul><li><code>||</code> when you mean <code>??</code>: <code>0 || 8080</code> is 8080</li><li><code>for…in</code> on arrays (string keys, inherited props)</li><li>Treating an interface as a runtime check; nothing exists to check against</li><li>Excess-property checks only apply to fresh object literals, not variables</li></ul></div>
+  </div>
+  <div class="notes" data-id="syntax"></div>
+</section>
+
+<!-- ============ 4 COLLECTIONS ============ -->
+<section class="topic" id="collections">
+  <h2>Collections and data structures</h2>
+  <p class="lede">Arrays, plain objects, <code>Map</code> and <code>Set</code> cover nearly everything. The standard library has no heap, deque, sorted map or linked list.</p>
+  <div class="prose">
+  <h3>The idea in plain words</h3>
+  <p>An <strong>Array</strong> is a growable list like Python's <code>list</code> or Java's <code>ArrayList</code>. A <strong>plain object</strong> <code>{}</code> is a string-keyed record; use it for fixed shapes known at compile time. A <strong>Map</strong> is a real hash map: any key type (including objects, compared by identity), insertion-ordered, with <code>.size</code>, and no inherited keys like <code>"constructor"</code> to collide with. Use <code>Map</code> whenever keys come from data. <strong>Set</strong> is a hash set with insertion order and, since ES2025, real set algebra.</p>
+  <p>Recent additions worth knowing: non-mutating array methods (<code>toSorted</code>, <code>toReversed</code>, <code>toSpliced</code>, <code>with</code>), <code>Object.groupBy</code>/<code>Map.groupBy</code>, Set methods (<code>union</code>, <code>intersection</code>, <code>difference</code>, <code>isSubsetOf</code>), lazy <strong>iterator helpers</strong> (<code>.map</code>, <code>.filter</code>, <code>.take</code> directly on iterators), and in Node 26, <code>Map.prototype.getOrInsert</code>/<code>getOrInsertComputed</code> and <code>Iterator.concat</code>.</p>
+  </div>
+<script type="text/x-code" data-lang="ts" data-title="collections.ts">
+const nums = [5, 1, 10];
+nums.sort();                          // [1, 10, 5]  ← sorts as STRINGS, in place
+nums.toSorted((a, b) => a - b);       // [1, 5, 10]  new array, original untouched
+nums.at(-1);                          // last element
+nums.includes(10);                    // membership (handles NaN, unlike indexOf)
+
+const people = [{ name: "Ada", team: "core" }, { name: "Lin", team: "web" }];
+const byTeam = Object.groupBy(people, p => p.team);   // { core: [...], web: [...] }
+
+const counts = new Map⟦<string, number>⟧();
+for (const w of words) counts.set(w, (counts.get(w) ?? 0) + 1);
+
+const seen = new Set(["a", "b"]);
+seen.union(new Set(["c"]));           // Set {"a","b","c"}
+seen.intersection(new Set(["b"]));    // Set {"b"}
+
+// Iterator helpers are lazy: nothing runs until toArray / for…of
+const firstThree = counts.keys().filter(k => k.length > 3).take(3).toArray();
+
+const copy = structuredClone(nested); // deep copy (no functions or class prototypes)
+</script>
+  <div class="scroll"><table>
+    <tr><th>Need</th><th>JS/TS</th><th>Python</th><th>Java</th><th>Go</th></tr>
+    <tr><td>List</td><td><code>T[]</code></td><td><code>list</code></td><td><code>ArrayList&lt;T&gt;</code></td><td><code>[]T</code></td></tr>
+    <tr><td>Fixed tuple</td><td><code>[string, number]</code> (just an array)</td><td><code>tuple</code></td><td>record</td><td>struct</td></tr>
+    <tr><td>Record with known keys</td><td><code>{ … }</code> object</td><td>dataclass / TypedDict</td><td>record / class</td><td>struct</td></tr>
+    <tr><td>Hash map</td><td><code>Map&lt;K,V&gt;</code></td><td><code>dict</code></td><td><code>HashMap</code></td><td><code>map[K]V</code></td></tr>
+    <tr><td>Hash set</td><td><code>Set&lt;T&gt;</code></td><td><code>set</code></td><td><code>HashSet</code></td><td><code>map[T]struct{}</code></td></tr>
+    <tr><td>Map iteration order</td><td>insertion order</td><td>insertion order</td><td>unordered (use LinkedHashMap)</td><td>randomized</td></tr>
+    <tr><td>Immutable list</td><td><code>readonly T[]</code> (types only) / <code>Object.freeze</code></td><td><code>tuple</code></td><td><code>List.of</code></td><td>none</td></tr>
+    <tr><td>Heap / priority queue</td><td>library or hand-rolled</td><td><code>heapq</code></td><td><code>PriorityQueue</code></td><td><code>container/heap</code></td></tr>
+    <tr><td>Deque</td><td>array (<code>shift</code> is O(n)) or library</td><td><code>collections.deque</code></td><td><code>ArrayDeque</code></td><td>slice or <code>container/list</code></td></tr>
+  </table></div>
+  <div class="tabs">
+<script type="text/x-code" data-lang="ts" data-tab="TypeScript" data-title="top words">
+function topWords(text⟦: string⟧, n = 3) {
+  const counts = new Map⟦<string, number>⟧();
+  for (const w of text.toLowerCase().match(/\p{L}+/gu) ?? []) {
+    counts.set(w, (counts.get(w) ?? 0) + 1);
+  }
+  return [...counts].toSorted((a, b) => b[1] - a[1]).slice(0, n);
+}
+</script>
+<script type="text/x-code" data-lang="py" data-tab="Python" data-title="top words">
+from collections import Counter
+import re
+
+def top_words(text: str, n: int = 3):
+    return Counter(re.findall(r"[^\W\d_]+", text.lower())).most_common(n)
+</script>
+<script type="text/x-code" data-lang="java" data-tab="Java" data-title="top words">
+static List<Map.Entry<String, Long>> topWords(String text, int n) {
+    return Arrays.stream(text.toLowerCase().split("\\P{L}+"))
+        .filter(w -> !w.isEmpty())
+        .collect(Collectors.groupingBy(w -> w, Collectors.counting()))
+        .entrySet().stream()
+        .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
+        .limit(n).toList();
+}
+</script>
+<script type="text/x-code" data-lang="go" data-tab="Go" data-title="top words">
+func TopWords(text string, n int) []string {
+	counts := map[string]int{}
+	for _, w := range strings.FieldsFunc(strings.ToLower(text), func(r rune) bool { return !unicode.IsLetter(r) }) {
+		counts[w]++
+	}
+	keys := slices.Collect(maps.Keys(counts))
+	slices.SortFunc(keys, func(a, b string) int { return counts[b] - counts[a] })
+	return keys[:min(n, len(keys))]
+}
+</script>
+    <div class="why"><strong>What's different and why:</strong> there's no <code>Counter</code>; <code>Map</code> plus <code>?? 0</code> is the idiom. Spreading a Map gives <code>[key, value]</code> pairs. Array methods are eager (each <code>.map</code> builds a new array), unlike Java streams; use iterator helpers when you want laziness.</div>
+  </div>
+  <div class="uses">
+    <div><h4>Reach for it when</h4><ul><li><code>Map</code> for dynamic keys, counters and caches</li><li><code>Set</code> for dedupe: <code>[...new Set(xs)]</code></li><li><code>toSorted</code>/<code>with</code> when state must stay immutable (React, reducers)</li><li><code>WeakMap</code> to attach data to objects without leaking them</li></ul></div>
+    <div class="watch"><h4>Watch out for</h4><ul><li><code>sort()</code> without a comparator sorts lexicographically</li><li>Object keys are always strings: <code>obj[1]</code> and <code>obj["1"]</code> are the same key</li><li><code>Map</code>/<code>Set</code> compare object keys by identity, not value (no <code>equals</code>/<code>hashCode</code>)</li><li><code>JSON.stringify(new Map())</code> is <code>"{}"</code></li></ul></div>
+  </div>
+  <div class="notes" data-id="collections"></div>
+</section>
+
+<!-- ============ 5 FUNCTIONS ============ -->
+<section class="topic" id="functions">
+  <h2>Functions, closures, and generics</h2>
+  <p class="lede">Functions are ordinary values that remember the variables around them. Generics are inferred, structural, and erased, so they constrain shapes, not runtime classes.</p>
+  <div class="prose">
+  <h3>The idea in plain words</h3>
+  <p>There are two common forms. A <code>function</code> declaration is hoisted (usable before its line) and gets its own <code>this</code>. An arrow function <code>(x) =&gt; x + 1</code> is not hoisted and inherits <code>this</code> from where it was written, which is why arrows are the default for callbacks. Neither form supports overloading by parameter type the way Java does; TypeScript offers overload <em>signatures</em> over a single implementation.</p>
+  <p>There are no keyword arguments. The idiom for Python-style named arguments is to pass one options object and destructure it, which also gives you defaults and makes call sites self-describing.</p>
+  <p>A <strong>closure</strong> captures variables, not values. Every function holds a reference to the scope it was created in, and it sees later changes to those variables. Go 1.22 fixed the classic loop-variable bug by giving each iteration a fresh variable; JavaScript's <code>let</code> did the same thing in 2015, while <code>var</code> still has the old behavior.</p>
+  </div>
+  <div class="viz" id="viz-closure"></div>
+<script type="text/x-code" data-lang="ts" data-title="functions.ts">
+// Options object = named arguments with defaults
+function connect({ host = "localhost", port = 5432, tls = false }⟦: {
+  host?: string; port?: number; tls?: boolean;
+}⟧ = {}) {
+  return `${tls ? "tls" : "tcp"}://${host}:${port}`;
+}
+connect({ port: 6543 });
+
+// Rest parameters (like *args)
+const sum = (...xs⟦: number[]⟧) => xs.reduce((a, b) => a + b, 0);
+
+// Closure as private state (a Python generator or a Java object would do this)
+function counter() {
+  let n = 0;
+  return { next: () => ++n, reset: () => { n = 0; } };
+}
+
+// Overload signatures: several typed entry points, one implementation
+⟦function pick(xs: string): string;
+⟧⟦function pick<T>(xs: T[]): T | undefined;
+⟧function pick(xs⟦: string | unknown[]⟧) { return xs[Math.floor(Math.random() * xs.length)]; }
+</script>
+  <div class="prose">
+  <h3>Generics</h3>
+  <p>Type parameters are almost always inferred from arguments. Constraints use <code>extends</code> to say "at least this shape". Because generics are erased, like Java's but unlike Go's, you can't write <code>new T()</code> or check <code>x instanceof T</code>; pass a constructor or a validator function instead. TypeScript's generics go further than Java's or Go's: <code>keyof</code>, indexed access <code>T[K]</code>, mapped types and conditional types let you compute types from other types.</p>
+  </div>
+<script type="text/x-code" data-lang="ts" data-title="generics.ts">
+function first⟦<T>⟧(xs⟦: readonly T[]⟧)⟦: T | undefined⟧ { return xs[0]; }
+first([1, 2]);                          // T inferred as number
+
+// keyof + indexed access: the return type depends on which key you pass
+function get⟦<T, K extends keyof T>⟧(obj⟦: T⟧, key⟦: K⟧)⟦: T[K]⟧ { return obj[key]; }
+get({ id: 1, name: "a" }, "name");      // string
+// get({ id: 1 }, "nope");              // compile error
+
+// Constraint: anything with a length
+function longest⟦<T extends { length: number }>⟧(a⟦: T⟧, b⟦: T⟧) { return a.length >= b.length ? a : b; }
+
+// Mapped + conditional types (type-level functions)
+⟦type Nullable<T> = { [K in keyof T]: T[K] | null };
+⟧⟦type ElementOf<T> = T extends readonly (infer E)[] ? E : never;
+⟧
+// Erasure workaround: pass the runtime piece explicitly
+function make⟦<T>⟧(Ctor⟦: new () => T⟧)⟦: T⟧ { return new Ctor(); }
+</script>
+  <div class="tabs">
+<script type="text/x-code" data-lang="ts" data-tab="TypeScript" data-title="memoize">
+function memoize⟦<A extends unknown[], R>⟧(fn⟦: (...args: A) => R⟧) {
+  const cache = new Map⟦<string, R>⟧();
+  return (...args⟦: A⟧)⟦: R⟧ => {
+    const key = JSON.stringify(args);
+    if (!cache.has(key)) cache.set(key, fn(...args));
+    return cache.get(key)⟦!⟧;
+  };
+}
+</script>
+<script type="text/x-code" data-lang="py" data-tab="Python" data-title="memoize">
+from functools import cache   # built in; usually just use @cache
+
+def memoize[**P, R](fn: Callable[P, R]) -> Callable[P, R]:
+    store: dict = {}
+    def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+        key = (args, tuple(kwargs.items()))
+        if key not in store: store[key] = fn(*args, **kwargs)
+        return store[key]
+    return wrapper
+</script>
+<script type="text/x-code" data-lang="java" data-tab="Java" data-title="memoize">
+static <A, R> Function<A, R> memoize(Function<A, R> fn) {
+    Map<A, R> cache = new ConcurrentHashMap<>();
+    return a -> cache.computeIfAbsent(a, fn);   // one argument; equals/hashCode as key
+}
+</script>
+<script type="text/x-code" data-lang="go" data-tab="Go" data-title="memoize">
+func Memoize[A comparable, R any](fn func(A) R) func(A) R {
+	cache := map[A]R{}
+	return func(a A) R {
+		if r, ok := cache[a]; ok { return r }
+		r := fn(a); cache[a] = r
+		return r
+	}
+}
+</script>
+    <div class="why"><strong>What's different and why:</strong> TypeScript can type a variadic function generically (<code>A extends unknown[]</code>), like Python's <code>ParamSpec</code>. But there's no <code>hashCode</code>/<code>comparable</code>, so object arguments need an explicit key (here JSON), because Map compares objects by identity.</div>
+  </div>
+  <div class="uses">
+    <div><h4>Reach for it when</h4><ul><li>Arrow functions for callbacks and anything that uses <code>this</code> from outside</li><li>Options objects once a function has more than two parameters</li><li>Closures for small private state instead of a class</li><li>Generic constraints over <code>any</code></li></ul></div>
+    <div class="watch"><h4>Watch out for</h4><ul><li><code>["1","2","3"].map(parseInt)</code> is <code>[1, NaN, NaN]</code>: map passes (value, index)</li><li>Default parameters are evaluated per call (unlike Python's shared mutable default)</li><li>Type-level cleverness that nobody can read; prefer a few overloads</li><li>Closures in long-lived listeners keep big objects alive</li></ul></div>
+  </div>
+  <div class="notes" data-id="functions"></div>
+</section>
+
+<!-- ============ 6 ERRORS ============ -->
+<section class="topic" id="errors">
+  <h2>Error handling</h2>
+  <p class="lede">Exceptions, unchecked, untyped, and able to carry any value. TypeScript doesn't track what a function throws, so errors you expect callers to handle are often better returned as values.</p>
+  <div class="prose">
+  <h3>The idea in plain words</h3>
+  <p><code>throw</code> accepts anything (<code>throw "oops"</code> is legal), so the caught value is typed <code>unknown</code> under <code>strict</code>. Always throw <code>Error</code> objects (they carry a stack trace) and narrow before using the caught value. There are no checked exceptions like Java's and no <code>throws</code> clause in types. Async code reports errors as rejected promises; <code>await</code> turns a rejection back into a throw, so <code>try/catch</code> works across async code the way it does in Python's asyncio.</p>
+  <p>Two modern tools: the <code>cause</code> option chains errors (like Java's cause or Go's <code>%w</code> wrapping), and <code>using</code> declarations run cleanup automatically when a block exits, like Python's <code>with</code>, Java's try-with-resources, or Go's <code>defer</code>. <code>using</code> is supported in Node 24+ and TypeScript.</p>
+  </div>
+<script type="text/x-code" data-lang="ts" data-title="errors.ts">
+class NotFoundError extends Error {
+  ⟦override ⟧name = "NotFoundError";
+  ⟦readonly ⟧key⟦: string⟧;
+  constructor(key⟦: string⟧, options⟦?: ErrorOptions⟧) {
+    super(`not found: ${key}`, options);
+    this.key = key;
+  }
+}
+
+try {
+  await loadUser("42");
+} catch (err) {                       // err: unknown
+  if (err instanceof NotFoundError) return null;
+  throw new Error("loading user failed", { cause: err });   // wrap, keep the original
+} finally {
+  metrics.done();
+}
+
+// Errors as values: a discriminated union, much like Go's (value, err)
+⟦type Result<T, E = Error> = { ok: true; value: T } | { ok: false; error: E };
+⟧function parsePort(s⟦: string⟧)⟦: Result<number, string>⟧ {
+  const n = Number(s);
+  return Number.isInteger(n) && n > 0 && n < 65536
+    ? { ok: true, value: n }
+    : { ok: false, error: `bad port: ${s}` };
+}
+
+// Automatic cleanup: Symbol.dispose runs when the block exits, even on throw
+function openLock(path⟦: string⟧) {
+  acquire(path);
+  return { [Symbol.dispose]() { release(path); } };
+}
+{
+  using lock = openLock("/tmp/job.lock");
+  doWork();
+}                                       // release() runs here
+</script>
+  <p class="callout">You'll often see the shorter <code>constructor(public readonly key: string)</code> form, called a parameter property, in Angular and NestJS code. It generates runtime code, so it isn't erasable and <code>node file.ts</code> rejects it. With <code>erasableSyntaxOnly</code>, declare the field and assign it in the constructor, as above.</p>
+  <div class="tabs">
+<script type="text/x-code" data-lang="ts" data-tab="TypeScript" data-title="read config">
+import { readFile } from "node:fs/promises";
+
+async function readConfig(path⟦: string⟧) {
+  try {
+    return JSON.parse(await readFile(path, "utf8"));
+  } catch (err) {
+    if (err instanceof Error && "code" in err && err.code === "ENOENT") return {};
+    throw new Error(`invalid config at ${path}`, { cause: err });
+  }
+}
+</script>
+<script type="text/x-code" data-lang="py" data-tab="Python" data-title="read config">
+def read_config(path: str) -> dict:
+    try:
+        with open(path) as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return {}
+    except json.JSONDecodeError as e:
+        raise ValueError(f"invalid config at {path}") from e
+</script>
+<script type="text/x-code" data-lang="java" data-tab="Java" data-title="read config">
+static Map<String, Object> readConfig(Path path) throws ConfigException {
+    try {
+        return mapper.readValue(Files.readString(path), Map.class);
+    } catch (NoSuchFileException e) {
+        return Map.of();
+    } catch (IOException e) {
+        throw new ConfigException("invalid config at " + path, e);
+    }
+}
+</script>
+<script type="text/x-code" data-lang="go" data-tab="Go" data-title="read config">
+func ReadConfig(path string) (map[string]any, error) {
+	b, err := os.ReadFile(path)
+	if errors.Is(err, fs.ErrNotExist) { return map[string]any{}, nil }
+	if err != nil { return nil, err }
+	var cfg map[string]any
+	if err := json.Unmarshal(b, &cfg); err != nil {
+		return nil, fmt.Errorf("invalid config at %s: %w", path, err)
+	}
+	return cfg, nil
+}
+</script>
+    <div class="why"><strong>What's different and why:</strong> you can't have several typed <code>catch</code> clauses as in Java or Python; there is one <code>catch</code> and you branch with <code>instanceof</code> or by checking <code>.code</code>. Node's system errors are identified by a string <code>code</code> such as <code>ENOENT</code>, not by subclass.</div>
+  </div>
+  <div class="uses">
+    <div><h4>Reach for it when</h4><ul><li>Exceptions for bugs and truly exceptional failures</li><li>Result unions for expected outcomes (validation, "not found", parse failures)</li><li><code>{ cause }</code> every time you rethrow</li><li><code>using</code>/<code>await using</code> for locks, handles and temp files</li></ul></div>
+    <div class="watch"><h4>Watch out for</h4><ul><li>Floating promises: an un-awaited rejected promise crashes Node with an unhandled rejection. Enable the <code>no-floating-promises</code> lint rule</li><li><code>catch (e) { console.log(e.message) }</code> on <code>unknown</code> won't compile, and shouldn't</li><li>Errors thrown inside <code>setTimeout</code> callbacks escape your <code>try</code></li><li>Swallowing errors with an empty <code>catch {}</code></li></ul></div>
+  </div>
+  <div class="notes" data-id="errors"></div>
+</section>
+
+<!-- ============ 7 OBJECTS ============ -->
+<section class="topic" id="objects">
+  <h2>Objects and code reuse</h2>
+  <p class="lede">Objects are dictionaries that delegate missing lookups to another object, their prototype. Classes are syntax over that chain. Interfaces are structural and satisfied implicitly, like Go.</p>
+  <div class="prose">
+  <h3>The idea in plain words</h3>
+  <p>When you read <code>obj.x</code> and <code>obj</code> has no own property <code>x</code>, the engine asks <code>obj</code>'s prototype, then that object's prototype, until it reaches <code>null</code>. Methods defined in a <code>class</code> live once on <code>ClassName.prototype</code> and are shared by every instance. <code>extends</code> just links one prototype to another. This is closer to Python's attribute lookup through the MRO than to Java's vtables, but with single inheritance only.</p>
+  <p>Interfaces describe shapes and exist only at compile time. A class doesn't need to declare <code>implements</code> to satisfy one; <code>implements</code> is just an early check. That's Go's model: any value with the right members fits.</p>
+  </div>
+  <div class="viz" id="viz-proto"></div>
+<script type="text/x-code" data-lang="ts" data-title="classes.ts">
+⟦interface Shape { area(): number }
+⟧
+class Account {
+  #balance = 0;                 // truly private at runtime (# is enforced by the engine)
+  ⟦private ⟧audit⟦: string[]⟧ = [];  // TS-only privacy: erased, still reachable in JS
+  ⟦readonly ⟧owner⟦: string⟧;
+  static count = 0;
+
+  constructor(owner⟦: string⟧) { this.owner = owner; Account.count++; }
+
+  get balance() { return this.#balance; }
+  deposit(n⟦: number⟧)⟦: this⟧ { this.#balance += n; return this; }   // chainable
+}
+
+class Savings extends Account {
+  ⟦override ⟧deposit(n⟦: number⟧) { return super.deposit(n * 1.01); }
+}
+
+// Structural: no `implements` needed; anything with area() is a Shape
+const square = { side: 2, area() { return this.side ** 2; } };
+const s⟦: Shape⟧ = square;
+</script>
+  <div class="prose">
+  <h3>Code reuse without deep hierarchies</h3>
+  <p>Idiomatic modern TypeScript uses few classes. Reuse comes from plain functions, composition (an object holding collaborators), and interfaces for contracts. When you want trait-like shared behavior, a <em>mixin</em> is a function that takes a class and returns a subclass. In front-end code, React hooks or Vue composables play the same role.</p>
+  </div>
+  <div class="tabs">
+<script type="text/x-code" data-lang="ts" data-tab="TypeScript" data-title="composition">
+⟦interface Store { get(k: string): Promise<string | undefined> }
+⟧
+// Plain object + closures; no class required
+function cachedStore(inner⟦: Store⟧, ttlMs⟦: number⟧)⟦: Store⟧ {
+  const hits = new Map⟦<string, { v: string | undefined; at: number }>⟧();
+  return {
+    async get(k) {
+      const h = hits.get(k);
+      if (h && Date.now() - h.at < ttlMs) return h.v;
+      const v = await inner.get(k);
+      hits.set(k, { v, at: Date.now() });
+      return v;
+    },
+  };
+}
+</script>
+<script type="text/x-code" data-lang="py" data-tab="Python" data-title="composition">
+class Store(Protocol):              # structural, like a TS interface
+    async def get(self, k: str) -> str | None: ...
+
+class CachedStore:
+    def __init__(self, inner: Store, ttl: float):
+        self.inner, self.ttl, self.hits = inner, ttl, {}
+    async def get(self, k: str) -> str | None:
+        if (h := self.hits.get(k)) and time.monotonic() - h[1] < self.ttl:
+            return h[0]
+        v = await self.inner.get(k)
+        self.hits[k] = (v, time.monotonic())
+        return v
+</script>
+<script type="text/x-code" data-lang="java" data-tab="Java" data-title="composition">
+interface Store { CompletableFuture<Optional<String>> get(String k); }
+
+final class CachedStore implements Store {   // nominal: must declare implements
+    private final Store inner; private final Duration ttl;
+    private final Map<String, Entry> hits = new ConcurrentHashMap<>();
+    CachedStore(Store inner, Duration ttl) { this.inner = inner; this.ttl = ttl; }
+    public CompletableFuture<Optional<String>> get(String k) { /* … */ }
+}
+</script>
+<script type="text/x-code" data-lang="go" data-tab="Go" data-title="composition">
+type Store interface{ Get(ctx context.Context, k string) (string, bool, error) }
+
+type CachedStore struct {      // satisfies Store implicitly, like TS
+	inner Store
+	ttl   time.Duration
+	mu    sync.Mutex           // TS needs no lock: one thread
+	hits  map[string]entry
+}
+</script>
+    <div class="why"><strong>What's different and why:</strong> the TypeScript version needs no class and no lock. Structural typing means the returned object literal is a <code>Store</code> because of its shape, and single-threaded execution means the map can't be corrupted by concurrent writes (though two concurrent <code>get</code>s for the same key will both fetch).</div>
+  </div>
+  <div class="uses">
+    <div><h4>Reach for it when</h4><ul><li>Classes for things with identity and lifecycle (connections, caches, domain entities); also for custom errors</li><li><code>#private</code> when privacy must hold at runtime (libraries)</li><li>Interfaces for contracts between modules</li><li>Composition and functions before inheritance</li></ul></div>
+    <div class="watch"><h4>Watch out for</h4><ul><li>Passing <code>obj.method</code> as a callback loses <code>this</code> (see Gotchas)</li><li>TS <code>private</code> is not real privacy</li><li>Class instances don't survive <code>JSON</code> round-trips; you get plain objects back</li><li>Java-style deep hierarchies and getters/setters for everything</li></ul></div>
+  </div>
+  <div class="notes" data-id="objects"></div>
+</section>
+
+<!-- ============ 8 CONCURRENCY ============ -->
+<section class="topic" id="concurrency">
+  <h2>Concurrency model</h2>
+  <p class="lede">One thread runs your code, one task at a time, each to completion. Concurrency comes from non-blocking I/O and an event loop; parallelism comes from separate workers that share nothing by default.</p>
+  <div class="prose">
+  <h3>The idea in plain words</h3>
+  <p>The engine has a call stack and two waiting lines. When the stack empties, it drains the entire <strong>microtask queue</strong> (promise callbacks and the code after each <code>await</code>), then takes one <strong>task</strong> (timer, I/O completion, incoming request) from the task queue, runs it, drains microtasks again, and repeats. Nothing ever interrupts running code, so there are no data races on ordinary variables and no need for locks. But anything that holds the thread, like a long loop or <code>JSON.parse</code> on a 200&nbsp;MB string, freezes every other request or the whole UI.</p>
+  <p>Compared with other languages: it resembles Python's asyncio, except the loop always exists, almost every I/O API is async, and there's no GIL story because there's only one thread to begin with. It is not Go: goroutines are preemptively scheduled across all cores; JavaScript tasks are cooperative on one core. Logical races still exist, because state can change between two <code>await</code>s.</p>
+  </div>
+  <div class="viz" id="viz-loop"></div>
+<script type="text/x-code" data-lang="ts" data-title="async.ts">
+// Sequential vs concurrent: the difference is when you await
+const a = await getUser(1);                 // waits
+const b = await getUser(2);                 // then waits again: total = sum
+
+const [c, d] = await Promise.all([getUser(1), getUser(2)]);   // both in flight: total = max
+
+const results = await Promise.allSettled(urls.map(u => fetch(u)));   // never rejects
+const fastest = await Promise.any(mirrors.map(m => fetch(m)));       // first success
+const res = await fetch(url, { signal: AbortSignal.timeout(2_000) }); // timeout (like Go's context)
+
+// Cancellation: one controller, many listeners
+const ctrl = new AbortController();
+setTimeout(() => ctrl.abort(), 5_000);
+await Promise.all(jobs.map(j => run(j, { signal: ctrl.signal })));
+
+// Turn a callback API into a promise
+const { promise, resolve, reject } = Promise.withResolvers⟦<string>⟧();
+
+// Async iteration over a stream
+for await (const chunk of response.body⟦!⟧) process(chunk);
+</script>
+  <div class="prose">
+  <h3>Real parallelism</h3>
+  <p>For CPU-heavy work, use <strong>worker threads</strong> (<code>node:worker_threads</code> on the server, Web Workers in browsers). Each worker is a separate isolate with its own heap and event loop. They communicate by message passing, which copies data using the structured clone algorithm. That's similar to Go channels in spirit, but much heavier: no shared memory unless you opt into <code>SharedArrayBuffer</code> with <code>Atomics</code>. In production you'd use a pool (such as Piscina) rather than spawning a worker per job.</p>
+  </div>
+  <div class="tabs">
+<script type="text/x-code" data-lang="ts" data-tab="TypeScript" data-title="limited concurrency">
+// Run at most `limit` tasks at a time; no threads, no locks
+async function mapLimit⟦<T, R>⟧(items⟦: T[]⟧, limit⟦: number⟧, fn⟦: (x: T) => Promise<R>⟧) {
+  const out⟦: R[]⟧ = new Array(items.length);
+  let next = 0;
+  async function worker() {
+    while (next < items.length) {
+      const i = next++;                // safe: no other code runs between these lines
+      out[i] = await fn(items[i]⟦!⟧);
+    }
+  }
+  await Promise.all(Array.from({ length: limit }, worker));
+  return out;
+}
+</script>
+<script type="text/x-code" data-lang="py" data-tab="Python" data-title="limited concurrency">
+async def map_limit(items, limit, fn):
+    sem = asyncio.Semaphore(limit)
+    async def one(x):
+        async with sem:
+            return await fn(x)
+    return await asyncio.gather(*(one(x) for x in items))
+</script>
+<script type="text/x-code" data-lang="java" data-tab="Java" data-title="limited concurrency">
+// Java 21+: virtual threads make blocking code cheap
+static <T, R> List<R> mapLimit(List<T> items, int limit, Function<T, R> fn) throws Exception {
+    var sem = new Semaphore(limit);
+    try (var ex = Executors.newVirtualThreadPerTaskExecutor()) {
+        var futures = items.stream().map(x -> ex.submit(() -> {
+            sem.acquire(); try { return fn.apply(x); } finally { sem.release(); }
+        })).toList();
+        var out = new ArrayList<R>();
+        for (var f : futures) out.add(f.get());
+        return out;
+    }
+}
+</script>
+<script type="text/x-code" data-lang="go" data-tab="Go" data-title="limited concurrency">
+func MapLimit[T, R any](ctx context.Context, items []T, limit int, fn func(context.Context, T) (R, error)) ([]R, error) {
+	out := make([]R, len(items))
+	g, ctx := errgroup.WithContext(ctx)
+	g.SetLimit(limit)
+	for i, x := range items {
+		g.Go(func() (err error) { out[i], err = fn(ctx, x); return })
+	}
+	return out, g.Wait()
+}
+</script>
+    <div class="why"><strong>What's different and why:</strong> <code>next++</code> needs no lock or atomic in JavaScript because nothing can run between reading and writing it; the only switch points are <code>await</code>s. In Go and Java the same counter would be a data race. But the JS version only helps with I/O waits; it never uses a second core.</div>
+  </div>
+  <div class="uses">
+    <div><h4>Reach for it when</h4><ul><li><code>Promise.all</code> for independent I/O, <code>allSettled</code> when partial failure is fine</li><li><code>AbortSignal</code> for timeouts and cancellation, passed down like Go's <code>context</code></li><li>Worker threads for image processing, parsing, crypto, compression</li></ul></div>
+    <div class="watch"><h4>Watch out for</h4><ul><li><code>await</code> inside a <code>for</code> loop when the calls are independent (accidentally sequential)</li><li><code>array.forEach(async …)</code> doesn't wait for anything</li><li>Unbounded <code>Promise.all</code> over 10,000 items: you'll exhaust sockets or rate limits</li><li>Sync APIs (<code>readFileSync</code>, heavy loops) in request handlers</li><li>Promises can't be cancelled themselves; only work that listens to a signal stops</li></ul></div>
+  </div>
+  <div class="notes" data-id="concurrency"></div>
+</section>
+
+<!-- ============ 9 MEMORY ============ -->
+<section class="topic" id="memory">
+  <h2>Memory model</h2>
+  <p class="lede">Garbage collected. Primitives behave like values; every object is reached through a reference, and assignment or argument passing copies the reference, never the object.</p>
+  <div class="prose">
+  <h3>The idea in plain words</h3>
+  <p>This is the same model as Python and Java (for objects): "call by sharing". A function can mutate an object you pass it, but reassigning its parameter doesn't affect your variable. There are no pointers, no <code>&amp;</code>, and no value-type structs, which is the big difference from Go, where assigning a struct copies it. If you need a copy, you make one: spread for a shallow copy, <code>structuredClone</code> for a deep one.</p>
+  <p>V8's collector is generational and mostly concurrent. Short-lived objects are allocated in a small young generation and cleared cheaply; survivors are promoted to the old generation, which is marked and compacted incrementally. An object is collected when nothing reachable from the roots (globals, the stack, active closures, pending callbacks) refers to it. You never free memory, but you can leak it by staying reachable.</p>
+  </div>
+  <div class="viz" id="viz-mem"></div>
+  <div class="tabs">
+<script type="text/x-code" data-lang="ts" data-tab="TypeScript" data-title="copy semantics">
+⟦type P = { x: number; tags: string[] };
+⟧const a⟦: P⟧ = { x: 1, tags: ["t"] };
+const b = a;                       // same object
+const c = { ...a };                // shallow copy: c.tags is a.tags
+const d = structuredClone(a);      // deep copy
+b.x = 9;      // a.x is 9
+c.tags.push("u");   // a.tags is ["t","u"] too
+d.tags.push("v");   // a unaffected
+</script>
+<script type="text/x-code" data-lang="py" data-tab="Python" data-title="copy semantics">
+a = {"x": 1, "tags": ["t"]}
+b = a                 # same object
+c = dict(a)           # shallow  (or copy.copy)
+d = copy.deepcopy(a)  # deep
+# identical semantics to JavaScript
+</script>
+<script type="text/x-code" data-lang="java" data-tab="Java" data-title="copy semantics">
+var a = new P(1, new ArrayList<>(List.of("t")));
+var b = a;            // same object (reference copy)
+// no built-in deep copy; write a copy constructor or use records + immutable lists
+// primitives (int, double) are copied by value, same as JS primitives
+</script>
+<script type="text/x-code" data-lang="go" data-tab="Go" data-title="copy semantics">
+type P struct{ X int; Tags []string }
+a := P{X: 1, Tags: []string{"t"}}
+b := a                 // COPY of the struct (X copied; Tags shares the backing array)
+b.X = 9                // a.X is still 1  ← differs from JS
+pa := &a; pa.X = 9     // pointer gives JS-like sharing
+</script>
+    <div class="why"><strong>What's different and why:</strong> in Go you choose between value and pointer at every use site. In JavaScript every object is effectively always behind a pointer, so the question is only "do I need a copy?" Immutability-by-convention (never mutate shared data, return new objects) is how JS code avoids aliasing bugs.</div>
+  </div>
+  <div class="prose">
+  <h3>How memory leaks happen</h3>
+  <ul>
+    <li>Module-level <code>Map</code> caches with no eviction; they grow forever on a server.</li>
+    <li>Event listeners and intervals that are never removed, keeping their closures (and everything those capture) reachable.</li>
+    <li>Closures that capture a large object when they need only one field.</li>
+    <li>In browsers, references to DOM nodes that have been removed from the page.</li>
+  </ul>
+  <p>Tools: <code>process.memoryUsage()</code>, heap snapshots in Chrome DevTools (compare two snapshots and sort by "retained size"), and <code>--max-old-space-size</code> to raise Node's heap ceiling. For caches keyed by objects, <code>WeakMap</code> lets entries disappear with their keys; <code>WeakRef</code> and <code>FinalizationRegistry</code> exist but are rarely the right tool.</p>
+  </div>
+  <div class="uses">
+    <div><h4>Reach for it when</h4><ul><li><code>structuredClone</code> for deep copies of plain data</li><li>Spread plus immutable updates for state</li><li><code>WeakMap</code> for per-object metadata</li><li>An LRU with a size bound for every server-side cache</li></ul></div>
+    <div class="watch"><h4>Watch out for</h4><ul><li>Spread is shallow: nested arrays and objects are still shared</li><li><code>const</code> means the binding can't change, not that the object is immutable</li><li><code>Object.freeze</code> is shallow too</li><li><code>readonly</code> in TypeScript is compile-time only</li></ul></div>
+  </div>
+  <div class="notes" data-id="memory"></div>
+</section>
+
+<!-- ============ 10 MODULES ============ -->
+<section class="topic" id="modules">
+  <h2>Modules, packages, and visibility</h2>
+  <p class="lede">Each file is a module. Anything not exported is private to that file. A package's public surface is whatever its <code>package.json</code> <code>"exports"</code> field allows.</p>
+  <div class="prose">
+  <h3>The idea in plain words</h3>
+  <p>Modern code uses <strong>ES modules</strong>: <code>import</code>/<code>export</code>, static and analyzable, loaded once and cached, with top-level <code>await</code> allowed. The older <strong>CommonJS</strong> format (<code>require</code>, <code>module.exports</code>) still fills npm. Current Node versions can <code>require()</code> an ES module as long as it has no top-level await, which has removed most of the old interop pain. Set <code>"type": "module"</code> and write ESM.</p>
+  <p>Visibility has two levels. Inside a package, the unit is the file: export it or it's private, which is coarser than Java's four levels and differs from Go's package-wide visibility with capitalization. Across packages, the <code>"exports"</code> map in <code>package.json</code> lists the entry points consumers may import; everything else is blocked, which works like Go's <code>internal/</code> directories or Java's <code>module-info</code> exports.</p>
+  </div>
+<script type="text/x-code" data-lang="ts" data-title="modules.ts">
+// math.ts
+export const TAU = Math.PI * 2;
+export function area(r⟦: number⟧) { return TAU / 2 * r * r; }
+function helper() {}                       // private to this file
+⟦export type Unit = "cm" | "in";
+⟧
+// main.ts
+import { area, TAU } from "./math.ts";     // explicit extension when Node runs .ts directly
+import ⟦type⟧ { Unit } from "./math.ts";    // type-only: erased completely
+import * as path from "node:path";         // node: prefix for built-ins
+import config from "./config.json" with { type: "json" };   // import attributes
+
+const here = import.meta.dirname;          // replaces CommonJS __dirname
+const { heavy } = await import("./heavy.ts");   // lazy, dynamic import
+</script>
+<script type="text/x-code" data-lang="json" data-title="package.json — controlling a library's public surface">
+{
+  "name": "@acme/links",
+  "version": "1.4.0",
+  "type": "module",
+  "exports": {
+    ".": "./dist/index.js",
+    "./testing": "./dist/testing.js"
+  },
+  "imports": { "#internal/*": "./src/internal/*" },
+  "dependencies": { "undici": "^7.0.0" },
+  "devDependencies": { "typescript": "^7.0.0" },
+  "peerDependencies": { "react": ">=19" }
+}
+</script>
+  <div class="prose">
+  <p>Version ranges: <code>^7.0.0</code> means any 7.x (compatible minor and patch updates), <code>~7.0.0</code> means 7.0.x only. The lockfile pins exact versions. <code>peerDependencies</code> says "the app must supply this", which is how plugins avoid bundling a second copy of React. Published libraries ship compiled <code>.js</code> plus <code>.d.ts</code> declaration files; Node refuses to strip types from files inside <code>node_modules</code>.</p>
+  </div>
+  <div class="scroll"><table>
+    <tr><th></th><th>JS/TS</th><th>Python</th><th>Java</th><th>Go</th></tr>
+    <tr><td>Unit of privacy</td><td>file (module)</td><td>convention (<code>_name</code>)</td><td>class / package / module</td><td>package (lowercase)</td></tr>
+    <tr><td>Public API of a library</td><td><code>"exports"</code> map</td><td><code>__all__</code>, convention</td><td><code>module-info.java</code></td><td>capitalized names; <code>internal/</code></td></tr>
+    <tr><td>Import path</td><td>relative file or package name</td><td>dotted module path</td><td>fully qualified class</td><td>module path + package dir</td></tr>
+    <tr><td>Circular imports</td><td>allowed; may see uninitialized bindings</td><td>allowed; partial modules</td><td>fine</td><td>compile error</td></tr>
+    <tr><td>Dependency manifest</td><td><code>package.json</code> + lockfile</td><td><code>pyproject.toml</code> + lock</td><td><code>pom.xml</code> / <code>build.gradle</code></td><td><code>go.mod</code> + <code>go.sum</code></td></tr>
+  </table></div>
+  <div class="uses">
+    <div><h4>Reach for it when</h4><ul><li>Named exports by default: better refactoring and autocomplete</li><li><code>import type</code> for types (enforced by <code>verbatimModuleSyntax</code>)</li><li>Dynamic <code>import()</code> to lazy-load heavy code</li><li>An <code>"exports"</code> map in every library you publish</li></ul></div>
+    <div class="watch"><h4>Watch out for</h4><ul><li>Barrel files (<code>index.ts</code> re-exporting everything) slow down tests and bundlers and hide cycles</li><li>Mixing ESM and CJS in one package</li><li>Circular imports that read a value during module initialization</li><li>Default exports from CJS packages arriving as <code>{ default: … }</code></li></ul></div>
+  </div>
+  <div class="notes" data-id="modules"></div>
+</section>
+
+<!-- ============ 11 IDIOMS ============ -->
+<section class="topic" id="idioms">
+  <h2>Idiomatic style</h2>
+  <p class="lede">Good modern TypeScript reads like typed, mostly functional JavaScript: small modules of functions over plain data, types at the boundaries, inference everywhere else.</p>
+  <div class="prose">
+  <h3>What good looks like</h3>
+  <ul>
+    <li><strong>Annotate boundaries, infer the middle.</strong> Type parameters and exported return types; let locals infer. Over-annotation is the Java habit to drop.</li>
+    <li><strong>Model data as types, not classes.</strong> Plain objects described by <code>type</code>/<code>interface</code>, and discriminated unions for variants.</li>
+    <li><strong>Make illegal states unrepresentable.</strong> <code>{ status: "loading" } | { status: "ok"; data: T }</code> beats <code>{ loading: boolean; data?: T; error?: string }</code>.</li>
+    <li><strong>Don't mutate what you didn't create.</strong> Return new arrays and objects; mutate freely inside a function's own locals.</li>
+    <li><strong>Validate untrusted data once, at the edge</strong>, then trust the types inside.</li>
+    <li><strong>async/await, not <code>.then</code> chains</strong>; early returns over nesting; <code>const</code> everywhere you can.</li>
+  </ul>
+  </div>
+  <div class="tabs">
+<script type="text/x-code" data-lang="ts" data-tab="Before" data-title="before.ts">
+class UserService {
+  private users⟦: any⟧ = {};
+  public getActiveUserNames()⟦: Array<string>⟧ {
+    let result⟦: Array<string>⟧ = new Array();
+    for (var key in this.users) {
+      if (this.users[key].active == true) {
+        result.push(this.users[key].firstName + " " + this.users[key].lastName);
+      }
+    }
+    return result;
+  }
+}
+</script>
+<script type="text/x-code" data-lang="ts" data-tab="After" data-title="after.ts">
+⟦export interface User { id: string; first: string; last: string; active: boolean }
+⟧
+export const activeNames = (users⟦: Iterable<User>⟧) =>
+  [...users].filter(u => u.active).map(u => `${u.first} ${u.last}`);
+</script>
+    <div class="why"><strong>What changed:</strong> no class wrapping stateless logic, no <code>any</code>, no <code>var</code>/<code>for…in</code>/<code>==</code>, inferred return type, and the data source is a parameter, which makes it trivially testable.</div>
+  </div>
+  <div class="scroll"><table>
+    <tr><th>Anti-pattern</th><th>Why it hurts</th><th>Do instead</th></tr>
+    <tr><td><code>any</code> to silence errors</td><td>Disables checking and spreads to everything it touches</td><td><code>unknown</code> plus narrowing, or fix the type</td></tr>
+    <tr><td><code>enum</code></td><td>Generates runtime code, not erasable, numeric enums accept any number</td><td>String literal unions, or an <code>as const</code> object</td></tr>
+    <tr><td><code>x as Foo</code> on API data</td><td>A lie the compiler believes</td><td>Validate with a schema (Zod, Valibot) or a type guard</td></tr>
+    <tr><td>Boolean flag soup in state</td><td>Allows impossible combinations</td><td>Discriminated union</td></tr>
+    <tr><td>Utility classes of static methods</td><td>Java habit; a module already is a namespace</td><td>Exported functions</td></tr>
+    <tr><td><code>.then().then().catch()</code></td><td>Hard to read and to add branching</td><td><code>async</code>/<code>await</code> with <code>try</code></td></tr>
+    <tr><td>Adding a dependency for 10 lines</td><td>Supply-chain risk and install bloat</td><td>Check the standard library first (see below)</td></tr>
+    <tr><td>Annotating every local</td><td>Noise; drifts out of sync</td><td>Let inference work</td></tr>
+  </table></div>
+  <div class="uses">
+    <div><h4>Reach for it when</h4><ul><li>A formatter and linter in CI so style is never discussed in review</li><li>typescript-eslint's <code>strict-type-checked</code> preset on new projects</li><li>Small files with one clear export each</li></ul></div>
+    <div class="watch"><h4>Watch out for</h4><ul><li>Importing Java patterns: factories, DI containers and interfaces with one implementation</li><li>Importing Go patterns: returning <code>[value, error]</code> tuples everywhere instead of typed results</li><li>Point-free cleverness with long <code>reduce</code> chains; a <code>for…of</code> loop is fine</li></ul></div>
+  </div>
+  <div class="notes" data-id="idioms"></div>
+</section>
+
+<!-- ============ 12 GOTCHAS ============ -->
+<section class="topic" id="gotchas">
+  <h2>Gotchas</h2>
+  <p class="lede">Common surprises, especially for developers who know Python, Java or Go. Most come from coercion, floating-point numbers, <code>this</code>, and the fact that types disappear at runtime.</p>
+  <div class="viz" id="viz-eq"></div>
+  <h3><code>this</code> depends on the call, not the definition</h3>
+  <div class="prose"><p>In Python, <code>obj.method</code> is a bound method you can pass anywhere. In Java, <code>this</code> is always the instance. In JavaScript, <code>this</code> is whatever is to the left of the dot <em>at the call site</em>. Pass the method alone and the receiver is gone.</p></div>
+<script type="text/x-code" data-lang="ts" data-title="this.ts">
+class Timer {
+  ticks = 0;
+  tick() { this.ticks++; }
+  tickArrow = () => { this.ticks++; };   // arrow field: `this` fixed at construction
+}
+const t = new Timer();
+setInterval(t.tick, 1000);        // TypeError: `this` is undefined inside tick
+setInterval(() => t.tick(), 1000); // fine: called with t on the left of the dot
+setInterval(t.tick.bind(t), 1000); // fine: permanently bound
+setInterval(t.tickArrow, 1000);    // fine
+</script>
+  <h3>The list</h3>
+  <div class="scroll"><table>
+    <tr><th>Gotcha</th><th>Example</th><th>Surprising if you know</th><th>Fix</th></tr>
+    <tr><td>Empty collections are truthy</td><td><code>if ([])</code> runs</td><td>Python</td><td><code>if (arr.length)</code>, <code>if (map.size)</code></td></tr>
+    <tr><td><code>%</code> keeps the sign of the dividend</td><td><code>-7 % 3</code> is <code>-1</code> (Python gives <code>2</code>)</td><td>Python</td><td><code>((n % m) + m) % m</code></td></tr>
+    <tr><td>No integer division</td><td><code>7 / 2</code> is <code>3.5</code></td><td>Java, Go, Python's <code>//</code></td><td><code>Math.trunc(7 / 2)</code> or <code>Math.floor</code></td></tr>
+    <tr><td>Integers lose precision above 2<sup>53</sup></td><td><code>JSON.parse('{"id":9007199254740993}')</code> rounds the id</td><td>Java <code>long</code>, Go <code>int64</code></td><td>Send big IDs as strings; use <code>bigint</code></td></tr>
+    <tr><td>Floating point</td><td><code>0.1 + 0.2 !== 0.3</code></td><td>everyone</td><td>Integer cents, or a decimal library</td></tr>
+    <tr><td>Object equality is identity</td><td><code>{a:1} === {a:1}</code> is false</td><td>Python <code>==</code>, Java <code>equals</code></td><td>Compare fields, or a deep-equal helper</td></tr>
+    <tr><td>String length counts UTF-16 units</td><td><code>"👍🏽".length</code> is <code>4</code></td><td>Python (code points), Go (bytes)</td><td><code>[...s].length</code> counts code points (2); <code>Intl.Segmenter</code> counts what users see (1)</td></tr>
+    <tr><td><code>typeof null</code> is <code>"object"</code></td><td>so is <code>typeof []</code></td><td>everyone</td><td><code>x === null</code>, <code>Array.isArray(x)</code></td></tr>
+    <tr><td>Default <code>sort</code> is lexicographic</td><td><code>[10, 9].sort()</code> is <code>[10, 9]</code></td><td>everyone</td><td><code>.toSorted((a, b) =&gt; a - b)</code></td></tr>
+    <tr><td><code>Date</code> months start at 0</td><td><code>new Date(2026, 1, 1)</code> is February</td><td>everyone</td><td>Use <code>Temporal</code> (global in Node 26)</td></tr>
+    <tr><td>Returning an object from an arrow</td><td><code>() =&gt; { ok: true }</code> returns undefined</td><td>Java lambdas</td><td><code>() =&gt; ({ ok: true })</code></td></tr>
+    <tr><td>Automatic semicolon insertion</td><td><code>return</code> then a newline returns undefined</td><td>Go (which inserts too, differently)</td><td>Keep the value on the <code>return</code> line; let Prettier format</td></tr>
+    <tr><td>JSON loses types</td><td>Dates become strings, <code>undefined</code> vanishes, <code>bigint</code> throws, Maps become <code>{}</code></td><td>Java (Jackson), Go (struct tags)</td><td>Validate and convert on parse</td></tr>
+    <tr><td>Optional vs. present-but-undefined</td><td><code>{a: undefined}</code> has key <code>a</code></td><td>Go zero values</td><td><code>exactOptionalPropertyTypes</code>, <code>Object.hasOwn</code></td></tr>
+    <tr><td>Types don't exist at runtime</td><td>no <code>x instanceof MyInterface</code></td><td>Java</td><td>Type guards, discriminants, schemas</td></tr>
+    <tr><td>Integer-like keys reorder</td><td><code>{b:1, 2:1, a:1, 1:1}</code> iterates 1, 2, b, a</td><td>Python dict order</td><td>Use a <code>Map</code></td></tr>
+  </table></div>
+  <div class="uses">
+    <div><h4>Reach for it when</h4><ul><li><code>===</code> always; <code>== null</code> is the one accepted exception (matches null and undefined)</li><li><code>Number.isNaN</code>, <code>Number.parseInt(s, 10)</code></li><li>Lint rules: <code>eqeqeq</code>, <code>no-floating-promises</code>, <code>unbound-method</code></li></ul></div>
+    <div class="watch"><h4>Watch out for</h4><ul><li><code>isNaN("abc")</code> is true (coerces); <code>Number.isNaN</code> doesn't</li><li><code>parseInt("08abc")</code> is <code>8</code>; <code>Number("08abc")</code> is <code>NaN</code></li><li><code>new Array(3)</code> creates holes, not <code>[undefined × 3]</code>; use <code>Array.from({length: 3})</code></li></ul></div>
+  </div>
+  <div class="notes" data-id="gotchas"></div>
+</section>
+
+<!-- ============ 13 STDLIB ============ -->
+<section class="topic" id="stdlib">
+  <h2>Standard library and ecosystem</h2>
+  <p class="lede">The language's own library is small, but runtimes now ship a large shared set of web-standard APIs, so code using <code>fetch</code>, <code>URL</code> or <code>crypto</code> runs unchanged in Node, Deno, Bun, browsers and edge workers.</p>
+  <div class="prose">
+  <h3>Check here before adding a dependency</h3>
+  </div>
+  <div class="scroll"><table>
+    <tr><th>Need</th><th>Built in</th><th>Replaces</th></tr>
+    <tr><td>HTTP client</td><td><code>fetch</code>, <code>Request</code>, <code>Response</code>, <code>AbortSignal.timeout</code></td><td>axios, node-fetch</td></tr>
+    <tr><td>URLs and query strings</td><td><code>URL</code>, <code>URLSearchParams</code>, <code>URL.canParse</code>, <code>URLPattern</code></td><td>qs, url-parse</td></tr>
+    <tr><td>IDs, hashing, random</td><td><code>crypto.randomUUID()</code>, <code>crypto.subtle</code>, <code>node:crypto</code></td><td>uuid</td></tr>
+    <tr><td>Deep copy</td><td><code>structuredClone</code></td><td>lodash.clonedeep</td></tr>
+    <tr><td>Dates and time zones</td><td><code>Temporal</code> (Node 26), <code>Intl.DateTimeFormat</code></td><td>moment, date-fns (mostly)</td></tr>
+    <tr><td>Formatting</td><td><code>Intl.NumberFormat</code>, <code>ListFormat</code>, <code>RelativeTimeFormat</code>, <code>Segmenter</code></td><td>numeral, pluralize helpers</td></tr>
+    <tr><td>CLI arguments, colors</td><td><code>util.parseArgs</code>, <code>util.styleText</code></td><td>minimist, chalk</td></tr>
+    <tr><td>Env files</td><td><code>node --env-file=.env</code>, <code>process.loadEnvFile()</code></td><td>dotenv</td></tr>
+    <tr><td>Globbing, watching</td><td><code>fs.glob</code>, <code>fs.watch</code>, <code>node --watch</code></td><td>glob, nodemon</td></tr>
+    <tr><td>Testing, assertions, mocks</td><td><code>node:test</code>, <code>node:assert/strict</code>, <code>mock</code></td><td>mocha, chai, sinon</td></tr>
+    <tr><td>Binary encodings</td><td><code>Uint8Array.fromBase64</code>/<code>toHex</code>, <code>TextEncoder</code></td><td>Buffer tricks, base64 libs</td></tr>
+    <tr><td>Embedded database</td><td><code>node:sqlite</code> (check the stability level for your Node version)</td><td>better-sqlite3</td></tr>
+  </table></div>
+  <div class="prose">
+  <h3>Ecosystem picks (as of late 2026)</h3>
+  <p>These change faster than the language, so treat this as a starting map, not a verdict.</p>
+  </div>
+  <div class="scroll"><table>
+    <tr><th>Area</th><th>Widely used</th><th>Notes</th></tr>
+    <tr><td>Runtimes</td><td>Node.js, Bun, Deno 2</td><td>Bun and Deno run TypeScript fully and are largely Node-compatible</td></tr>
+    <tr><td>HTTP servers</td><td>Hono, Fastify, Express 5, NestJS</td><td>Hono runs on every runtime and at the edge; NestJS is structured much like Spring</td></tr>
+    <tr><td>Full-stack and UI</td><td>React with Next.js or React Router, Vue/Nuxt, Svelte/SvelteKit, Astro</td><td>Vite underpins most of these</td></tr>
+    <tr><td>Validation</td><td>Zod, Valibot, ArkType</td><td>Define the schema once, infer the static type from it</td></tr>
+    <tr><td>Database</td><td>Drizzle, Prisma, Kysely</td><td>Drizzle and Kysely are close to SQL; Prisma generates a client from a schema</td></tr>
+    <tr><td>Testing</td><td>Vitest, Playwright</td><td>Playwright for browsers and end-to-end tests</td></tr>
+    <tr><td>Logging</td><td>pino</td><td>Structured JSON, like Go's <code>slog</code></td></tr>
+    <tr><td>Monorepos</td><td>pnpm workspaces, Turborepo, Nx</td><td>Comparable to Gradle multi-project builds</td></tr>
+  </table></div>
+<script type="text/x-code" data-lang="ts" data-title="stdlib-tour.ts">
+const id = crypto.randomUUID();
+const url = new URL("/search?q=ts", "https://example.com");
+url.searchParams.set("page", "2");
+
+const eur = new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(1234.5); // "1.234,50 €"
+const ago = new Intl.RelativeTimeFormat("en", { numeric: "auto" }).format(-1, "day");             // "yesterday"
+
+const meeting = Temporal.ZonedDateTime.from("2026-11-02T09:30[America/New_York]");
+const inTokyo = meeting.withTimeZone("Asia/Tokyo");     // time-zone math that Date never had
+const nextWeek = Temporal.Now.plainDateISO().add({ weeks: 1 });
+
+const hits = new Map⟦<string, number>⟧();
+hits.getOrInsert("home", 0);                            // Node 26: no more get-or-set boilerplate
+</script>
+  <div class="uses">
+    <div><h4>Reach for it when</h4><ul><li>Web-standard APIs first; they port across every runtime</li><li>Schema libraries at every I/O boundary</li><li>Temporal for any new date or time code on Node 26+</li></ul></div>
+    <div class="watch"><h4>Watch out for</h4><ul><li>Browser support lags Node for the newest APIs (Temporal, <code>getOrInsert</code>); check before shipping to the front end</li><li>Abandoned packages; check last publish date and maintainer count</li><li>Packages that are just a polyfill for something built in now</li></ul></div>
+  </div>
+  <div class="notes" data-id="stdlib"></div>
+</section>
+
+<!-- ============ 14 COMING FROM ============ -->
+<section class="topic" id="coming-from">
+  <h2>Comparison with other languages</h2>
+  <p class="lede">The same concepts mapped across three widely used languages. If you know one of them, its table shows what carries over to JavaScript and TypeScript and what doesn't.</p>
+  <h3>From Python</h3>
+  <div class="scroll"><table>
+    <tr><th>Concept</th><th>Python</th><th>JS/TS</th><th>What's different</th></tr>
+    <tr><td>Typing</td><td>hints, checked by mypy/pyright</td><td>types, checked by tsc</td><td>Same idea: optional and erased. TS's checker is stricter and more expressive</td></tr>
+    <tr><td>Numbers</td><td><code>int</code> (unbounded), <code>float</code></td><td><code>number</code> (float64), <code>bigint</code></td><td>No int type; integer precision ends at 2<sup>53</sup></td></tr>
+    <tr><td>Truthiness</td><td>empty containers are falsy</td><td>only <code>0 "" NaN null undefined false 0n</code> are falsy</td><td><code>[]</code> and <code>{}</code> are truthy</td></tr>
+    <tr><td>Equality</td><td><code>==</code> value, <code>is</code> identity</td><td><code>===</code> identity for objects</td><td>No <code>__eq__</code>; no operator overloading at all</td></tr>
+    <tr><td>Named arguments</td><td>keyword arguments</td><td>options object + destructuring</td><td>One object parameter instead</td></tr>
+    <tr><td>Async</td><td>asyncio, explicit loop</td><td>always-on event loop</td><td>Calling an async function starts it immediately; no <code>create_task</code></td></tr>
+    <tr><td>Context managers</td><td><code>with</code></td><td><code>using</code> + <code>Symbol.dispose</code></td><td>Newer; many libraries still use <code>try/finally</code></td></tr>
+    <tr><td>Comprehensions</td><td><code>[f(x) for x in xs if p(x)]</code></td><td><code>xs.filter(p).map(f)</code></td><td>Eager arrays; iterator helpers for laziness</td></tr>
+    <tr><td>Packaging</td><td>venv + pip/uv</td><td><code>node_modules</code> per project</td><td>Isolation is automatic; no activation step</td></tr>
+    <tr><td>Methods</td><td>bound when accessed</td><td>unbound; <code>this</code> set by the call</td><td>Use arrows or <code>.bind</code> for callbacks</td></tr>
+  </table></div>
+  <h3>From Java</h3>
+  <div class="scroll"><table>
+    <tr><th>Concept</th><th>Java</th><th>JS/TS</th><th>What's different</th></tr>
+    <tr><td>Type system</td><td>nominal, reified classes</td><td>structural, erased</td><td>Same shape means same type; no runtime type checks on interfaces</td></tr>
+    <tr><td>Generics</td><td>erased, invariant by default with wildcards</td><td>erased, inferred, variance mostly inferred</td><td>Much more inference; types can be computed with <code>keyof</code> and conditional types</td></tr>
+    <tr><td>Null safety</td><td><code>Optional</code>, annotations</td><td><code>strictNullChecks</code></td><td>Null is checked by the compiler everywhere</td></tr>
+    <tr><td>Exceptions</td><td>checked + unchecked</td><td>unchecked only, any value</td><td>Catch is <code>unknown</code>; result unions for expected failures</td></tr>
+    <tr><td>Threads</td><td>platform + virtual threads, shared memory</td><td>one thread + workers</td><td>No <code>synchronized</code>, no shared mutable state across threads by default</td></tr>
+    <tr><td>Classes</td><td>everything is in a class</td><td>functions are top level</td><td>A module is the namespace; classes are optional</td></tr>
+    <tr><td>Overloading</td><td>by parameter types</td><td>signatures over one implementation</td><td>You branch on runtime values inside one body</td></tr>
+    <tr><td>Enums</td><td>rich enum classes</td><td>literal unions</td><td>Avoid TS <code>enum</code>; it's not erasable</td></tr>
+    <tr><td>Build</td><td>javac must succeed to run</td><td>runs with type errors</td><td>Type checking is a separate CI gate</td></tr>
+    <tr><td>DI</td><td>Spring containers</td><td>pass dependencies as parameters</td><td>Containers exist (NestJS) but are less common</td></tr>
+  </table></div>
+  <h3>From Go</h3>
+  <div class="scroll"><table>
+    <tr><th>Concept</th><th>Go</th><th>JS/TS</th><th>What's different</th></tr>
+    <tr><td>Interfaces</td><td>structural, methods only</td><td>structural, any shape</td><td>Fields and literal values count too</td></tr>
+    <tr><td>Errors</td><td>values: <code>(T, error)</code></td><td>exceptions</td><td>Result unions are available but not universal</td></tr>
+    <tr><td>Concurrency</td><td>goroutines on all cores</td><td>async tasks on one core</td><td>No data races, but no free parallelism</td></tr>
+    <tr><td>Cancellation</td><td><code>context.Context</code></td><td><code>AbortSignal</code></td><td>Same pattern: pass it down, check it, listen to it</td></tr>
+    <tr><td>Structs</td><td>values, copied on assignment</td><td>objects, always by reference</td><td>No pointers; copy explicitly</td></tr>
+    <tr><td>Zero values</td><td>every type has one</td><td><code>undefined</code></td><td>Uninitialized means <code>undefined</code>, not <code>0</code> or <code>""</code></td></tr>
+    <tr><td>Visibility</td><td>capitalized = exported</td><td><code>export</code> keyword</td><td>Per file, not per package</td></tr>
+    <tr><td>Tooling</td><td>one <code>go</code> binary</td><td>runtime, package manager, tsc, linter, formatter</td><td>More pieces; Bun and Deno bundle more of them</td></tr>
+    <tr><td>Generics</td><td>constraints via interfaces</td><td><code>extends</code> constraints</td><td>Far more expressive at the type level</td></tr>
+    <tr><td>Exhaustiveness</td><td>none for type switches</td><td><code>never</code> check on unions</td><td>The compiler can prove you handled every case</td></tr>
+  </table></div>
+  <div class="notes" data-id="coming-from"></div>
+</section>
+
+<!-- ============ 15 PROJECT ============ -->
+<section class="topic" id="project">
+  <h2>End-to-end project: a concurrent link checker</h2>
+  <p class="lede">A small CLI that reads a list of URLs, checks them with bounded concurrency and per-request timeouts, prints a report, and sets a failing exit code. It runs with plain <code>node</code>, has zero runtime dependencies, and its tests use only the built-in runner.</p>
+  <div class="prose">
+  <p>It ties together most of the guide: ES modules and visibility, a discriminated union for results, errors converted to values at the boundary, generics, <code>async</code>/<code>await</code> with a concurrency limit, <code>AbortSignal.timeout</code>, built-in <code>parseArgs</code> and <code>styleText</code>, and <code>node:test</code> with a real local HTTP server. This exact code was run and type-checked with strict settings before being included.</p>
+  </div>
+<div class="filetree">linkcheck/
+├── package.json
+├── tsconfig.json       the strict config from the Toolchain topic
+├── src/
+│   ├── check.ts        pure logic: parse, check, limit concurrency
+│   └── main.ts         CLI: args, file I/O, output, exit code
+└── test/
+    └── check.test.ts</div>
+<script type="text/x-code" data-lang="sh" data-title="try it">
+mkdir linkcheck && cd linkcheck && npm init -y && npm pkg set type=module
+npm i -D typescript @types/node
+# create the files below, then:
+printf 'https://example.com\nhttps://example.com/nope\n' > urls.txt
+node src/main.ts urls.txt -c 4 -t 3000
+node --test            # runs test/**/*.test.ts
+npx tsc                # type check (noEmit is set in tsconfig)
+</script>
+  <div class="tabs">
+<script type="text/x-code" data-lang="ts" data-tab="src/check.ts" data-title="src/check.ts">
+⟦export type CheckResult =
+  | { url: string; ok: true; status: number; ms: number }
+  | { url: string; ok: false; reason: string; ms: number };
+⟧
+⟦export interface CheckOptions {
+  concurrency: number;
+  timeoutMs: number;
+  fetchFn?: typeof fetch;   // injectable for tests
+}
+⟧
+/** Parse one URL per line; skip blanks and # comments; dedupe; report invalid lines. */
+export function parseUrlList(text⟦: string⟧)⟦: { urls: string[]; invalid: string[] }⟧ {
+  const urls = new Set⟦<string>⟧();
+  const invalid⟦: string[]⟧ = [];
+  for (const raw of text.split(/\r?\n/)) {
+    const line = raw.trim();
+    if (line === "" || line.startsWith("#")) continue;
+    if (URL.canParse(line)) urls.add(line);
+    else invalid.push(line);
+  }
+  return { urls: [...urls], invalid };
+}
+
+/** Never throws: every failure becomes a value. */
+export async function checkUrl(url⟦: string⟧, opts⟦: CheckOptions⟧)⟦: Promise<CheckResult>⟧ {
+  const fetchFn = opts.fetchFn ?? fetch;
+  const start = performance.now();
+  const ms = () => Math.round(performance.now() - start);
+  try {
+    const res = await fetchFn(url, { redirect: "follow", signal: AbortSignal.timeout(opts.timeoutMs) });
+    await res.body?.cancel();   // we only need the status; free the socket
+    return res.ok
+      ? { url, ok: true, status: res.status, ms: ms() }
+      : { url, ok: false, reason: `HTTP ${res.status}`, ms: ms() };
+  } catch (err) {
+    return { url, ok: false, reason: describe(err, opts.timeoutMs), ms: ms() };
+  }
+}
+
+function describe(err⟦: unknown⟧, timeoutMs⟦: number⟧)⟦: string⟧ {
+  if (err instanceof Error && err.name === "TimeoutError") return `timeout after ${timeoutMs}ms`;
+  if (err instanceof Error) return err.cause instanceof Error ? err.cause.message : err.message;
+  return String(err);
+}
+
+/** Run fn over items with at most `limit` in flight; results keep input order. */
+export async function mapLimit⟦<T, R>⟧(
+  items⟦: readonly T[]⟧,
+  limit⟦: number⟧,
+  fn⟦: (item: T) => Promise<R>⟧,
+)⟦: Promise<R[]>⟧ {
+  const out⟦: R[]⟧ = new Array(items.length);
+  let next = 0;
+  async function worker()⟦: Promise<void>⟧ {
+    while (next < items.length) {
+      const i = next++;
+      out[i] = await fn(items[i]⟦!⟧);
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+  return out;
+}
+
+export function checkAll(urls⟦: readonly string[]⟧, opts⟦: CheckOptions⟧)⟦: Promise<CheckResult[]>⟧ {
+  return mapLimit(urls, opts.concurrency, (u) => checkUrl(u, opts));
+}
+</script>
+<script type="text/x-code" data-lang="ts" data-tab="src/main.ts" data-title="src/main.ts">
+import { readFile } from "node:fs/promises";
+import { parseArgs, styleText } from "node:util";
+import { checkAll, parseUrlList, ⟦type CheckResult⟧ } from "./check.ts";
+
+const { values, positionals } = parseArgs({
+  allowPositionals: true,
+  options: {
+    concurrency: { type: "string", short: "c", default: "8" },
+    timeout: { type: "string", short: "t", default: "5000" },
+    json: { type: "boolean", default: false },
+  },
+});
+
+const file = positionals[0];
+if (file === undefined) {
+  console.error("usage: linkcheck <file> [-c 8] [-t 5000] [--json]");
+  process.exit(2);
+}
+
+const { urls, invalid } = parseUrlList(await readFile(file, "utf8"));   // top-level await
+for (const line of invalid) console.warn(styleText("yellow", `skipping invalid URL: ${line}`));
+
+const results = await checkAll(urls, {
+  concurrency: Number(values.concurrency),
+  timeoutMs: Number(values.timeout),
+});
+
+if (values.json) console.log(JSON.stringify(results, null, 2));
+else for (const r of results) console.log(format(r));
+
+const failed = results.filter((r) => !r.ok).length;
+console.log(`\n${results.length - failed} ok, ${failed} failed`);
+process.exitCode = failed > 0 ? 1 : 0;
+
+function format(r⟦: CheckResult⟧)⟦: string⟧ {   // hoisted, so usable above
+  const time = `${r.ms}ms`.padStart(7);
+  return r.ok
+    ? `${styleText("green", "ok  ")} ${r.status} ${time}  ${r.url}`
+    : `${styleText("red", "FAIL")}     ${time}  ${r.url}  (${r.reason})`;
+}
+</script>
+<script type="text/x-code" data-lang="ts" data-tab="test/check.test.ts" data-title="test/check.test.ts">
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { createServer } from "node:http";
+import { once } from "node:events";
+⟦import type { AddressInfo } from "node:net";
+⟧import { checkAll, mapLimit, parseUrlList, ⟦type CheckResult⟧ } from "../src/check.ts";
+
+const reasonOf = (r⟦: CheckResult | undefined⟧) => (r && !r.ok ? r.reason : undefined);
+
+test("parseUrlList skips blanks, comments, duplicates and invalid lines", () => {
+  const { urls, invalid } = parseUrlList("# list\nhttps://a.test\n\nhttps://a.test\nnot a url\n");
+  assert.deepEqual(urls, ["https://a.test"]);
+  assert.deepEqual(invalid, ["not a url"]);
+});
+
+test("mapLimit keeps order and never exceeds the limit", async () => {
+  let active = 0;
+  let peak = 0;
+  const out = await mapLimit([30, 10, 20, 5], 2, async (ms) => {
+    active++;
+    peak = Math.max(peak, active);
+    await new Promise((resolve) => setTimeout(resolve, ms));
+    active--;
+    return ms * 2;
+  });
+  assert.deepEqual(out, [60, 20, 40, 10]);
+  assert.equal(peak, 2);
+});
+
+test("checkAll reports success, HTTP errors and timeouts", async (t) => {
+  const server = createServer((req, res) => {
+    if (req.url === "/slow") return void setTimeout(() => res.end("late"), 300);
+    res.statusCode = req.url === "/missing" ? 404 : 200;
+    res.end("hi");
+  });
+  server.listen(0, "127.0.0.1");
+  await once(server, "listening");
+  t.after(() => { server.closeAllConnections(); server.close(); });
+
+  const { port } = server.address() ⟦as AddressInfo⟧;
+  const base = `http://127.0.0.1:${port}`;
+  const [ok, missing, slow] = await checkAll(
+    [`${base}/`, `${base}/missing`, `${base}/slow`],
+    { concurrency: 3, timeoutMs: 100 },
+  );
+
+  assert.equal(ok?.ok, true);
+  assert.equal(reasonOf(missing), "HTTP 404");
+  assert.match(reasonOf(slow) ?? "", /timeout/);
+});
+</script>
+    <div class="why"><strong>Things to notice:</strong> <code>check.ts</code> has no I/O besides <code>fetch</code>, which is injectable, so it tests without mocks. <code>checkUrl</code> never throws, so one bad URL can't reject the whole <code>Promise.all</code>. <code>noUncheckedIndexedAccess</code> is why the code says <code>positionals[0]</code> might be <code>undefined</code> and why <code>items[i]!</code> needs the assertion. Try the Erase types switch on these files: what remains is the JavaScript Node actually runs.</div>
+  </div>
+  <div class="prose">
+  <h3>Ways to extend it</h3>
+  <ul>
+    <li>Retry failed checks with exponential backoff, and test it with an injected <code>fetchFn</code>.</li>
+    <li>Move the CPU-light checks into a worker pool and compare the timing (it shouldn't help: this is I/O-bound).</li>
+    <li>Add a <code>--watch</code> mode with <code>fs.watch</code> and an <code>AbortController</code> that cancels the in-flight run when the file changes.</li>
+    <li>Validate a JSON config file with Zod and infer <code>CheckOptions</code> from the schema.</li>
+  </ul>
+  </div>
+  <div class="notes" data-id="project"></div>
+</section>
+
+<!-- ============ CHEAT SHEET ============ -->
+<section class="topic" id="cheatsheet">
+  <h2>Cheat sheet</h2>
+  <p class="lede">The everyday syntax on one page. The Erase types switch works here too.</p>
+  <div class="cheatgrid">
+<section><h3>Values and variables</h3>
+<script type="text/x-code" data-lang="ts" data-mini>
+const x = 1;  let y = 2;          // never var
+typeof x            // "number"
+10n ** 20n          // bigint
+x ?? fallback       // null/undefined only
+x || fallback       // any falsy
+a?.b?.[0]?.()       // optional chaining
+`sum: ${a + b}`     // template literal
+Number("42")  String(42)  Boolean(0)
+</script></section>
+<section><h3>Destructuring and spread</h3>
+<script type="text/x-code" data-lang="ts" data-mini>
+const { a, b: renamed, c = 0, ...rest } = obj;
+const [head, ...tail] = list;
+const copy = { ...obj, a: 2 };     // shallow
+const all = [...xs, ...ys];
+fn(...args);
+[a, b] = [b, a];                   // swap
+</script></section>
+<section><h3>Arrays</h3>
+<script type="text/x-code" data-lang="ts" data-mini>
+xs.map(f)  xs.filter(p)  xs.reduce(f, init)
+xs.find(p)  xs.findLast(p)  xs.some(p)  xs.every(p)
+xs.flatMap(f)  xs.includes(v)  xs.at(-1)
+xs.toSorted((a, b) => a - b)  xs.toReversed()
+xs.with(i, v)  xs.toSpliced(i, n)  // non-mutating
+Array.from({ length: n }, (_, i) => i)
+Object.groupBy(xs, x => x.kind)
+</script></section>
+<section><h3>Objects, Map, Set</h3>
+<script type="text/x-code" data-lang="ts" data-mini>
+Object.keys(o)  Object.values(o)  Object.entries(o)
+Object.fromEntries(pairs)  Object.hasOwn(o, "k")
+const m = new Map⟦<string, number>⟧([["a", 1]]);
+m.get("a") ?? 0;  m.set("b", 2);  m.has("b");  m.size
+const s = new Set([1, 2]);
+s.union(t)  s.intersection(t)  s.difference(t)
+structuredClone(o)                 // deep copy
+</script></section>
+<section><h3>Functions</h3>
+<script type="text/x-code" data-lang="ts" data-mini>
+function f(a⟦: number⟧, b = 2)⟦: number⟧ { return a + b; }
+const g = (a⟦: number⟧) => a * 2;
+const h = () => ({ ok: true });    // parens for object
+function opts({ id, tries = 3 }⟦: { id: string; tries?: number }⟧) {}
+function sum(...xs⟦: number[]⟧) {}
+const bound = obj.method.bind(obj);
+</script></section>
+<section><h3>Classes</h3>
+<script type="text/x-code" data-lang="ts" data-mini>
+class A extends Base {
+  #secret = 1;                     // runtime-private
+  static count = 0;
+  value⟦: string⟧;
+  constructor(v⟦: string⟧) { super(); this.value = v; }
+  get size() { return this.value.length; }
+  ⟦override ⟧run() { super.run(); }
+  handler = () => this.value;      // bound arrow field
+}
+</script></section>
+<section><h3>Async</h3>
+<script type="text/x-code" data-lang="ts" data-mini>
+async function load()⟦: Promise<User>⟧ { return await api(); }
+await Promise.all([p1, p2]);       // fail fast
+await Promise.allSettled(ps);      // never rejects
+await Promise.race(ps);  await Promise.any(ps);
+const { promise, resolve } = Promise.withResolvers⟦<void>⟧();
+fetch(url, { signal: AbortSignal.timeout(5000) });
+for await (const chunk of stream) {}
+queueMicrotask(fn);  setTimeout(fn, 0);
+</script></section>
+<section><h3>Errors and cleanup</h3>
+<script type="text/x-code" data-lang="ts" data-mini>
+try { risky(); }
+catch (e) { if (e instanceof MyError) {} throw e; }
+finally { cleanup(); }
+throw new Error("context", { cause: e });
+class MyError extends Error { ⟦override ⟧name = "MyError"; }
+{ using r = acquire(); }           // r[Symbol.dispose]()
+{ await using c = await connect(); }
+</script></section>
+<section><h3>Modules</h3>
+<script type="text/x-code" data-lang="ts" data-mini>
+export const a = 1;  export function f() {}
+export default thing;              // prefer named
+import { a, f as g } from "./mod.ts";
+import ⟦type⟧ { T } from "./types.ts";
+import * as path from "node:path";
+import data from "./d.json" with { type: "json" };
+const mod = await import("./lazy.ts");
+import.meta.dirname  import.meta.filename
+</script></section>
+<section><h3>Types</h3>
+<script type="text/x-code" data-lang="ts" data-mini>
+⟦type Id = string | number;
+interface User { id: Id; name?: string; readonly at: Date }
+type Pair<T> = [T, T];
+type Fn = (x: number) => string;
+type Keys = keyof User;            // "id" | "name" | "at"
+type At = User["at"];              // Date
+type Opt<T> = { [K in keyof T]?: T[K] };
+type Un<T> = T extends Promise<infer U> ? U : T;
+⟧const cfg = { port: 1 } ⟦satisfies Record<string, number>⟧;
+const modes = ["a", "b"] as const;
+</script></section>
+<section><h3>Narrowing</h3>
+<script type="text/x-code" data-lang="ts" data-mini>
+typeof x === "string"
+x instanceof Date
+"kind" in x
+x === null    x == null            // null or undefined
+Array.isArray(x)
+function isUser(v⟦: unknown⟧)⟦: v is User⟧ { … }
+function assert(c⟦: unknown⟧)⟦: asserts c⟧ { … }
+const _exhaustive⟦: never⟧ = x;     // in default case
+</script></section>
+<section><h3>Utility types</h3>
+<script type="text/x-code" data-lang="ts" data-mini>
+⟦Partial<T>  Required<T>  Readonly<T>
+Pick<T, "a" | "b">  Omit<T, "c">  Record<K, V>
+Exclude<U, X>  Extract<U, X>  NonNullable<T>
+ReturnType<F>  Parameters<F>  Awaited<P>
+NoInfer<T>  InstanceType<C>
+⟧</script></section>
+<section><h3>Node CLI</h3>
+<script type="text/x-code" data-lang="sh" data-mini>
+node app.ts                 # run (types stripped)
+node --watch app.ts         # restart on change
+node --test                 # run *.test.ts
+node --env-file=.env app.ts
+node --inspect-brk app.ts   # debugger
+npx tsc --noEmit            # type check
+npm ci                      # clean install from lockfile
+npm outdated  npm audit
+</script></section>
+<section><h3>tsconfig essentials</h3>
+<script type="text/x-code" data-lang="json" data-mini>
+"strict": true,
+"noUncheckedIndexedAccess": true,
+"exactOptionalPropertyTypes": true,
+"verbatimModuleSyntax": true,
+"erasableSyntaxOnly": true,
+"module": "nodenext",
+"allowImportingTsExtensions": true,
+"noEmit": true
+</script></section>
+  </div>
+  <div class="notes" data-id="cheatsheet"></div>
+</section>
+
+<footer class="foot">
+  <p>Version note: written in October 2026 against TypeScript 7.0, Node.js 24 (Active LTS) and Node.js 26 (scheduled to become LTS in late October 2026), and the ECMAScript 2025 and 2026 editions. Features marked "Node 26" may be missing from older Node versions and from browsers.</p>
+  <p>Notes are stored in this browser's local storage under keys starting with <code>jsts-primer:</code>. Use "Copy all my notes" in the sidebar to back them up before clearing browser data or moving the file.</p>
+</footer>
+</main>
+</div>
+<script>
+(() => {
+"use strict";
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const store = {
+  get(k) { try { return localStorage.getItem("jsts-primer:" + k); } catch { return null; } },
+  set(k, v) { try { localStorage.setItem("jsts-primer:" + k, v); return true; } catch { return false; } },
+  keys() { try { return Object.keys(localStorage).filter(k => k.startsWith("jsts-primer:")); } catch { return []; } }
+};
+const esc = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* ---------- clipboard ---------- */
+async function copyText(text) {
+  try { await navigator.clipboard.writeText(text); return true; }
+  catch {
+    const ta = document.createElement("textarea");
+    ta.value = text; ta.setAttribute("readonly", ""); ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select();
+    let ok = false; try { ok = document.execCommand("copy"); } catch {}
+    ta.remove(); return ok;
+  }
+}
+
+/* ---------- syntax highlighting ---------- */
+const KW = {
+  ts: "abstract as async await break case catch class const continue debugger default delete do else enum export extends false finally for from function get if implements import in infer instanceof interface keyof let new null of override private protected public readonly return satisfies set static super switch this throw true try type typeof undefined unique using var void while with yield never unknown any string number boolean bigint symbol object asserts is",
+  py: "and as assert async await break class continue def del elif else except False finally for from global if import in is lambda None nonlocal not or pass raise return True try while with yield match case self",
+  java: "abstract boolean break case catch class double else extends final finally for if implements import int interface long new null permits private public record return sealed static super switch this throw throws try var void while true false",
+  go: "break case chan const continue default defer else for func go if import interface map package range return select struct switch type var nil true false any comparable",
+  sh: "cd mkdir npm npx node pnpm fnm printf echo",
+  json: "true false null"
+};
+const kwSets = Object.fromEntries(Object.entries(KW).map(([k, v]) => [k, new Set(v.split(" "))]));
+function tokenRe(lang) {
+  const com = (lang === "py" || lang === "sh") ? String.raw`#[^\n]*` : String.raw`\/\/[^\n]*|\/\*[\s\S]*?\*\/`;
+  const str = lang === "go" || lang === "java" || lang === "py" || lang === "json"
+    ? String.raw`"(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*'`
+    : String.raw`"(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*'|\x60(?:\\[\s\S]|[^\x60\\])*\x60`;
+  return new RegExp(`(${com})|(${str})|(\\b\\d[\\d_]*(?:\\.\\d+)?n?\\b)|([A-Za-z_$][\\w$]*)`, "g");
+}
+function highlight(text, lang) {
+  const set = kwSets[lang] || kwSets.ts;
+  const re = tokenRe(lang);
+  let out = "", last = 0, m;
+  while ((m = re.exec(text))) {
+    out += esc(text.slice(last, m.index));
+    const [tok, c, s, n, w] = m;
+    if (c) out += `<span class="c">${esc(tok)}</span>`;
+    else if (s) out += `<span class="s">${esc(tok)}</span>`;
+    else if (n) out += `<span class="n">${esc(tok)}</span>`;
+    else if (w && set.has(w)) out += `<span class="k">${tok}</span>`;
+    else out += esc(tok);
+    last = re.lastIndex;
+  }
+  return out + esc(text.slice(last));
+}
+function segments(raw) {
+  const segs = []; const re = /⟦([\s\S]*?)⟧/g; let last = 0, m;
+  while ((m = re.exec(raw))) {
+    if (m.index > last) segs.push({ t: false, s: raw.slice(last, m.index) });
+    segs.push({ t: true, s: m[1] });
+    last = re.lastIndex;
+  }
+  if (last < raw.length) segs.push({ t: false, s: raw.slice(last) });
+  // After an erased whole-line type block, also hide the blank line that followed it
+  const outSegs = [];
+  segs.forEach((g, k) => {
+    const prev = segs[k - 1];
+    const afterBlock = k === 0 ? false : prev.t && prev.s.endsWith("\n");
+    const m = !g.t && afterBlock && /^\n+/.exec(g.s);
+    if (m) { outSegs.push({ t: false, gap: true, s: m[0] }); if (g.s.length > m[0].length) outSegs.push({ t: false, s: g.s.slice(m[0].length) }); }
+    else outSegs.push(g);
+  });
+  return outSegs;
+}
+const isErased = () => document.documentElement.classList.contains("erased");
+function buildCode(script) {
+  let raw = script.textContent.replace(/^\n/, "").replace(/\s+$/, "");
+  const lang = script.dataset.lang || "ts";
+  const segs = segments(raw);
+  const html = segs.map(g => g.t ? `<span class="ty">${highlight(g.s, lang)}</span>` : g.gap ? `<span class="tygap">${g.s}</span>` : highlight(g.s, lang)).join("");
+  const wrap = document.createElement("div");
+  wrap.className = "codeblock";
+  const mini = script.hasAttribute("data-mini");
+  if (!mini) {
+    const head = document.createElement("div"); head.className = "codehead";
+    head.innerHTML = `<span class="title"></span>`;
+    head.firstChild.textContent = script.dataset.title || lang;
+    const btn = document.createElement("button"); btn.className = "copy"; btn.type = "button"; btn.textContent = "Copy";
+    btn.addEventListener("click", async () => {
+      const text = segs.filter(g => !((g.t || g.gap) && isErased())).map(g => g.s).join("").replace(/^\n+/, "");
+      const ok = await copyText(text);
+      btn.textContent = ok ? (isErased() && segs.some(g => g.t) ? "Copied as JS" : "Copied") : "Select and copy manually";
+      setTimeout(() => (btn.textContent = "Copy"), 1600);
+    });
+    head.appendChild(btn); wrap.appendChild(head);
+  }
+  const pre = document.createElement("pre"); const code = document.createElement("code");
+  code.innerHTML = html; pre.appendChild(code); wrap.appendChild(pre);
+  if (mini) { wrap.style.border = "0"; wrap.style.background = "transparent"; wrap.style.margin = "0"; pre.style.padding = ".2rem 0"; }
+  script.replaceWith(wrap);
+  return wrap;
+}
+$$(".tabs").forEach((tabs, ti) => {
+  const scripts = $$('script[type="text/x-code"]', tabs);
+  const bar = document.createElement("div"); bar.className = "tabbar"; bar.setAttribute("role", "tablist");
+  const panels = scripts.map((s, i) => {
+    const label = s.dataset.tab || s.dataset.lang;
+    const panel = buildCode(s); panel.setAttribute("role", "tabpanel"); panel.id = `tp${ti}-${i}`;
+    const b = document.createElement("button"); b.type = "button"; b.setAttribute("role", "tab");
+    b.textContent = label; b.setAttribute("aria-controls", panel.id);
+    b.addEventListener("click", () => select(i));
+    b.addEventListener("keydown", e => {
+      if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+        const n = (i + (e.key === "ArrowRight" ? 1 : -1) + scripts.length) % scripts.length;
+        select(n); bar.children[n].focus();
+      }
+    });
+    bar.appendChild(b); return panel;
+  });
+  function select(i) {
+    panels.forEach((p, j) => { p.hidden = j !== i; bar.children[j].setAttribute("aria-selected", String(j === i)); bar.children[j].tabIndex = j === i ? 0 : -1; });
+  }
+  tabs.prepend(bar); select(0);
+});
+$$('script[type="text/x-code"]').forEach(buildCode);
+
+/* ---------- erase types ---------- */
+function setErased(on) {
+  document.documentElement.classList.toggle("erased", on);
+  $$("[data-erase]").forEach(b => b.setAttribute("aria-pressed", String(on)));
+  store.set("erased", on ? "1" : "0");
+}
+$$("[data-erase]").forEach(b => b.addEventListener("click", () => setErased(!isErased())));
+setErased(store.get("erased") === "1");
+
+
+/* ---------- drawer ---------- */
+const menuBtn = $("#menuBtn");
+function drawer(open) { document.body.classList.toggle("drawer", open); menuBtn.setAttribute("aria-expanded", String(open)); if (open) $("#side a").focus(); }
+menuBtn.addEventListener("click", () => drawer(!document.body.classList.contains("drawer")));
+$("#scrim").addEventListener("click", () => drawer(false));
+$$("#side a").forEach(a => a.addEventListener("click", () => drawer(false)));
+document.addEventListener("keydown", e => { if (e.key === "Escape" && document.body.classList.contains("drawer")) { drawer(false); menuBtn.focus(); } });
+
+/* ---------- active topic ---------- */
+const links = new Map($$("#side a").map(a => [a.getAttribute("href").slice(1), a]));
+const io = new IntersectionObserver(entries => {
+  entries.forEach(en => {
+    if (en.isIntersecting) {
+      links.forEach(a => a.removeAttribute("aria-current"));
+      links.get(en.target.id)?.setAttribute("aria-current", "true");
+    }
+  });
+}, { rootMargin: "-30% 0px -65% 0px" });
+$$(".topic").forEach(s => io.observe(s));
+
+/* ---------- notes ---------- */
+$$(".notes").forEach(box => {
+  const id = box.dataset.id;
+  const title = box.closest(".topic")?.querySelector("h2")?.textContent || id;
+  box.innerHTML = `<label for="note-${id}">My notes <span class="status" aria-live="polite"></span></label><textarea id="note-${id}" placeholder="Your own examples, links and reminders for this topic. Saved automatically in this browser."></textarea>`;
+  const ta = $("textarea", box), st = $(".status", box);
+  ta.value = store.get("notes:" + id) || "";
+  ta.dataset.title = title;
+  let t;
+  ta.addEventListener("input", () => {
+    clearTimeout(t); st.textContent = "Saving…";
+    t = setTimeout(() => { st.textContent = store.set("notes:" + id, ta.value) ? "Saved" : "Not saved: this browser blocks local storage"; }, 400);
+  });
+});
+$("#copyNotes").addEventListener("click", async e => {
+  const parts = $$(".notes textarea").filter(t => t.value.trim()).map(t => `## ${t.dataset.title}\n\n${t.value.trim()}\n`);
+  const b = e.currentTarget;
+  if (!parts.length) { b.textContent = "No notes yet"; setTimeout(() => (b.textContent = "Copy all my notes"), 1600); return; }
+  const ok = await copyText(parts.join("\n"));
+  b.textContent = ok ? `Copied ${parts.length} topic${parts.length > 1 ? "s" : ""}` : "Copy failed";
+  setTimeout(() => (b.textContent = "Copy all my notes"), 1800);
+});
+
+/* ---------- stepper helper ---------- */
+function stepper(root, { title, hint, steps, render, extra }) {
+  root.innerHTML = `<h4></h4><p class="hint"></p><div class="body"></div><div class="explain" aria-live="polite"></div>
+  <div class="ctrl"><button class="btn" data-a="reset" type="button">Start over</button><button class="btn" data-a="prev" type="button">Back</button><button class="btn" data-a="next" type="button">Next step</button><span class="stepinfo"></span></div>`;
+  $("h4", root).textContent = title; $(".hint", root).textContent = hint;
+  const body = $(".body", root), ex = $(".explain", root), info = $(".stepinfo", root);
+  if (extra) extra(root);
+  let i = 0;
+  const api = {
+    go(n) { i = Math.max(0, Math.min(steps().length - 1, n)); const s = steps()[i]; render(body, s, i); ex.innerHTML = s.ex; info.textContent = `Step ${i + 1} of ${steps().length}`;
+      $('[data-a="prev"]', root).disabled = i === 0; $('[data-a="next"]', root).disabled = i === steps().length - 1; },
+    get i() { return i; }
+  };
+  root.addEventListener("click", e => {
+    const a = e.target.closest("[data-a]")?.dataset.a;
+    if (a === "next") api.go(i + 1); else if (a === "prev") api.go(i - 1); else if (a === "reset") api.go(0);
+  });
+  api.go(0); return api;
+}
+const codeLines = (lines, on, hints = {}) => `<div class="lines">${lines.map((l, j) => `<div class="${j === on ? "on" : ""}">${hints[j] ? `<span class="tyhint">${esc(hints[j])}</span>` : ""}${esc(l) || " "}</div>`).join("")}</div>`;
+const chips = (arr, hotIdx = -1) => arr.map((c, j) => `<span class="chip${j === hotIdx ? " hot" : ""}">${esc(c)}</span>`).join("") || `<span class="chip" style="opacity:.45;border-style:dashed">empty</span>`;
+
+/* ---------- viz: narrowing ---------- */
+{
+  const L = [
+    "function label(x: string | number | null) {",
+    "  if (x === null) {",
+    "    return \"none\";",
+    "  }",
+    "  if (typeof x === \"string\") {",
+    "    return x.toUpperCase();",
+    "  }",
+    "  return x.toFixed(2);",
+    "}"
+  ];
+  const S = [
+    { l: 0, t: "string | number | null", ex: "The declared type of <code>x</code> is the union of three sets of values." },
+    { l: 1, t: "string | number | null", ex: "Comparing with <code>null</code> splits the set in two: the branch where it's true and the code after it." },
+    { l: 2, t: "null", ex: "Inside the branch, only <code>null</code> is possible. The checker records that this branch always returns." },
+    { l: 4, t: "string | number", ex: "Because the branch above returned, <code>null</code> is gone for the rest of the function. No cast was needed." },
+    { l: 5, t: "string", ex: "<code>typeof x === \"string\"</code> narrows to <code>string</code>, so <code>.toUpperCase()</code> is allowed." },
+    { l: 7, t: "number", ex: "Only <code>number</code> is left. Delete the null check and this line fails with <em>'x' is possibly 'null'</em>. Narrowing is pure analysis; at runtime these are ordinary <code>if</code> statements." }
+  ];
+  stepper($("#viz-narrow"), {
+    title: "Step through: how narrowing changes the type of x",
+    hint: "The blue tag shows the type the checker believes x has on the highlighted line.",
+    steps: () => S,
+    render(body, s) { body.innerHTML = codeLines(L, s.l, { [s.l]: "x: " + s.t }); }
+  });
+}
+
+/* ---------- viz: closures var vs let ---------- */
+{
+  let mode = "let";
+  const L = m => [
+    "const fns = [];",
+    `for (${m} i = 0; i < 3; i++) {`,
+    "  fns.push(() => i);",
+    "}",
+    "console.log(fns.map(f => f()));"
+  ];
+  const steps = () => [
+    { l: 0, n: 0, i: null, ex: "An empty array that will hold three closures." },
+    { l: 2, n: 1, i: 0, ex: mode === "var" ? "<code>var</code> creates ONE <code>i</code> for the whole function. The first closure captures that variable, not the number 0." : "<code>let</code> creates a fresh binding of <code>i</code> for each iteration. The first closure captures iteration 0's binding." },
+    { l: 2, n: 2, i: 1, ex: mode === "var" ? "Same single variable, now 1. Both closures point at it." : "A new binding for iteration 1, initialized from the previous one and then incremented." },
+    { l: 2, n: 3, i: 2, ex: mode === "var" ? "Three closures, one shared variable." : "Three closures, three separate bindings." },
+    { l: 3, n: 3, i: 3, ex: mode === "var" ? "The loop increments <code>i</code> to 3 and stops. The shared variable now holds 3." : "The loop's last increment happens in a new binding that no closure captured." },
+    { l: 4, n: 3, i: 3, done: true, ex: mode === "var" ? "Every closure reads the same variable: <strong>[3, 3, 3]</strong>. Python behaves this way too; Go did before 1.22." : "Each closure reads its own binding: <strong>[0, 1, 2]</strong>. Go 1.22 adopted the same per-iteration semantics." }
+  ];
+  const api = stepper($("#viz-closure"), {
+    title: "Step through: closures capture variables, not values",
+    hint: "Switch between var and let, then step through the loop.",
+    steps,
+    extra(root) {
+      const p = document.createElement("div"); p.className = "picker";
+      p.innerHTML = `<button class="btn" type="button" data-m="let" aria-pressed="true">let</button><button class="btn" type="button" data-m="var" aria-pressed="false">var</button>`;
+      $(".body", root).before(p);
+      p.addEventListener("click", e => { const m = e.target.closest("[data-m]")?.dataset.m; if (!m) return; mode = m; $$("[data-m]", p).forEach(b => b.setAttribute("aria-pressed", String(b.dataset.m === m))); api.go(api.i); });
+    },
+    render(body, s) {
+      let scopes;
+      if (s.i === null) scopes = `<div class="obj"><span class="id">no i yet</span></div>`;
+      else if (mode === "var") scopes = `<div class="obj hot"><span class="id">function scope</span><br>i = ${s.i}</div>`;
+      else scopes = Array.from({ length: Math.min(s.n + (s.l === 3 ? 1 : 0), 4) }, (_, k) => `<div class="obj${k === Math.min(s.i, 3) ? " hot" : ""}"><span class="id">iteration ${k}</span><br>i = ${k}</div>`).join("");
+      const fns = Array.from({ length: s.n }, (_, k) => `f${k} → ${mode === "var" ? "the one i" : "iteration " + k + "'s i"}`);
+      const out = s.done ? [mode === "var" ? "[3, 3, 3]" : "[0, 1, 2]"] : [];
+      body.innerHTML = `<div class="grid2"><div>${codeLines(L(mode), s.l)}</div><div class="lanes" style="grid-template-columns:1fr 1fr">
+        <div class="lane"><h5>Bindings of i</h5>${scopes}</div>
+        <div class="lane"><h5>fns (closures)</h5>${chips(fns, s.n - 1)}</div>
+        <div class="lane out" style="grid-column:1/-1;min-height:3rem"><h5>Console</h5>${out.map(o => `<span class="chip">${o}</span>`).join("")}</div></div></div>`;
+    }
+  });
+}
+
+/* ---------- viz: prototype chain ---------- */
+{
+  const root = $("#viz-proto");
+  let shadow = false;
+  const chain = () => [
+    { id: "rex", props: shadow ? ["name", "eat"] : ["name"], note: "own properties" },
+    { id: "Dog.prototype", props: ["constructor", "bark"], note: "shared by all dogs" },
+    { id: "Animal.prototype", props: ["constructor", "eat"], note: "shared by all animals" },
+    { id: "Object.prototype", props: ["toString", "hasOwnProperty", "…"], note: "root of almost everything" }
+  ];
+  root.innerHTML = `<h4>Try it: property lookup walks the prototype chain</h4>
+  <p class="hint">Code: <code>class Animal { eat() {} }</code>, <code>class Dog extends Animal { bark() {} }</code>, <code>const rex = new Dog(); rex.name = "Rex";</code></p>
+  <div class="picker" role="group" aria-label="Look up a property">${["name", "bark", "eat", "toString", "fly"].map(p => `<button class="btn" type="button" data-p="${p}">rex.${p}</button>`).join("")}
+  <button class="btn" type="button" data-shadow aria-pressed="false">Add own rex.eat</button></div>
+  <div class="chain"></div><div class="explain" aria-live="polite">Pick a property to see where the engine finds it.</div>`;
+  const box = $(".chain", root), ex = $(".explain", root);
+  let timer;
+  function draw(hot = -1, found = -1) {
+    const c = chain();
+    box.innerHTML = c.map((o, k) => `<div class="obj${k === hot ? " hot" : ""}"><span class="id">${o.id}</span> <small>${o.note}</small><br>${o.props.map(p => k === found && p === cur ? `<strong>${p} ✓</strong>` : p).join(", ")}</div><span class="arrow" aria-hidden="true">→</span>`).join("") + `<div class="obj${hot === c.length ? " hot" : ""}" style="min-width:70px;flex:0"><span class="id">null</span></div>`;
+  }
+  let cur = "";
+  function lookup(p) {
+    clearTimeout(timer); cur = p;
+    const c = chain(); const idx = c.findIndex(o => o.props.includes(p));
+    const end = idx === -1 ? c.length : idx;
+    let k = 0;
+    const tick = () => {
+      draw(k, k === idx ? idx : -1);
+      if (k < end) { k++; timer = setTimeout(tick, reduced ? 0 : 420); }
+      else ex.innerHTML = idx === -1
+        ? `<code>rex.${p}</code> wasn't found on any object, so the result is <code>undefined</code> (no error, unlike Java or Python's AttributeError).`
+        : idx === 0 ? `<code>rex.${p}</code> is an own property, found immediately.${p === "eat" ? " It <em>shadows</em> Animal.prototype.eat without changing it." : ""}`
+        : `<code>rex.${p}</code> isn't on rex, so the engine walked ${idx} link${idx > 1 ? "s" : ""} up and found it on <strong>${c[idx].id}</strong>. Every instance shares that one function.`;
+    };
+    ex.textContent = "Looking…"; tick();
+  }
+  root.addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    if (b.hasAttribute("data-shadow")) { shadow = !shadow; b.setAttribute("aria-pressed", String(shadow)); b.textContent = shadow ? "Remove own rex.eat" : "Add own rex.eat"; draw(); ex.textContent = shadow ? "rex now has its own eat property. Try rex.eat again." : "Own eat removed."; return; }
+    if (b.dataset.p) { $$("[data-p]", root).forEach(x => x.setAttribute("aria-pressed", String(x === b))); lookup(b.dataset.p); }
+  });
+  draw();
+}
+
+/* ---------- viz: event loop ---------- */
+{
+  const L = [
+    'console.log("A");',
+    'setTimeout(() => console.log("B"), 0);',
+    'Promise.resolve().then(() => console.log("C"));',
+    '(async () => {',
+    '  console.log("D");',
+    '  await null;',
+    '  console.log("E");',
+    '})();',
+    'console.log("F");'
+  ];
+  const S = [
+    { l: -1, st: ["script"], mi: [], ma: [], o: [], ex: "The whole script runs as one task on the call stack. Predict the output order before stepping." },
+    { l: 0, st: ["script", "console.log"], mi: [], ma: [], o: ["A"], ex: "Plain synchronous code runs immediately." },
+    { l: 1, st: ["script", "setTimeout"], mi: [], ma: ["timer → log B"], ex: "setTimeout hands the callback to the timer system. Even at 0 ms it must wait in the task queue until the stack is empty and every microtask has run.", o: ["A"] },
+    { l: 2, st: ["script", "then"], mi: ["then → log C"], ma: ["timer → log B"], o: ["A"], ex: "The promise is already resolved, so its callback goes straight into the microtask queue. It still doesn't run yet." },
+    { l: 4, st: ["script", "async fn"], mi: ["then → log C"], ma: ["timer → log B"], o: ["A", "D"], ex: "Calling an async function runs its body synchronously, right now, up to the first await." },
+    { l: 5, st: ["script"], mi: ["then → log C", "resume async fn"], ma: ["timer → log B"], o: ["A", "D"], ex: "<code>await</code> suspends the function and queues its continuation as a microtask. Control returns to the caller." },
+    { l: 8, st: ["script", "console.log"], mi: ["then → log C", "resume async fn"], ma: ["timer → log B"], o: ["A", "D", "F"], ex: "Back in the script, still synchronous." },
+    { l: -1, st: [], mi: ["then → log C", "resume async fn"], ma: ["timer → log B"], o: ["A", "D", "F"], ex: "The script task is finished and the stack is empty. Before taking any new task, the engine drains the <strong>entire</strong> microtask queue." },
+    { l: 2, st: ["then callback"], mi: ["resume async fn"], ma: ["timer → log B"], o: ["A", "D", "F", "C"], ex: "First microtask: the promise callback." },
+    { l: 6, st: ["async fn (resumed)"], mi: [], ma: ["timer → log B"], o: ["A", "D", "F", "C", "E"], ex: "Second microtask: the async function continues after its await." },
+    { l: -1, st: [], mi: [], ma: ["timer → log B"], o: ["A", "D", "F", "C", "E"], ex: "Microtasks are empty, so the loop takes exactly one task from the task queue: the timer." },
+    { l: 1, st: ["timer callback"], mi: [], ma: [], o: ["A", "D", "F", "C", "E", "B"], ex: "Final order: <strong>A D F C E B</strong>. The rule: finish the current task, drain all microtasks (promises, awaits), take one task (timers, I/O), repeat. A microtask that keeps queueing microtasks starves timers and I/O." }
+  ];
+  stepper($("#viz-loop"), {
+    title: "Step through: the event loop",
+    hint: "Watch the two queues. Microtasks always run before the next task.",
+    steps: () => S,
+    render(body, s, i) {
+      const prev = S[i - 1];
+      const newOut = prev && s.o.length > prev.o.length ? s.o.length - 1 : -1;
+      body.innerHTML = `<div class="grid2"><div>${codeLines(L, s.l)}</div><div class="lanes">
+        <div class="lane"><h5>Call stack (top last)</h5>${chips(s.st, s.st.length - 1)}</div>
+        <div class="lane out"><h5>Console</h5>${s.o.length ? s.o.map((o, k) => `<span class="chip${k === newOut ? " hot" : ""}">${o}</span>`).join("") : ""}</div>
+        <div class="lane"><h5>Microtask queue</h5>${chips(s.mi)}</div>
+        <div class="lane"><h5>Task queue (timers, I/O)</h5>${chips(s.ma)}</div></div></div>`;
+    }
+  });
+}
+
+/* ---------- viz: memory ---------- */
+{
+  const L = [
+    "let n = 1;",
+    "let m = n;",
+    "m = 2;",
+    "let a = { count: 1 };",
+    "let b = a;",
+    "b.count = 2;",
+    "b = { count: 3 };",
+    "a = null;",
+    "bump(b);  // function bump(o) { o.count++; o = { count: 0 }; }"
+  ];
+  const S = [
+    { st: [["n", "1"]], hp: [], hot: "n", ex: "Primitives live directly in the variable." },
+    { st: [["n", "1"], ["m", "1"]], hp: [], hot: "m", ex: "Assigning a primitive copies the value. m is independent of n." },
+    { st: [["n", "1"], ["m", "2"]], hp: [], hot: "m", ex: "Changing m leaves n alone, as in most languages." },
+    { st: [["n", "1"], ["m", "2"], ["a", "→ #1"]], hp: [["#1", "{ count: 1 }"]], hot: "#1", ex: "An object is allocated on the heap. The variable holds a reference to it." },
+    { st: [["n", "1"], ["m", "2"], ["a", "→ #1"], ["b", "→ #1"]], hp: [["#1", "{ count: 1 }"]], hot: "b", ex: "Assigning an object copies the <em>reference</em>. Two names, one object. In Go, assigning a struct would have copied it." },
+    { st: [["n", "1"], ["m", "2"], ["a", "→ #1"], ["b", "→ #1"]], hp: [["#1", "{ count: 2 }"]], hot: "#1", ex: "Mutating through b is visible through a, because there's only one object." },
+    { st: [["n", "1"], ["m", "2"], ["a", "→ #1"], ["b", "→ #2"]], hp: [["#1", "{ count: 2 }"], ["#2", "{ count: 3 }"]], hot: "b", ex: "Reassigning b points it at a new object. a is unaffected: assignment never changes the object, only the variable." },
+    { st: [["n", "1"], ["m", "2"], ["a", "null"], ["b", "→ #2"]], hp: [["#1", "{ count: 2 }", "dead"], ["#2", "{ count: 3 }"]], hot: "#1", ex: "Nothing refers to #1 any more. It's unreachable, so the garbage collector may reclaim it at some later point. You never free it yourself." },
+    { st: [["n", "1"], ["m", "2"], ["a", "null"], ["b", "→ #2"]], hp: [["#1", "{ count: 2 }", "dead"], ["#2", "{ count: 4 }"], ["#3", "{ count: 0 }", "dead"]], hot: "#2", ex: "Call by sharing: the parameter o received a copy of b's reference, so <code>o.count++</code> changed #2. Then <code>o = {…}</code> only repointed the local o; b still points at #2. Same as Python and Java." }
+  ];
+  stepper($("#viz-mem"), {
+    title: "Step through: values, references and garbage",
+    hint: "Variables hold primitives or references; objects live on the heap.",
+    steps: () => S,
+    render(body, s, i) {
+      body.innerHTML = codeLines(L, i) + `<div class="mem" style="margin-top:.7rem">
+        <div class="box"><h5>Variables</h5>${s.st.map(([k, v]) => `<div class="slot${k === s.hot ? " hot" : ""}"><span>${k}</span><span class="v">${esc(v)}</span></div>`).join("")}</div>
+        <div class="box"><h5>Heap objects</h5>${s.hp.length ? s.hp.map(([id, v, d]) => `<div class="obj${id === s.hot ? " hot" : ""}${d ? " dead" : ""}"><span class="id">${id}</span> ${esc(v)}${d ? " (unreachable)" : ""}</div>`).join("") : `<div class="obj" style="opacity:.5">nothing allocated yet</div>`}</div></div>`;
+    }
+  });
+}
+
+/* ---------- viz: equality ---------- */
+{
+  const V = [
+    ["0", () => 0], ["-0", () => -0], ["1", () => 1], ['""', () => ""], ['"0"', () => "0"], ['"1"', () => "1"],
+    ["false", () => false], ["true", () => true], ["null", () => null], ["undefined", () => undefined],
+    ["NaN", () => NaN], ["[]", () => []], ["[1]", () => [1]], ["{}", () => ({})]
+  ];
+  const root = $("#viz-eq");
+  const opts = V.map(([l], k) => `<option value="${k}">${esc(l)}</option>`).join("");
+  root.innerHTML = `<h4>Try it: three kinds of equality</h4>
+  <p class="hint">Pick two values. Results are computed live by your browser's JavaScript engine. Each side creates a fresh value, so two <code>[]</code> are two different arrays.</p>
+  <div class="picker"><label>Left <select id="eqA">${opts}</select></label><label>Right <select id="eqB">${opts}</select></label></div>
+  <div class="eqres"></div><div class="explain" aria-live="polite"></div>`;
+  const a = $("#eqA", root), b = $("#eqB", root);
+  a.value = "0"; b.value = "3";
+  function run() {
+    const x = V[a.value][1](), y = V[b.value][1]();
+    const r = [["==", x == y], ["===", x === y], ["Object.is", Object.is(x, y)]];
+    $(".eqres", root).innerHTML = r.map(([k, v]) => `<div>${k}<b class="${v ? "yes" : "no"}">${v}</b></div>`).join("");
+    const ta = x === null ? "null" : typeof x, tb = y === null ? "null" : typeof y;
+    let e;
+    if (typeof x === "object" && x !== null && typeof y === "object" && y !== null) e = "Two objects are equal only if they are the same object. Contents are never compared.";
+    else if (Number.isNaN(x) || Number.isNaN(y)) e = "NaN is not equal to anything, including itself. <code>Object.is</code> treats NaN as equal to NaN; use <code>Number.isNaN</code> to test for it.";
+    else if (x === y && !Object.is(x, y)) e = "<code>===</code> treats 0 and -0 as equal; <code>Object.is</code> distinguishes them. Map and Set use the <code>===</code> behavior here.";
+    else if (x === y) e = "Same type and same value: all three agree.";
+    else if (x == y) e = `Different types (${ta} vs ${tb}), so <code>==</code> coerced them first: booleans become numbers, strings become numbers, objects become primitives via <code>valueOf</code>/<code>toString</code>, and <code>null</code> equals only <code>undefined</code>. This is why <code>===</code> is the rule.`;
+    else e = `Not equal by any definition (${ta} vs ${tb}).`;
+    $(".explain", root).innerHTML = e;
+  }
+  a.addEventListener("change", run); b.addEventListener("change", run); run();
+}
+})();
+</script>
+<script type="module" src="../explainer.js"></script>
+</body>
+</html>

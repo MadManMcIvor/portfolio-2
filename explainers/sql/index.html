@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="en" data-d="pg">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- Theme: light by default, applied before first paint. Same key as the rest of the
+     site, so the choice made on the home page carries here and back. -->
+<script>
+  (function () {
+    var KEY = 'theme';
+    var DEFAULT = 'light';
+    function apply(choice) {
+      document.documentElement.setAttribute('data-theme', choice);
+    }
+    function stored() {
+      try {
+        var v = localStorage.getItem(KEY);
+        return v === 'light' || v === 'dark' ? v : null;
+      } catch (e) {
+        return null;
+      }
+    }
+    apply(stored() || DEFAULT);
+    window.setTheme = function (choice) {
+      apply(choice);
+      try {
+        localStorage.setItem(KEY, choice);
+      } catch (e) {}
+    };
+  })();
+</script>
+<link rel="stylesheet" href="../../css/tokens.css">
+<title>SQL reference — Alex McIvor</title>
+<meta name="description" content="SQL the way the database reads it, with every example switchable between Postgres, DuckDB and SQLite.">
+<style>
+/* Palette: mapped onto Cream & Ink (../../css/tokens.css, ../explainer.css). Each dialect
+   keeps its own colour, and the page accent follows whichever one is picked. */
+:root{
+  --bg:var(--paper); --surface:var(--paper-raised); --muted:var(--ink-muted); --rule:var(--paper-line); --code-bg:var(--paper-sunken);
+  --str:var(--syn-string); --num:var(--syn-number); --com:var(--syn-comment); --nullc:var(--ink-faint);
+  --pg:var(--cat-slate); --pg-soft:var(--cat-slate-tint); --duck:var(--cat-ochre); --duck-soft:var(--cat-ochre-tint); --lite:var(--cat-sage); --lite-soft:var(--cat-sage-tint);
+  --accent:var(--pg); --accent-soft:var(--pg-soft);
+  --serif:var(--font-sans);
+  --mono:var(--font-mono);
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top, 0px);
+  padding-bottom:env(safe-area-inset-bottom, 0px);
+}
+:root[data-d="pg"]{--accent:var(--pg);--accent-soft:var(--pg-soft)}
+:root[data-d="duck"]{--accent:var(--duck);--accent-soft:var(--duck-soft)}
+:root[data-d="lite"]{--accent:var(--lite);--accent-soft:var(--lite-soft)}
+
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:calc(env(safe-area-inset-top, 0px) + 72px);scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--serif);font-size:1.0625rem;line-height:1.68;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top, 0px);z-index:10;background:var(--bg)}
+a{color:var(--accent);text-underline-offset:.18em;text-decoration-thickness:1px}
+a:hover{text-decoration-thickness:2px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+img{max-width:100%}
+
+/* Dialect switching */
+:root[data-d="pg"] [data-for]:not([data-for~="pg"]),
+:root[data-d="duck"] [data-for]:not([data-for~="duck"]),
+:root[data-d="lite"] [data-for]:not([data-for~="lite"]){display:none}
+
+/* Header */
+.top{position:sticky;top:env(safe-area-inset-top, 0px);z-index:20;background:var(--bg);border-bottom:1px solid var(--rule)}
+.top-inner{max-width:1180px;margin:0 auto;padding:.65rem 1.25rem;display:flex;align-items:center;justify-content:space-between;gap:1rem}
+.mark{font-weight:700;font-size:1.05rem;color:var(--ink);text-decoration:none;letter-spacing:-.01em}
+.switch{display:flex;align-items:center;gap:.6rem;font-size:.92rem;color:var(--muted)}
+.seg{display:flex;border:1px solid var(--rule);border-radius:999px;padding:3px;background:var(--surface)}
+.seg button{font:inherit;font-size:.9rem;color:var(--ink);background:none;border:0;border-radius:999px;padding:.28rem .8rem;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--surface)}
+@media (max-width:560px){.switch-label{display:none}.seg button{padding:.28rem .6rem;font-size:.85rem}}
+
+/* Layout */
+.shell{max-width:1180px;margin:0 auto;padding:0 1.25rem;display:grid;grid-template-columns:200px minmax(0,1fr);gap:3rem}
+.toc{position:sticky;top:calc(env(safe-area-inset-top, 0px) + 72px);align-self:start;padding-top:2.5rem;max-height:calc(100vh - 90px);overflow:auto}
+.toc summary{display:none}
+.toc ul{list-style:none;margin:0;padding:0;border-left:1px solid var(--rule)}
+.toc a{display:block;padding:.22rem 0 .22rem .9rem;margin-left:-1px;border-left:2px solid transparent;color:var(--muted);text-decoration:none;font-size:.93rem;line-height:1.4}
+.toc a:hover{color:var(--ink)}
+.toc a[aria-current="true"]{color:var(--ink);border-left-color:var(--accent)}
+main{min-width:0;max-width:46rem;padding-bottom:5rem}
+@media (max-width:900px){
+  .shell{grid-template-columns:minmax(0,1fr);gap:0}
+  .toc{position:static;padding-top:1rem;max-height:none}
+  .toc summary{display:list-item;cursor:pointer;font-weight:600;padding:.4rem 0}
+  .toc ul{margin:.4rem 0 .6rem}
+}
+
+/* Type */
+h1{font-family:var(--font-serif);font-size:clamp(2.4rem,5.5vw,4rem);line-height:1.05;letter-spacing:-.01em;margin:0 0 1rem;font-weight:400;max-width:16ch}
+h2{font-size:clamp(1.6rem,3vw,2rem);line-height:1.15;letter-spacing:-.01em;margin:4rem 0 .9rem;font-weight:650}
+h3{font-size:1.2rem;line-height:1.3;margin:2.2rem 0 .5rem;font-weight:600}
+p{margin:0 0 1rem}
+.lede{font-size:1.2rem;color:var(--muted);max-width:38rem}
+section{scroll-margin-top:80px}
+code{font-family:var(--mono);font-size:.86em;background:var(--code-bg);padding:.08em .32em;border-radius:4px}
+ul.plain{padding-left:1.2rem;margin:0 0 1rem}
+ul.plain li{margin-bottom:.35rem}
+
+/* Code blocks */
+.code{position:relative;margin:1rem 0 1.4rem;background:var(--code-bg);border-radius:8px;border:1px solid var(--rule)}
+.code pre{margin:0;padding:1rem 1.1rem;overflow-x:auto;font-family:var(--mono);font-size:.85rem;line-height:1.6;tab-size:2}
+.code .cap{display:flex;justify-content:space-between;align-items:center;padding:.4rem .6rem .4rem 1.1rem;border-bottom:1px solid var(--rule);font-size:.86rem;color:var(--muted)}
+.code[data-for] .cap{color:var(--accent);font-weight:600}
+.code[data-for]{border-left:3px solid var(--accent)}
+.copy{font:inherit;font-size:.8rem;font-weight:400;color:var(--muted);background:var(--surface);border:1px solid var(--rule);border-radius:5px;padding:.15rem .55rem;cursor:pointer}
+.copy:hover{color:var(--ink)}
+.k{color:var(--accent);font-weight:600}
+.s{color:var(--str)}
+.n{color:var(--num)}
+.c{color:var(--com);font-style:italic}
+
+/* Hero query */
+.hero{padding-top:2.5rem}
+.qcard{margin:2rem 0 1rem;background:var(--surface);border:1px solid var(--rule);border-radius:var(--radius);overflow:hidden}
+.qhead{display:flex;justify-content:space-between;align-items:center;gap:1rem;padding:.75rem 1rem;border-bottom:1px solid var(--rule)}
+.qhead p{margin:0;font-size:.95rem;color:var(--muted)}
+.qbtn{font:inherit;font-size:.95rem;font-weight:600;color:var(--surface);background:var(--accent);border:0;border-radius:999px;padding:.45rem 1rem;cursor:pointer;white-space:nowrap}
+.qlines{list-style:none;margin:0;padding:.6rem 0}
+.qline{display:grid;grid-template-columns:2.6rem minmax(0,1fr);align-items:baseline;padding:.32rem 1rem;gap:.3rem 0}
+.step{display:inline-grid;place-items:center;width:1.7rem;height:1.7rem;border-radius:50%;background:var(--accent-soft);color:var(--accent);font-family:var(--mono);font-size:.8rem;font-weight:600}
+.qline code{background:none;padding:0;font-size:.9rem;white-space:pre-wrap;overflow-wrap:break-word}
+.note{grid-column:2;font-size:.92rem;color:var(--muted);line-height:1.45;display:none}
+.qlines.eval .note{display:block}
+.qlines.eval .qline{padding-top:.5rem;padding-bottom:.5rem}
+.qlines.eval .qline + .qline{border-top:1px dashed var(--rule)}
+@media (min-width:760px){
+  .qlines.eval .qline{grid-template-columns:2.6rem minmax(0,1fr) minmax(0,1fr);gap:0 1.2rem}
+  .qlines.eval .note{grid-column:3}
+}
+.qfoot{font-size:.92rem;color:var(--muted)}
+
+/* Tables */
+.scroll{overflow-x:auto;margin:1rem 0 1.4rem;border:1px solid var(--rule);border-radius:8px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.92rem;line-height:1.45}
+th,td{text-align:left;padding:.55rem .75rem;border-bottom:1px solid var(--rule);vertical-align:top}
+tr:last-child td{border-bottom:0}
+th{font-weight:600}
+td code{white-space:nowrap}
+.compare th:first-child,.compare td:first-child{color:var(--muted);min-width:9rem}
+.compare td{min-width:10rem}
+.compare td code{white-space:normal}
+:root[data-d="pg"] .compare .c-pg,
+:root[data-d="duck"] .compare .c-duck,
+:root[data-d="lite"] .compare .c-lite{background:var(--accent-soft)}
+
+/* Join demo */
+.demo{margin:1.4rem 0;border:1px solid var(--rule);border-radius:var(--radius);background:var(--surface);padding:1rem}
+.demo-tabs{display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:1rem}
+.demo-tabs button{font:inherit;font-size:.88rem;background:var(--bg);color:var(--ink);border:1px solid var(--rule);border-radius:999px;padding:.25rem .8rem;cursor:pointer}
+.demo-tabs button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+.demo-src{display:grid;grid-template-columns:1fr 1fr;gap:1rem;align-items:start}
+.demo-out table{font-family:var(--mono);font-size:.82rem}
+.demo-out th{font-family:var(--serif)}
+.demo-out th,.demo-out td{padding:.35rem .7rem}
+@media (max-width:560px){.demo-src{grid-template-columns:1fr}}
+.mini{font-family:var(--mono);font-size:.8rem;border:1px solid var(--rule);border-radius:6px;overflow:hidden}
+.mini caption{caption-side:top;text-align:left;font-family:var(--serif);font-size:.9rem;font-weight:600;padding:0 0 .3rem}
+.mini th,.mini td{padding:.3rem .55rem}
+.mini th{font-family:var(--serif);background:var(--bg)}
+.mini tr.unused td{opacity:.35}
+.nul{color:var(--nullc);font-style:italic}
+.demo-desc{margin:1rem 0 .5rem;font-size:.97rem}
+.demo .code{margin:.6rem 0}
+.demo-out{margin-top:.6rem}
+
+/* Gotchas & exercises */
+.gotcha{border-top:1px solid var(--rule);padding-top:1.1rem;margin-top:1.4rem}
+.gotcha h3{margin-top:0}
+details.ex{border:1px solid var(--rule);border-radius:8px;background:var(--surface);margin:.8rem 0;padding:.7rem 1rem}
+details.ex summary{cursor:pointer;font-weight:600}
+details.ex[open] summary{margin-bottom:.4rem}
+.ex-q{margin:.2rem 0 .3rem}
+
+footer{border-top:1px solid var(--rule);margin-top:4rem;padding-top:1.2rem;font-size:.95rem;color:var(--muted)}
+</style>
+<link rel="stylesheet" href="../explainer.css">
+</head>
+<body>
+<div class="site-strip">
+  <nav class="site-strip__crumbs" aria-label="Site">
+    <a class="site-strip__home" href="../../">Alex McIvor</a>
+    <span class="site-strip__sep" aria-hidden="true">/</span>
+    <a href="../">Explainers</a>
+  </nav>
+  <button id="theme-toggle" type="button" class="site-strip__toggle" aria-label="Toggle dark mode" title="Toggle dark mode">
+    <span class="theme-icon theme-icon-sun" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path></svg></span>
+    <span class="theme-icon theme-icon-moon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg></span>
+  </button>
+</div>
+<header class="top">
+  <div class="top-inner">
+    <a class="mark" href="#top">SQL reference</a>
+    <div class="switch" role="group" aria-label="Database for examples">
+      <span class="switch-label">Examples for</span>
+      <div class="seg">
+        <button type="button" data-set="pg" aria-pressed="true">Postgres</button>
+        <button type="button" data-set="duck" aria-pressed="false">DuckDB</button>
+        <button type="button" data-set="lite" aria-pressed="false">SQLite</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="shell" id="top">
+<nav class="toc" aria-label="Contents">
+  <details id="toc" open>
+    <summary>Contents</summary>
+    <ul>
+      <li><a href="#order">Evaluation order</a></li>
+      <li><a href="#model">The mental model</a></li>
+      <li><a href="#select">Reading rows</a></li>
+      <li><a href="#null">NULL</a></li>
+      <li><a href="#group">Aggregating</a></li>
+      <li><a href="#joins">Joins</a></li>
+      <li><a href="#cte">Subqueries and CTEs</a></li>
+      <li><a href="#windows">Window functions</a></li>
+      <li><a href="#write">Changing data</a></li>
+      <li><a href="#schema">Tables, types, indexes</a></li>
+      <li><a href="#db">Your database</a></li>
+      <li><a href="#compare">Side by side</a></li>
+      <li><a href="#gotchas">Gotchas</a></li>
+      <li><a href="#practice">Practice</a></li>
+    </ul>
+  </details>
+</nav>
+
+<main>
+<section class="hero" id="order">
+  <h1>SQL, the way the database reads it</h1>
+  <p class="lede">You write a query top to bottom, but the database evaluates it in a different order. Most confusing errors make sense once you see that order.</p>
+
+  <div class="qcard">
+    <div class="qhead">
+      <p>Each number is the step in which that clause runs.</p>
+      <button class="qbtn" id="qbtn" type="button" aria-pressed="false">Show evaluation order</button>
+    </div>
+    <ol class="qlines" id="qlines">
+      <li class="qline" data-step="5" data-pos="0"><span class="step">5</span><code>SELECT city, count(*) AS orders, sum(total) AS revenue</code><span class="note">Compute the output columns and give them names. Aliases like <em>revenue</em> are born here.</span></li>
+      <li class="qline" data-step="1" data-pos="1"><span class="step">1</span><code>FROM orders</code><span class="note">Start with every row of <em>orders</em>.</span></li>
+      <li class="qline" data-step="1" data-pos="2"><span class="step">1</span><code>JOIN customers ON customers.id = orders.customer_id</code><span class="note">Pair each order with its customer. The result is one wide table.</span></li>
+      <li class="qline" data-step="2" data-pos="3"><span class="step">2</span><code>WHERE ordered_on &gt;= '2024-01-01'</code><span class="note">Throw away rows before grouping. The SELECT aliases don’t exist yet, so <em>WHERE revenue &gt; 100</em> fails.</span></li>
+      <li class="qline" data-step="3" data-pos="4"><span class="step">3</span><code>GROUP BY city</code><span class="note">Collapse the surviving rows into one row per city.</span></li>
+      <li class="qline" data-step="4" data-pos="5"><span class="step">4</span><code>HAVING count(*) &gt; 2</code><span class="note">Filter the groups. Aggregates like <em>count(*)</em> only work from this point on.</span></li>
+      <li class="qline" data-step="6" data-pos="6"><span class="step">6</span><code>ORDER BY revenue DESC</code><span class="note">Sort the finished result. <em>revenue</em> exists now, so the alias works.</span></li>
+      <li class="qline" data-step="7" data-pos="7"><span class="step">7</span><code>LIMIT 5;</code><span class="note">Keep the first five rows. Without ORDER BY, “first” would mean nothing.</span></li>
+    </ol>
+  </div>
+  <p class="qfoot">DuckDB and SQLite bend this rule and let you use a SELECT alias in WHERE. Postgres follows it strictly. Writing queries as if the rule holds everywhere keeps them portable.</p>
+  <p>The rest of this page covers the language itself, then the places where Postgres, DuckDB and SQLite disagree. Pick your database at the top, and every dialect-specific example switches with you. Examples use a small two-table shop you can create in the next section.</p>
+</section>
+
+<section id="model">
+  <h2>The mental model</h2>
+  <p>A <strong>table</strong> is a set of rows, and every row has the same columns. “Set” matters: rows have no built-in order. If you don’t say ORDER BY, the database can return them in any order it likes, and that order can change between runs.</p>
+  <p>SQL is <strong>declarative</strong>. You describe the result you want; the query planner decides how to get it, which indexes to use, and which table to read first. Two queries that look very different can run with the same plan.</p>
+  <p>Every step of a query produces another table. That’s why you can put a whole query in FROM, join to the output of a CTE, or wrap a query in another query. If you can picture the intermediate table at each step from the card above, you can debug almost anything.</p>
+  <p>A <strong>primary key</strong> uniquely identifies a row. A <strong>foreign key</strong> is a column that holds another table’s primary key, which is how tables point at each other. Joins follow those pointers.</p>
+
+  <h3>The sample data</h3>
+  <p>This script runs unchanged in all three databases. Paste it into a fresh database and every example below will work.</p>
+  <div class="code" data-cap="Sample schema, works everywhere"><pre>CREATE TABLE customers (
+  id      INTEGER PRIMARY KEY,
+  name    TEXT NOT NULL,
+  city    TEXT,
+  joined  DATE NOT NULL
+);
+
+CREATE TABLE orders (
+  id           INTEGER PRIMARY KEY,
+  customer_id  INTEGER REFERENCES customers(id),
+  ordered_on   DATE NOT NULL,
+  total        DECIMAL(10,2) NOT NULL
+);
+
+INSERT INTO customers VALUES
+  (1, 'Ana',   'Lisbon', '2023-03-14'),
+  (2, 'Bilal', 'Leeds',  '2023-07-02'),
+  (3, 'Chen',  'Lisbon', '2024-01-20'),
+  (4, 'Dara',  NULL,     '2024-02-11');
+
+INSERT INTO orders VALUES
+  (10, 1,    '2024-01-05', 42.50),
+  (11, 1,    '2024-02-17', 18.00),
+  (12, 2,    '2024-02-20', 99.90),
+  (13, 3,    '2024-03-02', 12.25),
+  (14, 1,    '2024-03-09', 65.00),
+  (15, NULL, '2024-03-10', 30.00);</pre></div>
+  <p>Dara has no orders, and order 15 has no customer. Both are there on purpose: they’re what make joins and NULLs interesting.</p>
+</section>
+
+<section id="select">
+  <h2>Reading rows</h2>
+  <div class="code"><pre>SELECT name, city
+FROM customers
+WHERE city = 'Lisbon'
+ORDER BY name
+LIMIT 10;</pre></div>
+  <p>Strings use <strong>single quotes</strong>: <code>'Lisbon'</code>. Double quotes are for identifiers, such as a column called <code>"Order Date"</code> with a space in it. Mixing them up is the most common first-day error.</p>
+  <p>WHERE takes any true-or-false expression. Combine conditions with AND, OR and NOT, and use parentheses when you mix AND with OR, because AND binds tighter.</p>
+  <div class="code" data-cap="Common filters and a computed column"><pre>SELECT
+  name,
+  CASE WHEN joined &lt; '2024-01-01' THEN 'early' ELSE 'new' END AS cohort
+FROM customers
+WHERE city IN ('Lisbon', 'Leeds')      -- any of these values
+  AND name LIKE 'A%'                   -- % = any run of characters, _ = one character
+  AND joined BETWEEN '2023-01-01' AND '2023-12-31';  -- inclusive at both ends</pre></div>
+  <ul class="plain">
+    <li><strong>DISTINCT</strong> removes duplicate rows from the result: <code>SELECT DISTINCT city FROM customers</code>.</li>
+    <li><strong>AS</strong> names a column or table. <code>FROM customers AS c</code> lets you write <code>c.name</code>; the AS is optional for tables.</li>
+    <li><strong>CASE</strong> is SQL’s if/else. It returns the first matching THEN, or the ELSE value, or NULL if nothing matches and there’s no ELSE.</li>
+    <li><strong>LIMIT n OFFSET m</strong> skips m rows and returns n. Fine for small pages; slow for deep ones, because the database still walks the skipped rows.</li>
+  </ul>
+</section>
+
+<section id="null">
+  <h2>NULL</h2>
+  <p>NULL means “unknown”, not zero and not empty. Any comparison with an unknown is itself unknown, and WHERE only keeps rows where the condition is definitely true. So <code>city = NULL</code> matches nothing, not even Dara.</p>
+  <div class="code"><pre>SELECT name FROM customers WHERE city IS NULL;        -- Dara
+SELECT name, coalesce(city, 'unknown') FROM customers; -- first non-NULL argument
+SELECT nullif(total, 0) FROM orders;                   -- turns 0 into NULL (handy before dividing)</pre></div>
+  <div class="scroll"><table>
+    <thead><tr><th>Expression</th><th>Result</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr><td><code>NULL = NULL</code></td><td>NULL</td><td>Two unknowns aren’t known to be equal.</td></tr>
+      <tr><td><code>NULL AND false</code></td><td>false</td><td>Whatever the unknown is, the whole thing is false.</td></tr>
+      <tr><td><code>NULL OR true</code></td><td>true</td><td>Whatever the unknown is, the whole thing is true.</td></tr>
+      <tr><td><code>NULL + 1</code></td><td>NULL</td><td>Arithmetic on an unknown is unknown.</td></tr>
+      <tr><td><code>NULL IS NULL</code></td><td>true</td><td>IS asks “is it unknown?”, which has a definite answer.</td></tr>
+      <tr><td><code>a IS DISTINCT FROM b</code></td><td>true or false</td><td>Like <code>&lt;&gt;</code> but treats two NULLs as equal. Works in all three (SQLite 3.39+); SQLite also accepts <code>a IS NOT b</code>.</td></tr>
+    </tbody>
+  </table></div>
+  <p>Aggregates skip NULLs: <code>avg(x)</code> averages only the known values, and <code>sum</code> of an all-NULL column is NULL, not 0.</p>
+</section>
+
+<section id="group">
+  <h2>Aggregating</h2>
+  <p>GROUP BY collapses rows that share values into one row each, and aggregate functions summarise each group.</p>
+  <div class="code"><pre>SELECT customer_id,
+       count(*)        AS orders,
+       sum(total)      AS spent,
+       avg(total)      AS avg_order,
+       max(ordered_on) AS last_order,
+       count(*) FILTER (WHERE total &gt; 50) AS big_orders
+FROM orders
+WHERE ordered_on &gt;= '2024-01-01'   -- filters rows, before grouping
+GROUP BY customer_id
+HAVING sum(total) &gt; 50;            -- filters groups, after grouping</pre></div>
+  <p>The rule: every column in SELECT must either appear in GROUP BY or sit inside an aggregate. Postgres enforces it. SQLite doesn’t, and quietly picks a value from some row in the group, which can hide real bugs. DuckDB enforces it but gives you <code>GROUP BY ALL</code>, which groups by every non-aggregated column for you.</p>
+  <ul class="plain">
+    <li><code>count(*)</code> counts rows. <code>count(col)</code> counts rows where col isn’t NULL. <code>count(DISTINCT col)</code> counts different non-NULL values.</li>
+    <li><code>FILTER (WHERE …)</code> applies a condition to one aggregate only. All three databases support it (SQLite 3.30+). The portable fallback is <code>sum(CASE WHEN … THEN 1 ELSE 0 END)</code>.</li>
+    <li>NULLs form their own group. Grouping customers by city gives a row for Lisbon, one for Leeds and one for NULL.</li>
+  </ul>
+</section>
+
+<section id="joins">
+  <h2>Joins</h2>
+  <p>A join combines rows from two tables by a condition, usually “this foreign key equals that primary key”. Think of it as building every pair of rows, then keeping the pairs where ON is true. The join type decides what happens to rows that found no partner.</p>
+  <div class="demo" id="demo">
+    <div class="demo-tabs" role="group" aria-label="Join type">
+      <button type="button" data-j="inner" aria-pressed="true">Inner</button>
+      <button type="button" data-j="left" aria-pressed="false">Left</button>
+      <button type="button" data-j="right" aria-pressed="false">Right</button>
+      <button type="button" data-j="full" aria-pressed="false">Full</button>
+      <button type="button" data-j="semi" aria-pressed="false">Semi (EXISTS)</button>
+      <button type="button" data-j="anti" aria-pressed="false">Anti (NOT EXISTS)</button>
+    </div>
+    <div class="demo-src" id="demo-src"></div>
+    <p class="demo-desc" id="demo-desc" aria-live="polite"></p>
+    <div class="code"><pre id="demo-sql"></pre></div>
+    <div class="scroll demo-out" id="demo-out"></div>
+  </div>
+  <p>Faded source rows are the ones that don’t make it into the result.</p>
+  <ul class="plain">
+    <li><code>JOIN</code> on its own means INNER JOIN. <code>LEFT JOIN</code> is short for LEFT OUTER JOIN.</li>
+    <li><code>USING (id)</code> is shorthand for <code>ON a.id = b.id</code> when both columns share a name.</li>
+    <li><code>CROSS JOIN</code> pairs every row with every row: 4 customers × 6 orders = 24 rows. Useful for generating combinations, dangerous by accident.</li>
+    <li>A <strong>self join</strong> joins a table to itself under two aliases, for example employees to their managers.</li>
+    <li>SQLite added RIGHT and FULL joins in version 3.39 (2022). On older versions, swap the tables and use LEFT.</li>
+  </ul>
+  <p>Joins multiply. If a customer has three orders and three support tickets, joining both tables gives nine rows for that customer, and any sum over them is inflated. Aggregate each table first, then join the results. The <a href="#gotchas">gotchas</a> section shows the fix.</p>
+</section>
+
+<section id="cte">
+  <h2>Subqueries and CTEs</h2>
+  <p>Because every query produces a table, you can use a query anywhere a table or value fits. A <strong>CTE</strong> (common table expression) gives that inner query a name with WITH, so you can read the logic top to bottom.</p>
+  <div class="code" data-cap="Customers who spent more than the average customer"><pre>WITH spend AS (
+  SELECT customer_id, sum(total) AS spent
+  FROM orders
+  WHERE customer_id IS NOT NULL
+  GROUP BY customer_id
+)
+SELECT c.name, s.spent
+FROM customers c
+JOIN spend s ON s.customer_id = c.id
+WHERE s.spent &gt; (SELECT avg(spent) FROM spend);   -- scalar subquery: one value</pre></div>
+  <ul class="plain">
+    <li>A <strong>scalar subquery</strong> returns one value and can go anywhere a value can.</li>
+    <li><code>WHERE id IN (SELECT …)</code> tests membership. <code>WHERE EXISTS (SELECT 1 …)</code> tests whether any row matches.</li>
+    <li>A <strong>correlated subquery</strong> refers to the outer query (like <code>o.customer_id = c.id</code> inside EXISTS) and conceptually runs once per outer row. Planners usually rewrite it into a join.</li>
+    <li><code>UNION</code> stacks results and removes duplicates; <code>UNION ALL</code> keeps them and is faster. <code>INTERSECT</code> and <code>EXCEPT</code> give rows in both, or in the first but not the second.</li>
+  </ul>
+  <h3>Recursive CTEs</h3>
+  <p>WITH RECURSIVE builds a result by repeatedly feeding it back into itself, which is how SQL walks trees (org charts, folders) and generates sequences.</p>
+  <div class="code" data-cap="Numbers 1 to 10, works everywhere"><pre>WITH RECURSIVE n(i) AS (
+  SELECT 1                              -- starting row
+  UNION ALL
+  SELECT i + 1 FROM n WHERE i &lt; 10      -- repeat until this returns nothing
+)
+SELECT i FROM n;</pre></div>
+</section>
+
+<section id="windows">
+  <h2>Window functions</h2>
+  <p>A window function computes over a group of related rows <em>without collapsing them</em>. GROUP BY gives one row per customer; a window gives every order its own row plus a value computed across that customer’s orders.</p>
+  <div class="code"><pre>SELECT
+  customer_id,
+  ordered_on,
+  total,
+  sum(total)   OVER (PARTITION BY customer_id ORDER BY ordered_on) AS running_total,
+  row_number() OVER (PARTITION BY customer_id ORDER BY ordered_on) AS nth_order,
+  total - lag(total) OVER (PARTITION BY customer_id ORDER BY ordered_on) AS change
+FROM orders;</pre></div>
+  <ul class="plain">
+    <li><strong>PARTITION BY</strong> splits rows into independent groups. Leave it out and the whole result is one window.</li>
+    <li><strong>ORDER BY</strong> inside OVER orders rows within each partition. It doesn’t sort the output.</li>
+    <li><code>row_number()</code> numbers rows 1, 2, 3. <code>rank()</code> gives ties the same number and leaves gaps (1, 1, 3); <code>dense_rank()</code> doesn’t leave gaps (1, 1, 2).</li>
+    <li><code>lag(x)</code> and <code>lead(x)</code> read the previous or next row. <code>first_value</code>, <code>last_value</code> and <code>nth_value</code> read specific positions.</li>
+    <li>A <strong>frame</strong> narrows the window: <code>avg(total) OVER (ORDER BY ordered_on ROWS BETWEEN 2 PRECEDING AND CURRENT ROW)</code> is a three-row moving average.</li>
+  </ul>
+  <p>Windows run after WHERE, GROUP BY and HAVING, so you can’t filter on them in the same query’s WHERE. To get the top order per customer:</p>
+  <div class="code" data-for="pg lite" data-cap="Top order per customer: wrap it in a subquery"><pre>SELECT *
+FROM (
+  SELECT o.*,
+         row_number() OVER (PARTITION BY customer_id ORDER BY total DESC) AS rn
+  FROM orders o
+) ranked
+WHERE rn = 1;</pre></div>
+  <div class="code" data-for="duck" data-cap="Top order per customer: DuckDB’s QUALIFY filters on a window directly"><pre>SELECT *
+FROM orders
+QUALIFY row_number() OVER (PARTITION BY customer_id ORDER BY total DESC) = 1;</pre></div>
+  <p data-for="pg">Postgres also has <code>DISTINCT ON</code> for exactly this job; see <a href="#db">your database</a>.</p>
+  <p data-for="lite">SQLite has supported window functions since 3.25 (2018).</p>
+</section>
+
+<section id="write">
+  <h2>Changing data</h2>
+  <div class="code"><pre>INSERT INTO customers (id, name, city, joined)
+VALUES (5, 'Eli', 'Leeds', '2024-04-01');
+
+UPDATE orders SET total = total * 0.9 WHERE id = 12;
+
+DELETE FROM orders WHERE customer_id IS NULL;</pre></div>
+  <p>An UPDATE or DELETE without WHERE touches every row. Write the WHERE as a SELECT first, check the rows it returns, then swap SELECT for UPDATE or DELETE.</p>
+  <p><strong>RETURNING</strong> hands back the rows you just changed, so you don’t need a second query to learn a new ID. All three support it (SQLite 3.35+): <code>INSERT … RETURNING id</code>.</p>
+  <h3>Insert or update (upsert)</h3>
+  <p>All three share the same ON CONFLICT syntax. <code>excluded</code> refers to the row you tried to insert.</p>
+  <div class="code"><pre>INSERT INTO customers (id, name, city, joined)
+VALUES (2, 'Bilal', 'York', '2023-07-02')
+ON CONFLICT (id) DO UPDATE SET city = excluded.city;
+
+-- or keep the existing row and skip the new one
+INSERT INTO customers VALUES (2, 'Bilal', 'York', '2023-07-02')
+ON CONFLICT DO NOTHING;</pre></div>
+  <p data-for="duck lite"><code>INSERT OR REPLACE INTO …</code> also works here. It replaces the whole conflicting row rather than chosen columns.</p>
+  <p data-for="pg">Postgres 15 and later also support the standard <code>MERGE</code> statement for more complex sync logic.</p>
+  <h3>Transactions</h3>
+  <p>A transaction groups statements so they all happen or none do. Other sessions don’t see your changes until COMMIT.</p>
+  <div class="code"><pre>BEGIN;
+UPDATE orders SET total = total - 10 WHERE id = 10;
+UPDATE orders SET total = total + 10 WHERE id = 12;
+COMMIT;      -- or ROLLBACK; to undo both</pre></div>
+</section>
+
+<section id="schema">
+  <h2>Tables, types, indexes</h2>
+  <p>Constraints are rules the database enforces for you: <code>NOT NULL</code>, <code>UNIQUE</code>, <code>CHECK (price &gt;= 0)</code>, <code>PRIMARY KEY</code> and <code>REFERENCES</code>. Put rules here rather than in application code, and bad data can’t get in no matter which program writes it.</p>
+  <div class="code" data-for="pg" data-cap="Postgres: auto-generated ID, arrays, JSON, timestamps"><pre>CREATE TABLE products (
+  id         bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  name       text NOT NULL UNIQUE,
+  price      numeric(10,2) NOT NULL CHECK (price &gt;= 0),
+  tags       text[],
+  details    jsonb,
+  created_at timestamptz NOT NULL DEFAULT now()
+);</pre></div>
+  <div class="code" data-for="duck" data-cap="DuckDB: IDs come from a sequence; lists and JSON are built in"><pre>CREATE SEQUENCE products_id_seq;
+
+CREATE TABLE products (
+  id         INTEGER PRIMARY KEY DEFAULT nextval('products_id_seq'),
+  name       VARCHAR NOT NULL UNIQUE,
+  price      DECIMAL(10,2) NOT NULL CHECK (price &gt;= 0),
+  tags       VARCHAR[],
+  details    JSON,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT current_timestamp
+);</pre></div>
+  <div class="code" data-for="lite" data-cap="SQLite: INTEGER PRIMARY KEY auto-assigns; STRICT enforces types"><pre>CREATE TABLE products (
+  id         INTEGER PRIMARY KEY,       -- alias for the rowid, filled in for you
+  name       TEXT NOT NULL UNIQUE,
+  price      REAL NOT NULL CHECK (price &gt;= 0),
+  tags       TEXT,                      -- store a JSON array as text
+  details    TEXT,                      -- query with -&gt;&gt; or json_extract()
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+) STRICT;
+
+PRAGMA foreign_keys = ON;   -- REFERENCES is ignored until you run this, per connection</pre></div>
+  <h3>Indexes</h3>
+  <p>An index is a sorted copy of some columns that lets the database find rows without reading the whole table, like a book’s index. Index columns you filter or join on often. Each index speeds reads and slows writes a little.</p>
+  <div class="code"><pre>CREATE INDEX orders_customer_idx ON orders (customer_id);
+CREATE INDEX orders_date_idx     ON orders (ordered_on);</pre></div>
+  <p data-for="pg">Check whether a query uses them with <code>EXPLAIN ANALYZE SELECT …</code>, which runs the query and shows the real plan and timings. Postgres also supports partial indexes (<code>WHERE active</code>), expression indexes (<code>lower(email)</code>), GIN indexes for jsonb and arrays, and full-text search.</p>
+  <p data-for="duck">DuckDB rarely needs indexes for analytics: it stores data by column and keeps min/max summaries for each chunk, so filters skip most data automatically. Indexes mainly matter for enforcing PRIMARY KEY and UNIQUE, and for point lookups. Use <code>EXPLAIN ANALYZE</code> to see the plan.</p>
+  <p data-for="lite">See whether SQLite uses an index with <code>EXPLAIN QUERY PLAN SELECT …</code>. Look for “SEARCH … USING INDEX” rather than “SCAN”. Run <code>ANALYZE;</code> after loading data so the planner has statistics.</p>
+  <h3>Changing a table</h3>
+  <div class="code"><pre>ALTER TABLE customers ADD COLUMN email TEXT;
+ALTER TABLE customers RENAME COLUMN city TO town;
+DROP TABLE IF EXISTS products;</pre></div>
+  <p data-for="lite">SQLite’s ALTER TABLE is limited: you can add, rename and (since 3.35) drop columns, but not change a column’s type or constraints. For that, create a new table, copy the rows across and rename it.</p>
+  <p data-for="pg">Postgres can change almost anything in place, for example <code>ALTER TABLE orders ALTER COLUMN total TYPE numeric(12,2)</code>, and most schema changes are themselves transactional, so you can roll them back.</p>
+  <p data-for="duck">DuckDB supports ADD, DROP, RENAME and <code>ALTER COLUMN … TYPE</code>, but altering a column that has an index or constraint on it can be refused; recreating the table with <code>CREATE TABLE new AS SELECT …</code> is often simplest.</p>
+</section>
+
+<section id="db">
+  <h2>Your database</h2>
+
+  <div data-for="pg">
+    <p><strong>Postgres</strong> is a client–server database: a server process owns the data, and many programs connect to it over the network at once. It handles heavy concurrent reads and writes, enforces types strictly, and has a deep extension ecosystem (PostGIS for maps, pgvector for embeddings). It’s the usual choice for an application’s main database.</p>
+    <h3>Connect</h3>
+    <div class="code" data-for="pg" data-cap="Shell"><pre>psql -h localhost -U postgres -d shop
+createdb shop                       # make a new database first, if needed
+psql -d shop -f schema.sql          # run a file
+
+# Python
+pip install "psycopg[binary]"</pre></div>
+    <h3>psql commands</h3>
+    <div class="scroll"><table>
+      <tbody>
+        <tr><td><code>\l</code> / <code>\c shop</code></td><td>List databases / connect to one</td></tr>
+        <tr><td><code>\dt</code> / <code>\d orders</code></td><td>List tables / describe a table, its indexes and constraints</td></tr>
+        <tr><td><code>\df</code> / <code>\dn</code></td><td>List functions / schemas</td></tr>
+        <tr><td><code>\x</code></td><td>Toggle expanded display for wide rows</td></tr>
+        <tr><td><code>\timing</code></td><td>Show how long each query takes</td></tr>
+        <tr><td><code>\i file.sql</code></td><td>Run a file</td></tr>
+        <tr><td><code>\copy orders FROM 'o.csv' CSV HEADER</code></td><td>Load a CSV from your machine</td></tr>
+        <tr><td><code>\?</code> / <code>\h SELECT</code> / <code>\q</code></td><td>Help for psql / help for a SQL command / quit</td></tr>
+      </tbody>
+    </table></div>
+    <h3>What Postgres does that the others don’t</h3>
+    <div class="code" data-for="pg" data-cap="Postgres"><pre>-- Latest order per customer
+SELECT DISTINCT ON (customer_id) customer_id, ordered_on, total
+FROM orders
+ORDER BY customer_id, ordered_on DESC;
+
+-- One row per day in March, including days with no orders
+SELECT g.d::date AS day, coalesce(sum(o.total), 0) AS revenue
+FROM generate_series(timestamp '2024-03-01', timestamp '2024-03-31', interval '1 day') AS g(d)
+LEFT JOIN orders o ON o.ordered_on = g.d::date
+GROUP BY g.d
+ORDER BY g.d;
+
+-- jsonb: -&gt; returns json, -&gt;&gt; returns text, @&gt; tests containment
+SELECT name FROM products WHERE details @&gt; '{"color": "red"}';
+SELECT details -&gt;&gt; 'color' FROM products;
+
+-- Arrays
+SELECT name FROM products WHERE 'sale' = ANY (tags);</pre></div>
+    <p>Also worth knowing: <code>ILIKE</code> for case-insensitive matching, <code>x::int</code> as a short cast, <code>LATERAL</code> joins, materialized views, and schemas (namespaces inside one database).</p>
+    <h3>What trips people up</h3>
+    <ul class="plain">
+      <li>Unquoted names are folded to lowercase. <code>CREATE TABLE "Orders"</code> creates a table you must always quote; <code>Orders</code> without quotes means <code>orders</code>. Stick to lowercase snake_case.</li>
+      <li>SELECT aliases can’t be used in WHERE. Repeat the expression or move it into a CTE.</li>
+      <li>Integer division truncates: <code>5 / 2</code> is 2. Write <code>5 / 2.0</code> or cast.</li>
+      <li>Types are strict. Comparing a text column with an integer is an error, not a silent conversion.</li>
+      <li>Prefer <code>timestamptz</code> over <code>timestamp</code>: it stores an absolute moment and converts to the session’s time zone for display.</li>
+    </ul>
+  </div>
+
+  <div data-for="duck">
+    <p><strong>DuckDB</strong> is an analytical database that runs inside your program, with no server. It stores data by column and processes it in batches, so scans and aggregates over millions of rows are fast on a laptop. It reads CSV, Parquet and JSON files directly, which makes it a strong tool for data analysis, notebooks and cleaning messy files. It isn’t meant for many programs writing at once.</p>
+    <h3>Start</h3>
+    <div class="code" data-for="duck" data-cap="Shell"><pre>duckdb                      # in-memory, gone when you quit
+duckdb shop.duckdb          # persistent file
+
+# Python
+pip install duckdb
+python -c "import duckdb; print(duckdb.sql('SELECT 42').fetchall())"</pre></div>
+    <p>In Python, <code>duckdb.sql("SELECT * FROM df")</code> can query a pandas or Polars DataFrame named <code>df</code> directly, and <code>.df()</code> turns any result back into one.</p>
+    <h3>CLI commands</h3>
+    <div class="scroll"><table>
+      <tbody>
+        <tr><td><code>.tables</code> / <code>SHOW TABLES;</code></td><td>List tables</td></tr>
+        <tr><td><code>DESCRIBE orders;</code></td><td>Columns and types</td></tr>
+        <tr><td><code>SUMMARIZE orders;</code></td><td>Min, max, nulls, distinct counts and quantiles for every column</td></tr>
+        <tr><td><code>.mode box</code> / <code>csv</code> / <code>markdown</code> / <code>line</code></td><td>Change output format</td></tr>
+        <tr><td><code>.maxrows 100</code></td><td>Show more rows (results are truncated by default)</td></tr>
+        <tr><td><code>.timer on</code></td><td>Show query timing</td></tr>
+        <tr><td><code>.read file.sql</code> / <code>.quit</code></td><td>Run a file / quit</td></tr>
+      </tbody>
+    </table></div>
+    <h3>What DuckDB does that the others don’t</h3>
+    <div class="code" data-for="duck" data-cap="DuckDB"><pre>-- Query files without importing them
+SELECT * FROM 'sales_2024.csv' LIMIT 5;
+SELECT region, sum(amount) FROM read_parquet('data/*.parquet') GROUP BY ALL;
+
+-- Write results straight to a file
+COPY (SELECT * FROM orders WHERE total &gt; 20) TO 'big_orders.parquet' (FORMAT parquet);
+
+-- FROM-first shorthand, and "every column except"
+FROM orders;
+SELECT * EXCLUDE (customer_id) FROM orders;
+SELECT * REPLACE (round(total) AS total) FROM orders;
+
+-- Value of one column at the max of another
+SELECT customer_id, arg_max(ordered_on, total) AS date_of_biggest_order
+FROM orders GROUP BY ALL;
+
+-- Read another database in place
+ATTACH 'app.sqlite' AS app (TYPE sqlite);
+SELECT count(*) FROM app.users;</pre></div>
+    <p>Also worth knowing: <code>QUALIFY</code> for filtering on window functions, <code>PIVOT</code> and <code>UNPIVOT</code>, list and struct column types, <code>COLUMNS('price_.*')</code> to apply an expression to many columns, and <code>ILIKE</code> and <code>::</code> casts as in Postgres.</p>
+    <h3>What trips people up</h3>
+    <ul class="plain">
+      <li><code>/</code> always divides as decimals: <code>5 / 2</code> is 2.5. Use <code>//</code> for integer division. This differs from both Postgres and SQLite.</li>
+      <li>Only one process can open a database file for writing at a time. Several readers are fine with <code>duckdb -readonly</code>.</li>
+      <li>The CLI truncates long results; you’re not missing rows, they’re just hidden. Use <code>.maxrows</code> or <code>LIMIT</code>.</li>
+      <li>Names are case-insensitive but keep the case you created them with.</li>
+      <li>It’s built for bulk work. Thousands of single-row INSERTs are slow; load with <code>COPY</code>, <code>read_csv</code> or <code>INSERT … SELECT</code>.</li>
+    </ul>
+  </div>
+
+  <div data-for="lite">
+    <p><strong>SQLite</strong> is a library that keeps an entire database in one ordinary file, with no server and no setup. It ships inside phones, browsers and Python itself, and it’s one of the most widely deployed pieces of software there is. It suits app storage, local tools, tests, prototypes and small-to-medium websites. One writer at a time; readers can run alongside in WAL mode.</p>
+    <h3>Start</h3>
+    <div class="code" data-for="lite" data-cap="Shell"><pre>sqlite3 shop.db            # creates the file if it doesn't exist
+sqlite3 shop.db &lt; schema.sql
+
+# Python (built in, nothing to install)
+import sqlite3
+con = sqlite3.connect("shop.db")
+rows = con.execute("SELECT * FROM orders WHERE total &gt; ?", (20,)).fetchall()</pre></div>
+    <h3>sqlite3 commands</h3>
+    <div class="scroll"><table>
+      <tbody>
+        <tr><td><code>.tables</code></td><td>List tables</td></tr>
+        <tr><td><code>.schema orders</code></td><td>Show the CREATE statement for a table</td></tr>
+        <tr><td><code>PRAGMA table_info(orders);</code></td><td>Columns, types, defaults and keys as rows</td></tr>
+        <tr><td><code>.headers on</code> / <code>.mode box</code></td><td>Readable output with column names</td></tr>
+        <tr><td><code>.import --csv o.csv orders</code></td><td>Load a CSV into a table</td></tr>
+        <tr><td><code>.output out.txt</code> / <code>.once out.csv</code></td><td>Send results to a file</td></tr>
+        <tr><td><code>.timer on</code></td><td>Show query timing</td></tr>
+        <tr><td><code>.read file.sql</code> / <code>.quit</code></td><td>Run a file / quit</td></tr>
+      </tbody>
+    </table></div>
+    <h3>What SQLite does differently</h3>
+    <div class="code" data-for="lite" data-cap="SQLite"><pre>PRAGMA foreign_keys = ON;      -- off by default, set it on every connection
+PRAGMA journal_mode = WAL;     -- readers stop blocking the writer; persists in the file
+
+-- Dates are stored as text; functions do the arithmetic
+SELECT date('now'), date('now', '-7 days'), date('now', 'start of month');
+
+SELECT strftime('%Y-%m', ordered_on) AS month, sum(total) AS revenue
+FROM orders
+GROUP BY month;
+
+-- JSON lives in text columns
+SELECT details -&gt;&gt; '$.color' FROM products;
+SELECT json_extract(details, '$.size') FROM products;
+
+-- Join strings within a group
+SELECT customer_id, group_concat(id, ', ') FROM orders GROUP BY customer_id;</pre></div>
+    <h3>What trips people up</h3>
+    <ul class="plain">
+      <li>Column types are suggestions (“type affinity”). An INTEGER column will happily store <code>'abc'</code>. Add <code>STRICT</code> to CREATE TABLE (3.37+) to make types real.</li>
+      <li>Foreign keys aren’t enforced until <code>PRAGMA foreign_keys = ON</code>, and the setting doesn’t persist.</li>
+      <li>There’s no date or boolean type. Dates are ISO text (<code>'2024-03-09'</code>), which sorts correctly as long as you keep the format; TRUE and FALSE are 1 and 0.</li>
+      <li>LIKE is case-insensitive for ASCII letters by default, unlike Postgres.</li>
+      <li>A double-quoted word that isn’t a column name is treated as a string, so a typo like <code>WHERE city = "Lisbon"</code> works here and breaks everywhere else. Use single quotes.</li>
+      <li>Integer division truncates: <code>5 / 2</code> is 2.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="compare">
+  <h2>Side by side</h2>
+  <p>All three at once. The column for the database you’ve picked is highlighted.</p>
+  <div class="scroll"><table class="compare">
+    <thead><tr><th>Task</th><th class="c-pg">Postgres</th><th class="c-duck">DuckDB</th><th class="c-lite">SQLite</th></tr></thead>
+    <tbody>
+      <tr><td>Runs as</td><td class="c-pg">A server you connect to</td><td class="c-duck">A library in your process</td><td class="c-lite">A library in your process</td></tr>
+      <tr><td>Stored in</td><td class="c-pg">A server data directory</td><td class="c-duck">One file, or memory</td><td class="c-lite">One file, or memory</td></tr>
+      <tr><td>Best at</td><td class="c-pg">Apps with many concurrent users</td><td class="c-duck">Analysis over large data and files</td><td class="c-lite">Embedded app storage and local tools</td></tr>
+      <tr><td>Auto-increment ID</td><td class="c-pg"><code>GENERATED ALWAYS AS IDENTITY</code></td><td class="c-duck"><code>DEFAULT nextval('seq')</code></td><td class="c-lite"><code>INTEGER PRIMARY KEY</code></td></tr>
+      <tr><td>Cast</td><td class="c-pg"><code>CAST(x AS int)</code> or <code>x::int</code></td><td class="c-duck"><code>CAST(x AS int)</code> or <code>x::int</code></td><td class="c-lite"><code>CAST(x AS INTEGER)</code></td></tr>
+      <tr><td><code>5 / 2</code></td><td class="c-pg">2</td><td class="c-duck">2.5 (use <code>//</code> for 2)</td><td class="c-lite">2</td></tr>
+      <tr><td>Case-insensitive match</td><td class="c-pg"><code>ILIKE</code></td><td class="c-duck"><code>ILIKE</code></td><td class="c-lite"><code>LIKE</code> (ASCII only)</td></tr>
+      <tr><td>Join strings in a group</td><td class="c-pg"><code>string_agg(x, ', ')</code></td><td class="c-duck"><code>string_agg(x, ', ')</code></td><td class="c-lite"><code>group_concat(x, ', ')</code></td></tr>
+      <tr><td>Current time</td><td class="c-pg"><code>now()</code></td><td class="c-duck"><code>now()</code></td><td class="c-lite"><code>datetime('now')</code></td></tr>
+      <tr><td>Start of month</td><td class="c-pg"><code>date_trunc('month', d)</code></td><td class="c-duck"><code>date_trunc('month', d)</code></td><td class="c-lite"><code>date(d, 'start of month')</code></td></tr>
+      <tr><td>Booleans</td><td class="c-pg"><code>boolean</code></td><td class="c-duck"><code>BOOLEAN</code></td><td class="c-lite">Integers 0 and 1</td></tr>
+      <tr><td>JSON</td><td class="c-pg"><code>jsonb</code> with <code>-&gt;</code>, <code>-&gt;&gt;</code>, <code>@&gt;</code></td><td class="c-duck"><code>JSON</code> with <code>-&gt;</code>, <code>-&gt;&gt;</code></td><td class="c-lite">Text with <code>-&gt;</code>, <code>-&gt;&gt;</code>, <code>json_extract</code></td></tr>
+      <tr><td>Arrays</td><td class="c-pg"><code>text[]</code></td><td class="c-duck"><code>LIST</code>, <code>STRUCT</code>, <code>MAP</code></td><td class="c-lite">None; use JSON</td></tr>
+      <tr><td>Filter on a window</td><td class="c-pg">Subquery</td><td class="c-duck"><code>QUALIFY</code></td><td class="c-lite">Subquery</td></tr>
+      <tr><td>Latest row per group</td><td class="c-pg"><code>DISTINCT ON</code></td><td class="c-duck"><code>QUALIFY</code> or <code>arg_max</code></td><td class="c-lite"><code>row_number()</code> in a subquery</td></tr>
+      <tr><td>Upsert</td><td class="c-pg"><code>ON CONFLICT … DO UPDATE</code></td><td class="c-duck"><code>ON CONFLICT</code> or <code>INSERT OR REPLACE</code></td><td class="c-lite"><code>ON CONFLICT</code> or <code>INSERT OR REPLACE</code></td></tr>
+      <tr><td>RETURNING</td><td class="c-pg">Yes</td><td class="c-duck">Yes</td><td class="c-lite">Yes, 3.35+</td></tr>
+      <tr><td>RIGHT and FULL JOIN</td><td class="c-pg">Yes</td><td class="c-duck">Yes</td><td class="c-lite">Yes, 3.39+</td></tr>
+      <tr><td>Alias in WHERE</td><td class="c-pg">Not allowed</td><td class="c-duck">Allowed</td><td class="c-lite">Allowed</td></tr>
+      <tr><td>Bare columns with GROUP BY</td><td class="c-pg">Error</td><td class="c-duck">Error (or <code>GROUP BY ALL</code>)</td><td class="c-lite">Allowed, picks an arbitrary row</td></tr>
+      <tr><td>List tables</td><td class="c-pg"><code>\dt</code></td><td class="c-duck"><code>SHOW TABLES;</code></td><td class="c-lite"><code>.tables</code></td></tr>
+      <tr><td>Describe a table</td><td class="c-pg"><code>\d orders</code></td><td class="c-duck"><code>DESCRIBE orders;</code></td><td class="c-lite"><code>.schema orders</code></td></tr>
+      <tr><td>Load a CSV</td><td class="c-pg"><code>\copy t FROM 'f.csv' CSV HEADER</code></td><td class="c-duck"><code>SELECT * FROM 'f.csv'</code></td><td class="c-lite"><code>.import --csv f.csv t</code></td></tr>
+      <tr><td>See the plan</td><td class="c-pg"><code>EXPLAIN ANALYZE</code></td><td class="c-duck"><code>EXPLAIN ANALYZE</code></td><td class="c-lite"><code>EXPLAIN QUERY PLAN</code></td></tr>
+      <tr><td>Unquoted names</td><td class="c-pg">Folded to lowercase</td><td class="c-duck">Case-insensitive</td><td class="c-lite">Case-insensitive</td></tr>
+    </tbody>
+  </table></div>
+  <p>Recent SQLite (3.44+) also accepts <code>string_agg</code> and <code>concat()</code>. If you need one query to run on all three, stick to standard SQL: <code>CAST</code>, <code>CASE</code>, <code>coalesce</code>, ISO-format date strings, and window functions in subqueries.</p>
+</section>
+
+<section id="gotchas">
+  <h2>Gotchas</h2>
+
+  <div class="gotcha">
+    <h3>NOT IN with a NULL returns nothing</h3>
+    <p>If the subquery contains a NULL, <code>x NOT IN (…)</code> is never true, because x might equal the unknown value. Our orders table has a NULL customer_id, so this returns zero rows instead of Dara.</p>
+    <div class="code"><pre>-- Wrong: returns nothing
+SELECT name FROM customers WHERE id NOT IN (SELECT customer_id FROM orders);
+
+-- Right
+SELECT name FROM customers c
+WHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id);</pre></div>
+  </div>
+
+  <div class="gotcha">
+    <h3>A WHERE clause that undoes your LEFT JOIN</h3>
+    <p>A condition on the right-hand table in WHERE removes the NULL rows that LEFT JOIN kept, turning it into an inner join. Put that condition in ON.</p>
+    <div class="code"><pre>-- Loses Dara
+SELECT c.name, o.total FROM customers c
+LEFT JOIN orders o ON o.customer_id = c.id
+WHERE o.total &gt; 20;
+
+-- Keeps every customer, matches only big orders
+SELECT c.name, o.total FROM customers c
+LEFT JOIN orders o ON o.customer_id = c.id AND o.total &gt; 20;</pre></div>
+  </div>
+
+  <div class="gotcha">
+    <h3>Joins that inflate totals</h3>
+    <p>Joining two one-to-many tables multiplies rows, so sums count things more than once. Aggregate each side first, then join.</p>
+    <div class="code"><pre>-- tickets is a hypothetical second table
+WITH o AS (SELECT customer_id, sum(total) AS spent FROM orders GROUP BY customer_id),
+     t AS (SELECT customer_id, count(*) AS tickets FROM tickets GROUP BY customer_id)
+SELECT c.name, o.spent, t.tickets
+FROM customers c
+LEFT JOIN o ON o.customer_id = c.id
+LEFT JOIN t ON t.customer_id = c.id;</pre></div>
+  </div>
+
+  <div class="gotcha">
+    <h3>Date ranges with BETWEEN</h3>
+    <p>For timestamps, <code>BETWEEN '2024-03-01' AND '2024-03-31'</code> stops at midnight on the 31st and misses most of that day. Use a half-open range instead: <code>ts &gt;= '2024-03-01' AND ts &lt; '2024-04-01'</code>. It’s correct for dates and timestamps alike.</p>
+  </div>
+
+  <div class="gotcha">
+    <h3>No ORDER BY, no order</h3>
+    <p>Results often come back in insertion order, until the table grows, an index appears, or the query runs in parallel. <code>LIMIT 10</code> without ORDER BY means “any ten rows”. If order matters, say so, and add a tie-breaker such as <code>ORDER BY ordered_on, id</code>.</p>
+  </div>
+
+  <div class="gotcha">
+    <h3>Averages that are secretly integers</h3>
+    <p>In Postgres and SQLite, <code>sum(a) / count(*)</code> on integer columns truncates. Multiply by <code>1.0</code> first, or use <code>avg()</code>. DuckDB returns a decimal either way.</p>
+  </div>
+</section>
+
+<section id="practice">
+  <h2>Practice</h2>
+  <p>All of these use the sample data. Try each one before opening the answer.</p>
+
+  <details class="ex"><summary>Customers who joined in 2024</summary>
+    <div class="code"><pre>SELECT name, joined
+FROM customers
+WHERE joined &gt;= '2024-01-01' AND joined &lt; '2025-01-01';</pre></div>
+  </details>
+
+  <details class="ex"><summary>Order count and total spent per customer, including Dara with zeros</summary>
+    <div class="code"><pre>SELECT c.name,
+       count(o.id)               AS orders,   -- count(o.id), not count(*), so Dara gets 0
+       coalesce(sum(o.total), 0) AS spent
+FROM customers c
+LEFT JOIN orders o ON o.customer_id = c.id
+GROUP BY c.id, c.name
+ORDER BY spent DESC;</pre></div>
+  </details>
+
+  <details class="ex"><summary>Cities whose customers spent more than 100 in total</summary>
+    <div class="code"><pre>SELECT c.city, sum(o.total) AS spent
+FROM customers c
+JOIN orders o ON o.customer_id = c.id
+GROUP BY c.city
+HAVING sum(o.total) &gt; 100;</pre></div>
+    <p>Only Lisbon qualifies: Ana’s three orders plus Chen’s come to 137.75.</p>
+  </details>
+
+  <details class="ex"><summary>Each customer’s single biggest order</summary>
+    <p>See the window functions section; the answer depends on your database.</p>
+    <div class="code" data-for="pg lite"><pre>SELECT customer_id, id, total
+FROM (
+  SELECT o.*, row_number() OVER (PARTITION BY customer_id ORDER BY total DESC) AS rn
+  FROM orders o
+  WHERE customer_id IS NOT NULL
+) x
+WHERE rn = 1;</pre></div>
+    <div class="code" data-for="duck"><pre>SELECT customer_id, id, total
+FROM orders
+WHERE customer_id IS NOT NULL
+QUALIFY row_number() OVER (PARTITION BY customer_id ORDER BY total DESC) = 1;</pre></div>
+  </details>
+
+  <details class="ex"><summary>Revenue by month</summary>
+    <div class="code" data-for="pg duck"><pre>SELECT date_trunc('month', ordered_on) AS month, sum(total) AS revenue
+FROM orders
+GROUP BY 1
+ORDER BY 1;</pre></div>
+    <div class="code" data-for="lite"><pre>SELECT strftime('%Y-%m', ordered_on) AS month, sum(total) AS revenue
+FROM orders
+GROUP BY 1
+ORDER BY 1;</pre></div>
+    <p><code>GROUP BY 1</code> means “the first SELECT column”. Handy for quick queries, fragile in long-lived code.</p>
+  </details>
+
+  <details class="ex"><summary>A running total of revenue across all orders, by date</summary>
+    <div class="code"><pre>SELECT ordered_on, total,
+       sum(total) OVER (ORDER BY ordered_on, id) AS running_revenue
+FROM orders
+ORDER BY ordered_on, id;</pre></div>
+  </details>
+
+  <details class="ex"><summary>Orders whose customer doesn’t exist in the customers table</summary>
+    <div class="code"><pre>SELECT o.*
+FROM orders o
+LEFT JOIN customers c ON c.id = o.customer_id
+WHERE c.id IS NULL;</pre></div>
+    <p>This is the anti-join pattern written with LEFT JOIN. It finds order 15.</p>
+  </details>
+</section>
+
+<footer>
+  <p>Official documentation: <a href="https://www.postgresql.org/docs/current/">Postgres</a>, <a href="https://duckdb.org/docs/">DuckDB</a>, <a href="https://www.sqlite.org/docs.html">SQLite</a>. Version notes reflect each project as of 2026.</p>
+</footer>
+</main>
+</div>
+<script>
+(function(){
+  var root = document.documentElement;
+
+  /* Syntax highlighting */
+  var KW = new Set(("SELECT FROM WHERE AND OR NOT IN IS NULL AS ON JOIN LEFT RIGHT FULL OUTER INNER CROSS GROUP BY HAVING ORDER LIMIT OFFSET DISTINCT CASE WHEN THEN ELSE END WITH RECURSIVE UNION ALL INTERSECT EXCEPT INSERT INTO VALUES UPDATE SET DELETE CREATE TABLE INDEX PRIMARY KEY REFERENCES UNIQUE CHECK DEFAULT CONSTRAINT FOREIGN ALTER ADD COLUMN DROP RENAME TYPE IF BEGIN COMMIT ROLLBACK RETURNING CONFLICT DO NOTHING OVER PARTITION ROWS RANGE BETWEEN PRECEDING FOLLOWING CURRENT ROW UNBOUNDED EXISTS LIKE ILIKE ASC DESC FILTER QUALIFY EXCLUDE REPLACE PRAGMA EXPLAIN ANALYZE QUERY PLAN SEQUENCE GENERATED ALWAYS IDENTITY STRICT TRUE FALSE CAST COPY TO USING LATERAL SHOW TABLES DESCRIBE SUMMARIZE ATTACH ANY FORMAT").split(" "));
+  function esc(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+  function hl(text){
+    var re = /(--[^\n]*|#[^\n]*)|('(?:[^']|'')*')|(\b\d+(?:\.\d+)?\b)|(\b[A-Za-z_]+\b)/g, out = "", last = 0, m;
+    while ((m = re.exec(text))){
+      out += esc(text.slice(last, m.index));
+      if (m[1]) out += '<span class="c">' + esc(m[1]) + '</span>';
+      else if (m[2]) out += '<span class="s">' + esc(m[2]) + '</span>';
+      else if (m[3]) out += '<span class="n">' + m[3] + '</span>';
+      else if (KW.has(m[4]) && m[4] === m[4].toUpperCase()) out += '<span class="k">' + m[4] + '</span>';
+      else out += esc(m[4]);
+      last = re.lastIndex;
+    }
+    return out + esc(text.slice(last));
+  }
+  function highlight(pre){ pre.innerHTML = hl(pre.textContent); }
+  document.querySelectorAll(".qline code").forEach(highlight);
+
+  /* Code block caption + copy */
+  document.querySelectorAll(".code").forEach(function(block){
+    var pre = block.querySelector("pre");
+    if (!pre) return;
+    highlight(pre);
+    if (pre.id === "demo-sql") return;
+    var cap = document.createElement("div");
+    cap.className = "cap";
+    var label = document.createElement("span");
+    label.textContent = block.getAttribute("data-cap") || "";
+    var btn = document.createElement("button");
+    btn.type = "button"; btn.className = "copy"; btn.textContent = "Copy";
+    btn.addEventListener("click", function(){
+      var text = pre.textContent;
+      var done = function(){ btn.textContent = "Copied"; setTimeout(function(){ btn.textContent = "Copy"; }, 1500); };
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText){
+          navigator.clipboard.writeText(text).then(done, function(){ selectPre(pre); btn.textContent = "Selected, press Ctrl+C"; });
+        } else { selectPre(pre); btn.textContent = "Selected, press Ctrl+C"; }
+      } catch(e){ selectPre(pre); }
+    });
+    cap.appendChild(label); cap.appendChild(btn);
+    block.insertBefore(cap, pre);
+  });
+  function selectPre(pre){
+    var r = document.createRange(); r.selectNodeContents(pre);
+    var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+  }
+
+  /* Dialect switch */
+  var seg = document.querySelectorAll(".seg button");
+  function setDialect(d){
+    root.setAttribute("data-d", d);
+    seg.forEach(function(b){ b.setAttribute("aria-pressed", String(b.dataset.set === d)); });
+    try { localStorage.setItem("sqlref-dialect", d); } catch(e){}
+  }
+  seg.forEach(function(b){ b.addEventListener("click", function(){ setDialect(b.dataset.set); }); });
+  try {
+    var saved = localStorage.getItem("sqlref-dialect");
+    if (saved === "pg" || saved === "duck" || saved === "lite") setDialect(saved);
+  } catch(e){}
+
+  /* Evaluation order card (FLIP reorder) */
+  var list = document.getElementById("qlines"), qbtn = document.getElementById("qbtn");
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  qbtn.addEventListener("click", function(){
+    var items = Array.prototype.slice.call(list.children);
+    var first = new Map(items.map(function(li){ return [li, li.getBoundingClientRect().top]; }));
+    var toEval = !list.classList.contains("eval");
+    items.sort(function(a, b){
+      if (toEval) return (a.dataset.step - b.dataset.step) || (a.dataset.pos - b.dataset.pos);
+      return a.dataset.pos - b.dataset.pos;
+    }).forEach(function(li){ list.appendChild(li); });
+    list.classList.toggle("eval", toEval);
+    qbtn.setAttribute("aria-pressed", String(toEval));
+    qbtn.textContent = toEval ? "Show written order" : "Show evaluation order";
+    if (reduce) return;
+    items.forEach(function(li){
+      var dy = first.get(li) - li.getBoundingClientRect().top;
+      if (!dy) return;
+      li.style.transition = "none";
+      li.style.transform = "translateY(" + dy + "px)";
+      requestAnimationFrame(function(){ requestAnimationFrame(function(){
+        li.style.transition = "transform 520ms cubic-bezier(.2,.7,.2,1)";
+        li.style.transform = "";
+      }); });
+    });
+  });
+
+  /* Join demo */
+  var C = [{id:1,name:"Ana"},{id:2,name:"Bilal"},{id:3,name:"Chen"},{id:4,name:"Dara"}];
+  var O = [{id:10,cid:1,total:"42.50"},{id:11,cid:1,total:"18.00"},{id:12,cid:2,total:"99.90"},{id:13,cid:3,total:"12.25"},{id:14,cid:1,total:"65.00"},{id:15,cid:null,total:"30.00"}];
+  var J = {
+    inner:{sql:"SELECT c.name, o.id, o.total\nFROM customers c\nJOIN orders o ON o.customer_id = c.id;", desc:"Only pairs that match. Dara (no orders) and order 15 (no customer) both disappear."},
+    left:{sql:"SELECT c.name, o.id, o.total\nFROM customers c\nLEFT JOIN orders o ON o.customer_id = c.id;", desc:"Every customer, matched where possible. Dara has no orders, so her order columns are NULL."},
+    right:{sql:"SELECT c.name, o.id, o.total\nFROM customers c\nRIGHT JOIN orders o ON o.customer_id = c.id;", desc:"Every order. Order 15 has no customer, so its name is NULL."},
+    full:{sql:"SELECT c.name, o.id, o.total\nFROM customers c\nFULL JOIN orders o ON o.customer_id = c.id;", desc:"Everything from both sides. NULLs fill in whichever side is missing."},
+    semi:{sql:"SELECT c.id, c.name\nFROM customers c\nWHERE EXISTS (\n  SELECT 1 FROM orders o WHERE o.customer_id = c.id\n);", desc:"Customers with at least one order, each listed once. Ana appears one time, not three."},
+    anti:{sql:"SELECT c.id, c.name\nFROM customers c\nWHERE NOT EXISTS (\n  SELECT 1 FROM orders o WHERE o.customer_id = c.id\n);", desc:"Customers with no orders at all."}
+  };
+  function cell(v){ return v === null ? '<td class="nul">NULL</td>' : '<td>' + esc(String(v)) + '</td>'; }
+  function runJoin(kind){
+    var rows = [], usedC = new Set(), usedO = new Set(), cols;
+    var hasOrder = function(c){ return O.some(function(o){ return o.cid === c.id; }); };
+    if (kind === "semi" || kind === "anti"){
+      cols = ["c.id","c.name"];
+      C.forEach(function(c){
+        if (hasOrder(c) === (kind === "semi")){ rows.push([c.id, c.name]); usedC.add(c.id); }
+      });
+    } else {
+      cols = ["c.name","o.id","o.total"];
+      C.forEach(function(c){
+        O.forEach(function(o){ if (o.cid === c.id){ rows.push([c.name,o.id,o.total]); usedC.add(c.id); usedO.add(o.id); } });
+      });
+      if (kind === "left" || kind === "full") C.forEach(function(c){ if (!hasOrder(c)){ rows.push([c.name,null,null]); usedC.add(c.id); } });
+      if (kind === "right" || kind === "full") O.forEach(function(o){ if (!C.some(function(c){ return c.id === o.cid; })){ rows.push([null,o.id,o.total]); usedO.add(o.id); } });
+    }
+    var src = '<table class="mini"><caption>customers</caption><thead><tr><th>id</th><th>name</th></tr></thead><tbody>' +
+      C.map(function(c){ return '<tr' + (usedC.has(c.id) ? '' : ' class="unused"') + '>' + cell(c.id) + cell(c.name) + '</tr>'; }).join("") + '</tbody></table>' +
+      '<table class="mini"><caption>orders</caption><thead><tr><th>id</th><th>customer_id</th><th>total</th></tr></thead><tbody>' +
+      O.map(function(o){ return '<tr' + (usedO.has(o.id) ? '' : ' class="unused"') + '>' + cell(o.id) + cell(o.cid) + cell(o.total) + '</tr>'; }).join("") + '</tbody></table>';
+    document.getElementById("demo-src").innerHTML = src;
+    document.getElementById("demo-desc").textContent = J[kind].desc + " " + rows.length + (rows.length === 1 ? " row." : " rows.");
+    var pre = document.getElementById("demo-sql"); pre.textContent = J[kind].sql; highlight(pre);
+    document.getElementById("demo-out").innerHTML = '<table><thead><tr>' + cols.map(function(c){ return '<th>' + c + '</th>'; }).join("") + '</tr></thead><tbody>' +
+      rows.map(function(r){ return '<tr>' + r.map(cell).join("") + '</tr>'; }).join("") + '</tbody></table>';
+    document.querySelectorAll(".demo-tabs button").forEach(function(b){ b.setAttribute("aria-pressed", String(b.dataset.j === kind)); });
+  }
+  document.querySelectorAll(".demo-tabs button").forEach(function(b){ b.addEventListener("click", function(){ runJoin(b.dataset.j); }); });
+  runJoin("inner");
+
+  /* Contents: open on desktop, collapsible on small screens, track current section */
+  var toc = document.getElementById("toc"), mq = window.matchMedia("(max-width: 900px)");
+  function syncToc(){ toc.open = !mq.matches; }
+  syncToc();
+  if (mq.addEventListener) mq.addEventListener("change", syncToc);
+  var links = Array.prototype.slice.call(document.querySelectorAll(".toc a"));
+  if ("IntersectionObserver" in window){
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if (e.isIntersecting){
+          links.forEach(function(a){ a.setAttribute("aria-current", String(a.getAttribute("href") === "#" + e.target.id)); });
+        }
+      });
+    }, {rootMargin:"-30% 0px -60% 0px"});
+    document.querySelectorAll("main section[id]").forEach(function(s){ io.observe(s); });
+  }
+  links.forEach(function(a){ a.addEventListener("click", function(){ if (mq.matches) toc.open = false; }); });
+})();
+</script>
+<script type="module" src="../explainer.js"></script>
+</body>
+</html>

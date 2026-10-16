@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Explainers — Alex McIvor</title>
+    <meta name="description" content="Interactive field guides by Alex McIvor: containers, networking, system design, auth, SQL, and references for JavaScript/TypeScript, Python, Go and Java." />
+
+    <!-- Theme: light by default, applied before first paint. Same key as the home page. -->
+    <script>
+      (function () {
+        var KEY = 'theme';
+        var DEFAULT = 'light';
+        function apply(choice) {
+          document.documentElement.setAttribute('data-theme', choice);
+        }
+        function stored() {
+          try {
+            var v = localStorage.getItem(KEY);
+            return v === 'light' || v === 'dark' ? v : null;
+          } catch (e) {
+            return null;
+          }
+        }
+        apply(stored() || DEFAULT);
+        window.setTheme = function (choice) {
+          apply(choice);
+          try {
+            localStorage.setItem(KEY, choice);
+          } catch (e) {}
+        };
+      })();
+    </script>
+
+    <link rel="stylesheet" href="../css/tokens.css" />
+    <link rel="stylesheet" href="../css/base.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <nav class="nav container" role="navigation" aria-label="Main">
+        <div class="nav-left">
+          <a href="../" class="site-title">Alex McIvor</a>
+          <a href="../#projects" class="nav-link">Selected work</a>
+          <a href="./" class="nav-link" aria-current="page">Explainers</a>
+          <a href="../#skills" class="nav-link nav-link--optional">Skills</a>
+          <a href="../#curio" class="nav-link">Curio cabinet</a>
+          <a href="../#contact" class="nav-link">Contact</a>
+        </div>
+        <div class="nav-actions">
+          <button id="theme-toggle" type="button" aria-label="Toggle dark mode" class="btn btn-icon" title="Toggle dark mode">
+            <span class="theme-icon theme-icon-sun" aria-hidden="true">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path></svg>
+            </span>
+            <span class="theme-icon theme-icon-moon" aria-hidden="true">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+            </span>
+          </button>
+        </div>
+      </nav>
+    </header>
+
+    <main>
+      <section class="container page-intro" aria-labelledby="page-heading">
+        <h1 id="page-heading">Explainers</h1>
+        <p class="lead">Interactive field guides to the tools and ideas I work with. Each is a single page: skim the diagrams, step through the visuals, copy the code, and come back to it when you need it.</p>
+      </section>
+
+      <div class="container explainer-groups" id="explainer-groups"></div>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container footer-inner"></div>
+    </footer>
+
+    <script type="module" src="../js/explainersPage.js"></script>
+  </body>
+</html>

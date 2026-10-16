@@ -1,5 +1,6 @@
 import { initThemeToggle } from './components/themeToggle.js';
 import { initProjectCards } from './components/projectCards.js';
+import { initFeaturedExplainers } from './components/explainers.js';
 import { initModal } from './components/modal.js';
 import { initCurioCabinet } from './components/curioCabinet.js';
 import { initHero } from './components/hero.js';
@@ -12,6 +13,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
   initThemeToggle();
   initHero();
   initProjectCards();
+  initFeaturedExplainers();
   initSkills();
   initCurioCabinet({modal});
   initContact();

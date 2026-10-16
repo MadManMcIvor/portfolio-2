@@ -1,0 +1,2604 @@
+<!DOCTYPE html>
+<!--
+  Modern Java primer: a quick reference for Java 25 LTS (checked against JDK 27).
+  HOW TO EDIT: each topic is a <section class="topic" id="..."> in <main>.
+  Inside: .idea (plain words), .viz (interactive), code blocks (.code), .lists (reach/watch), .notes.
+  Sidebar links are generated from the sections' <h2> + data-short attributes, so adding a
+  section with data-short="Label" adds it to the nav automatically.
+  Notes are stored in this browser's localStorage under "javaprimer:notes:<section id>".
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- Theme: light by default, applied before first paint. Same key as the rest of the
+     site, so the choice made on the home page carries here and back. -->
+<script>
+  (function () {
+    var KEY = 'theme';
+    var DEFAULT = 'light';
+    function apply(choice) {
+      document.documentElement.setAttribute('data-theme', choice);
+    }
+    function stored() {
+      try {
+        var v = localStorage.getItem(KEY);
+        return v === 'light' || v === 'dark' ? v : null;
+      } catch (e) {
+        return null;
+      }
+    }
+    apply(stored() || DEFAULT);
+    window.setTheme = function (choice) {
+      apply(choice);
+      try {
+        localStorage.setItem(KEY, choice);
+      } catch (e) {}
+    };
+  })();
+</script>
+<link rel="stylesheet" href="../../css/tokens.css">
+<title>Modern Java primer — Alex McIvor</title>
+<meta name="description" content="A quick reference for Java 25 LTS: records, sealed types, pattern matching, virtual threads and the rest, with interactive visuals.">
+<style>
+/* Palette: mapped onto Cream & Ink (../../css/tokens.css, ../explainer.css). Clay is the
+   accent; sage is "reach for it", ochre is "watch out" (and previews, checked exceptions). */
+:root{
+  --bg:var(--paper); --surface:var(--paper-raised); --muted:var(--ink-muted); --line:var(--paper-line);
+  --accent:var(--clay); --accent-ink:var(--on-cat); --accent-soft:var(--clay-tint);
+  --warn:var(--cat-ochre); --warn-soft:var(--cat-ochre-tint); --good:var(--sage); --good-soft:var(--sage-tint);
+  --code-bg:var(--paper-sunken); --hl:var(--cat-ochre-tint);
+  --tk-kw:var(--syn-keyword); --tk-str:var(--syn-string); --tk-com:var(--syn-comment); --tk-num:var(--syn-number); --tk-ann:var(--syn-func); --tk-type:var(--syn-type);
+  --serif:var(--font-sans);
+  --sans:var(--font-sans);
+  --mono:var(--font-mono);
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 20px); -webkit-text-size-adjust:100%;}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.6 var(--serif);}
+a{color:var(--accent);text-underline-offset:2px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+img,svg{max-width:100%}
+code{font-family:var(--mono);font-size:.86em;background:var(--code-bg);padding:.08em .32em;border-radius:4px}
+pre code{background:none;padding:0;border-radius:0;font-size:inherit}
+h1,h2,h3,h4{font-family:var(--sans);line-height:1.2;letter-spacing:-.01em}
+h3{font-size:1.15rem;margin:2.2rem 0 .6rem}
+h4{font-size:1rem;margin:0 0 .5rem}
+button{font:inherit;cursor:pointer}
+
+/* ---------- layout ---------- */
+.shell{display:grid;grid-template-columns:280px minmax(0,1fr);min-height:100%}
+.sidebar{position:sticky;top:0;height:100vh;overflow-y:auto;border-right:1px solid var(--line);
+  background:var(--surface);padding:24px 18px 32px;font-family:var(--sans);font-size:.92rem}
+.brand{display:block;font-weight:700;font-size:1.05rem;color:var(--ink);text-decoration:none;margin:0 6px 4px}
+.brand-sub{color:var(--muted);font-size:.82rem;margin:0 6px 18px}
+.nav ol{list-style:none;margin:0;padding:0;counter-reset:ch}
+.nav a{display:flex;gap:10px;padding:6px 8px;border-radius:6px;color:var(--ink);text-decoration:none;line-height:1.35}
+.nav a .num{color:var(--muted);min-width:1.4em;text-align:right;font-variant-numeric:tabular-nums}
+.nav a:hover{background:var(--code-bg)}
+.nav a.active{background:var(--accent-soft);color:var(--ink);font-weight:600}
+.nav a.active .num{color:var(--accent)}
+.side-tools{margin-top:22px;padding-top:16px;border-top:1px solid var(--line);display:flex;flex-wrap:wrap;gap:8px}
+.btn{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:7px;padding:6px 11px;font-family:var(--sans);font-size:.85rem;line-height:1.2}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent)}
+.topbar{display:none}
+main{padding:0 clamp(18px,5vw,64px) 120px;max-width:880px;width:100%;min-width:0}
+.backdrop{display:none}
+
+@media (max-width: 900px){
+  .shell{grid-template-columns:minmax(0,1fr)}
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:10px;position:sticky;
+    top:env(safe-area-inset-top,0px);z-index:20;background:var(--surface);border-bottom:1px solid var(--line);
+    padding:10px 16px;font-family:var(--sans)}
+  body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:21;background:var(--surface)}
+  .topbar .title{font-weight:700}
+  .sidebar{position:fixed;top:0;bottom:0;left:0;z-index:40;width:min(320px,86vw);height:auto;
+    transform:translateX(-102%);transition:transform .22s ease;
+    padding-top:calc(env(safe-area-inset-top,0px) + 20px);padding-bottom:calc(env(safe-area-inset-bottom,0px) + 24px)}
+  .sidebar.open{transform:none;box-shadow:0 0 0 100vmax rgba(0,0,0,.35)}
+  .backdrop.show{display:block;position:fixed;inset:0;z-index:35}
+  main{padding-top:8px}
+}
+@media (prefers-reduced-motion: reduce){ *{transition:none!important;animation:none!important;scroll-behavior:auto!important} }
+
+/* ---------- hero ---------- */
+.hero{padding:56px 0 24px}
+.bytes{display:flex;flex-wrap:wrap;gap:6px 16px;margin:0 0 18px}
+.bgroup{display:flex;gap:6px}
+.byte{font-family:var(--mono);font-weight:600;font-size:clamp(1.1rem,3.9vw,2.1rem);line-height:1;
+  padding:.28em .32em;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);min-width:2.2em;text-align:center}
+.byte.g-magic{color:var(--accent)}
+.byte.g-ver{color:var(--warn)}
+.byte.on{background:var(--accent-soft);border-color:var(--accent)}
+.byte.g-ver.on{background:var(--warn-soft);border-color:var(--warn)}
+.byte-caption{font-family:var(--sans);font-size:.95rem;color:var(--muted);min-height:3em;margin:0 0 28px;max-width:60ch}
+.hero h1{font-family:var(--font-serif);font-weight:400;font-size:clamp(2.4rem,5.5vw,4rem);line-height:1.05;margin:0 0 12px;letter-spacing:-.01em}
+.lede{font-size:1.15rem;max-width:62ch;margin:0 0 14px}
+.version-note{font-family:var(--sans);font-size:.92rem;border-left:3px solid var(--accent);padding:8px 14px;background:var(--surface);border-radius:0 8px 8px 0;max-width:68ch}
+
+/* ---------- topics ---------- */
+.topic{padding:56px 0 8px;border-top:1px solid var(--line)}
+.topic > h2{font-size:clamp(1.6rem,3vw,2rem);font-weight:650;margin:0 0 14px;display:flex;gap:14px;align-items:baseline}
+.topic > h2 .chap{font-size:.6em;color:var(--accent);font-variant-numeric:tabular-nums;font-weight:600}
+.topic p,.topic li{max-width:70ch}
+.idea{font-size:1.12rem;border-left:3px solid var(--accent);padding-left:16px;margin:0 0 22px}
+.since{display:inline-block;font-family:var(--sans);font-size:.72rem;font-weight:600;padding:1px 7px;border-radius:999px;
+  background:var(--accent-soft);color:var(--accent);vertical-align:.15em;margin-left:4px;white-space:nowrap}
+.since.preview{background:var(--warn-soft);color:var(--warn)}
+.diff{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:14px 0}
+.diff > :first-child{margin-top:0}.diff > :last-child{margin-bottom:0}
+.diff strong{font-family:var(--sans)}
+
+/* lists */
+.lists{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:28px 0}
+.lists > div{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 18px 6px}
+.lists .reach{border-top:3px solid var(--good)}
+.lists .watch{border-top:3px solid var(--warn)}
+.lists h4{font-family:var(--sans)}
+.lists ul{padding-left:1.1em;margin:0 0 10px}
+.lists li{margin:0 0 6px;font-size:.96rem}
+@media (max-width:640px){.lists{grid-template-columns:1fr}}
+
+/* notes */
+.notes{margin:24px 0 8px;font-family:var(--sans)}
+.notes label{display:flex;justify-content:space-between;font-size:.88rem;font-weight:600;margin-bottom:6px}
+.notes .status{font-weight:400;color:var(--muted)}
+.notes textarea{width:100%;min-height:90px;resize:vertical;border:1px dashed var(--line);border-radius:8px;
+  background:var(--surface);color:var(--ink);padding:10px 12px;font:15px/1.5 var(--sans)}
+.notes textarea:focus{border-style:solid;border-color:var(--accent);outline:none}
+
+/* code */
+.code{margin:14px 0 18px;border:1px solid var(--line);border-radius:9px;background:var(--code-bg);overflow:hidden}
+.code-head{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:5px 8px 5px 14px;
+  border-bottom:1px solid var(--line);font-family:var(--sans);font-size:.8rem;color:var(--muted)}
+.copy{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:6px;padding:3px 10px;font-family:var(--sans);font-size:.78rem}
+.copy.done{border-color:var(--good);color:var(--good)}
+.code pre{margin:0;padding:12px 14px;overflow-x:auto;font:13.5px/1.6 var(--mono);tab-size:4}
+.tk-kw{color:var(--tk-kw);font-weight:600}.tk-str{color:var(--tk-str)}.tk-com{color:var(--tk-com);font-style:italic}
+.tk-num{color:var(--tk-num)}.tk-ann{color:var(--tk-ann)}.tk-type{color:var(--tk-type)}
+
+/* tabs (compare + files) */
+.tabs{margin:14px 0 18px}
+.tablist{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:-1px;position:relative;z-index:1}
+.tab{border:1px solid var(--line);border-bottom-color:transparent;background:transparent;color:var(--muted);
+  border-radius:8px 8px 0 0;padding:6px 12px;font-family:var(--sans);font-size:.84rem}
+.tab[aria-selected="true"]{background:var(--code-bg);color:var(--ink);font-weight:600;border-bottom-color:var(--code-bg)}
+.tabs .code{margin:0;border-top-left-radius:0}
+.tabpanel[hidden]{display:none}
+
+/* tables */
+.table-wrap{overflow-x:auto;margin:14px 0 20px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-family:var(--sans);font-size:.9rem;line-height:1.45}
+th,td{text-align:left;vertical-align:top;padding:9px 12px;border-bottom:1px solid var(--line)}
+th{background:var(--code-bg);font-weight:600;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td code{white-space:nowrap}
+
+/* viz */
+.viz{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px;margin:20px 0 24px;font-family:var(--sans)}
+.viz h4{margin:0 0 4px}
+.viz .hint{color:var(--muted);font-size:.86rem;margin:0 0 14px}
+.viz-controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:12px 0}
+.viz-out{font-size:.93rem;line-height:1.55}
+.pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:.78rem;font-weight:600;border:1px solid var(--line)}
+.pill.ok{background:var(--good-soft);color:var(--good);border-color:transparent}
+.pill.bad{background:var(--warn-soft);color:var(--warn);border-color:transparent}
+
+/* pipeline */
+.stages{display:flex;flex-wrap:wrap;gap:6px;align-items:stretch}
+.stage{flex:1 1 110px;border:1px solid var(--line);border-radius:8px;padding:9px 10px;font-size:.85rem;background:var(--bg);opacity:.55;transition:opacity .2s, border-color .2s}
+.stage b{display:block;font-size:.9rem}
+.stage.on{opacity:1;border-color:var(--accent);background:var(--accent-soft)}
+.stage.past{opacity:.9}
+.stage-detail{margin-top:14px;min-height:6.5em}
+.stage-detail pre{background:var(--code-bg);border-radius:8px;padding:10px 12px;font:12.5px/1.5 var(--mono);overflow-x:auto;margin:8px 0 0}
+
+/* timeline */
+.versions{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.ver{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:8px;padding:6px 12px;font-family:var(--sans);font-size:.88rem;text-align:left;line-height:1.2}
+.ver small{display:block;color:var(--muted);font-size:.72rem}
+.ver.lts{border-width:2px}
+.ver[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.ver[aria-pressed="true"] small{color:inherit;opacity:.85}
+.ver-list{margin:0;padding-left:1.1em}
+.ver-list li{margin:0 0 5px}
+
+/* chooser */
+.chooser{display:grid;gap:12px}
+.chooser fieldset{border:0;padding:0;margin:0}
+.chooser legend{font-weight:600;font-size:.88rem;margin-bottom:6px}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.choice-result{margin-top:16px;border-top:1px solid var(--line);padding-top:14px}
+.choice-result .cls{font-family:var(--mono);font-size:1.15rem;font-weight:600;color:var(--accent)}
+
+/* exception tree */
+.extree ul{list-style:none;margin:0;padding-left:18px;border-left:1px solid var(--line)}
+.extree > ul{border-left:0;padding-left:0}
+.extree li{margin:4px 0}
+.exbtn{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:6px;padding:3px 9px;font-family:var(--mono);font-size:.8rem}
+.exbtn.checked{border-left:4px solid var(--warn)}
+.exbtn.unchecked{border-left:4px solid var(--good)}
+.exbtn.neutral{border-left:4px solid var(--muted)}
+.exbtn[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:.8rem;color:var(--muted);margin:10px 0}
+.legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px;background:var(--c)}
+
+/* access grid */
+.access{min-width:520px}
+.access td.y,.access td.n{text-align:center;font-weight:700}
+.access td.y{color:var(--good)} .access td.n{color:var(--muted);font-weight:400}
+.access tr.sel td{background:var(--accent-soft)}
+.access tbody tr{cursor:pointer}
+
+/* vthreads */
+.lanes{display:grid;gap:6px;margin:10px 0}
+.lane{display:grid;grid-template-columns:96px 1fr;gap:8px;align-items:center;font-size:.82rem}
+.lane .slot{height:30px;border-radius:6px;border:1px dashed var(--line);display:flex;align-items:center;padding:0 10px;font-family:var(--mono);font-size:.8rem}
+.lane .slot.busy{border-style:solid;background:var(--accent-soft);border-color:var(--accent)}
+.lane .slot.blocked{border-style:solid;background:var(--warn-soft);border-color:var(--warn);color:var(--warn)}
+.tasks{display:flex;flex-wrap:wrap;gap:5px;margin:10px 0}
+.task{font-family:var(--mono);font-size:.74rem;padding:3px 7px;border-radius:5px;border:1px solid var(--line);background:var(--bg)}
+.task.run{background:var(--accent-soft);border-color:var(--accent)}
+.task.io{background:var(--warn-soft);border-color:var(--warn)}
+.task.done{opacity:.45;text-decoration:line-through}
+.stat{font-variant-numeric:tabular-nums}
+
+/* memory */
+.mem{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,1fr) minmax(0,1fr);gap:10px}
+.mem .col{border:1px solid var(--line);border-radius:8px;padding:10px;background:var(--bg);min-height:190px}
+.mem .col h5{margin:0 0 8px;font-size:.8rem;color:var(--muted);font-weight:600}
+.mem .src{font:12px/1.75 var(--mono);white-space:pre;overflow-x:auto}
+.mem .src .ln{display:block;padding:0 6px;border-radius:4px}
+.mem .src .ln.cur{background:var(--hl)}
+.frame{border:1px solid var(--line);border-radius:6px;margin-bottom:8px;background:var(--surface)}
+.frame .fname{font-size:.75rem;color:var(--muted);padding:3px 8px;border-bottom:1px solid var(--line)}
+.var{display:flex;justify-content:space-between;gap:8px;padding:3px 8px;font-family:var(--mono);font-size:.8rem}
+.ref{font-weight:600}
+.obj{border:1px solid var(--line);border-radius:6px;padding:5px 8px;margin-bottom:8px;font-family:var(--mono);font-size:.8rem;background:var(--surface)}
+.obj.garbage{opacity:.45;border-style:dashed;text-decoration:line-through}
+.obj.changed,.var.changed{outline:2px solid var(--accent)}
+.c1{color:var(--accent)}.c2{color:var(--warn)}
+@media (max-width:700px){.mem{grid-template-columns:1fr 1fr}.mem .col.srccol{grid-column:1/-1;min-height:0}}
+
+/* cheat sheet */
+.cheat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:4px 22px}
+.cheat-grid section h4{margin:18px 0 6px;padding-top:10px;border-top:1px solid var(--line)}
+.cheat-grid .code{margin:6px 0}
+.cheat-grid .code pre{font-size:12.5px}
+.cheat-grid .code-head{display:none}
+.cheat-grid .code{position:relative}
+.cheat-grid .copy{position:absolute;top:6px;right:6px}
+
+.footer{margin-top:60px;color:var(--muted);font-family:var(--sans);font-size:.85rem}
+@media print{.sidebar,.topbar,.notes,.copy{display:none!important}.shell{display:block}.topic{break-inside:avoid-page}}
+</style>
+<link rel="stylesheet" href="../explainer.css">
+</head>
+<body>
+<div class="site-strip">
+  <nav class="site-strip__crumbs" aria-label="Site">
+    <a class="site-strip__home" href="../../">Alex McIvor</a>
+    <span class="site-strip__sep" aria-hidden="true">/</span>
+    <a href="../">Explainers</a>
+  </nav>
+  <button id="theme-toggle" type="button" class="site-strip__toggle" aria-label="Toggle dark mode" title="Toggle dark mode">
+    <span class="theme-icon theme-icon-sun" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path></svg></span>
+    <span class="theme-icon theme-icon-moon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg></span>
+  </button>
+</div>
+<div class="topbar">
+  <button class="btn" id="openNav" aria-controls="sidebar" aria-expanded="false">Topics</button>
+  <span class="title">Modern Java</span>
+</div>
+<div class="backdrop" id="backdrop"></div>
+<div class="shell">
+<aside class="sidebar" id="sidebar" aria-label="Topics">
+  <a class="brand" href="#start">Modern Java primer</a>
+  <p class="brand-sub">Reflects Java 25 LTS, checked against JDK 27</p>
+  <nav class="nav"><ol id="navList"></ol></nav>
+  <div class="side-tools">
+    <button class="btn" id="exportNotes" type="button">Copy all notes</button>
+    <button class="btn" id="importNotes" type="button">Import notes</button>
+  </div>
+</aside>
+<main id="main">
+<section class="hero" id="start" data-short="Start here">
+  <div class="bytes" id="bytes" role="group" aria-label="First eight bytes of a Java class file">
+    <span class="bgroup"><button class="byte g-magic" data-g="magic">CA</button><button class="byte g-magic" data-g="magic">FE</button><button class="byte g-magic" data-g="magic">BA</button><button class="byte g-magic" data-g="magic">BE</button></span>
+    <span class="bgroup"><button class="byte" data-g="minor">00</button><button class="byte" data-g="minor">00</button></span>
+    <span class="bgroup"><button class="byte g-ver" data-g="major">00</button><button class="byte g-ver" data-g="major">45</button></span>
+  </div>
+  <p class="byte-caption" id="byteCaption" aria-live="polite">Every compiled Java class begins with these eight bytes. Tap them.</p>
+  <h1>Modern Java: a quick reference</h1>
+  <p class="lede">Java as it's written today: records, sealed types, pattern matching, virtual threads, and <code>void main()</code> with no class around it. This reference assumes you can already program and focuses on how Java does things and why. Where the difference is instructive, it shows the equivalent in Python, JavaScript, TypeScript or Go.</p>
+  <p class="version-note"><strong>Version this reflects:</strong> Java SE 25, the current long-term support (LTS) release, which is what most teams should target. Notes also cover JDK 27, the latest feature release (GA 15 September 2026), whose preview features are marked <span class="since preview">Preview</span>. Checked October 2026.</p>
+
+  <div class="viz" id="timelineViz">
+    <h4>What each release added</h4>
+    <p class="hint">Pick a version to see the features it introduced that matter in everyday code. Thick borders mark long-term support (LTS) releases.</p>
+    <div class="versions" id="versions"></div>
+    <div class="viz-out" id="versionOut"></div>
+  </div>
+  <p>The topics are in a sensible reading order, but each one stands alone, so jump to whatever you need. Every topic ends with a notes box that saves in your browser only; use <em>Copy all notes</em> in the sidebar to back them up.</p>
+</section>
+
+<section class="topic" id="philosophy" data-short="Philosophy &amp; trade-offs">
+  <h2>Philosophy, trade-offs, and where it's used</h2>
+  <p class="idea">Java optimizes for large teams maintaining large codebases for a long time. It chooses explicitness over brevity, a stable runtime over language novelty, and backward compatibility over almost everything. The JVM is the real product; the language is a careful, slow-moving front end to it.</p>
+
+  <h3>The trade-offs, stated plainly</h3>
+  <p><strong>Compatibility is sacred.</strong> Bytecode compiled for Java 8 still runs on JDK 27. That's why features arrive slowly (and through multi-round previews) and why old APIs like <code>java.util.Date</code> are deprecated in spirit but never removed. Python broke compatibility once (2 → 3) and it cost a decade; Java decided never to do that.</p>
+  <p><strong>Static, nominal typing.</strong> Types are declared by name: a class implements an interface only if it says so. That's the opposite of Go and TypeScript, where structure decides compatibility. Nominal typing makes large refactors safe and IDE navigation exact, at the cost of ceremony.</p>
+  <p><strong>A managed runtime that gets faster while running.</strong> Code starts interpreted, then the JIT compiler profiles hot paths and compiles them to optimized machine code. Long-running servers get very fast; short-lived CLIs pay a startup cost (GraalVM native images and the newer AOT cache work address that).</p>
+  <p><strong>Garbage collected, with tunable collectors.</strong> You never free memory, and you choose a collector to trade throughput against pause time. G1 is the default everywhere as of JDK 27.</p>
+  <p><strong>Slow language, fast platform.</strong> The six-month release train ships something every March and September. Features land as <em>preview</em> first (opt-in with <code>--enable-preview</code>) and only become permanent after feedback.</p>
+
+  <div class="viz" id="pipelineViz">
+    <h4>From source to machine code</h4>
+    <p class="hint">Step through what happens between <code>App.java</code> and your CPU. This is the main thing Java does that Python, JS and Go don't do the same way.</p>
+    <div class="stages" id="stages"></div>
+    <div class="viz-controls">
+      <button class="btn" id="stagePrev">Previous</button>
+      <button class="btn primary" id="stageNext">Next step</button>
+      <span class="hint" id="stageCount" style="margin:0"></span>
+    </div>
+    <div class="stage-detail viz-out" id="stageDetail"></div>
+  </div>
+
+  <h3>Compared with other languages</h3>
+  <div class="diff">
+    <p><strong>vs Python / JavaScript:</strong> both are dynamically typed and interpreted (with JITs in V8 and PyPy). Java checks types before running and compiles to a portable bytecode first. You give up REPL-driven looseness (though <code>jshell</code> exists) and gain refactoring safety and predictable performance.</p>
+    <p><strong>vs TypeScript:</strong> TS types are erased and advisory; the runtime is still JS. Java types are enforced by the compiler <em>and</em> checked by the JVM (a bad cast throws at runtime). Generics, though, are erased in both, which surprises people.</p>
+    <p><strong>vs Go:</strong> closest philosophically (boring on purpose, built for teams), but Go compiles ahead-of-time to a static binary with a tiny runtime, while Java ships bytecode to a big adaptive VM. Go favors structural interfaces and explicit error values; Java favors nominal types and exceptions.</p>
+  </div>
+
+  <h3>Where it's used in industry</h3>
+  <p>Back-end services at banks, insurers, airlines, retailers and telecoms (usually Spring Boot, increasingly Quarkus or Micronaut). Big-data infrastructure: Kafka, Spark, Flink, Cassandra, Elasticsearch and Hadoop are JVM projects. Android (alongside Kotlin, which runs on the same ecosystem). Trading systems that tune the JVM for low latency. Developer tools: IntelliJ, Gradle, Jenkins, Bazel. Minecraft. If a company has a large back office, Java is probably in it.</p>
+
+  <div class="lists">
+    <div class="reach"><h4>Reach for it when</h4><ul>
+      <li>A service will live for years and be maintained by people who didn't write it.</li>
+      <li>You need high sustained throughput and a mature profiling and monitoring story.</li>
+      <li>You're in the JVM data ecosystem (Kafka, Spark, Flink) already.</li>
+      <li>You want lots of blocking-style concurrency without async/await (virtual threads).</li>
+    </ul></div>
+    <div class="watch"><h4>Watch out for</h4><ul>
+      <li>Startup time and memory footprint for tiny CLIs or scale-to-zero functions; consider GraalVM native image or Go.</li>
+      <li>Framework magic (annotations, reflection, proxies) hiding what actually runs.</li>
+      <li>Old tutorials: lots of top search results still teach Java 8 idioms.</li>
+    </ul></div>
+  </div>
+  <div class="notes" data-note="philosophy"></div>
+</section>
+
+<section class="topic" id="toolchain" data-short="Toolchain">
+  <h2>Toolchain: install, run, build, test, debug</h2>
+  <p class="idea">You install a JDK (compiler, runtime, and tools), then let a build tool (Maven or Gradle) handle compiling, dependencies, testing and packaging. Unlike Go, none of the formatter, linter or test runner ships with the language; you pick them and wire them into the build.</p>
+
+  <h3>Install a JDK</h3>
+  <p>"Java" has many builds of the same OpenJDK source: Eclipse Temurin, Amazon Corretto, Azul Zulu, Oracle's own, and others. Temurin is a safe free default. Use a version manager, similar to <code>pyenv</code>, <code>nvm</code> or <code>goenv</code>:</p>
+  <div class="code"><div class="code-head"><span>Terminal</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="bash"># SDKMAN! (macOS, Linux, WSL) — the Java equivalent of nvm/pyenv
+curl -s "https://get.sdkman.io" | bash
+sdk list java                 # see available builds
+sdk install java 25-tem       # Temurin 25 LTS (exact identifiers vary; pick from the list)
+sdk use java 27-tem           # switch per-shell, like `nvm use`
+
+java -version                 # runtime
+javac -version                # compiler</code></pre></div>
+  <p>Other routes: <code>winget</code> or the Adoptium installer on Windows, Homebrew casks on macOS, or <code>mise</code>/<code>asdf</code> if you already use them for Node and Go. For a project, also commit a <code>.sdkmanrc</code> (or <code>.tool-versions</code>) so everyone uses the same JDK.</p>
+
+  <h3>Run code with no build tool at all</h3>
+  <p>Modern Java can run a source file directly, like <code>python app.py</code> or <code>go run</code>. Since Java 25 a single file doesn't even need a class.</p>
+  <div class="tabs"><div class="tablist" role="tablist"><button class="tab" type="button" role="tab" aria-controls="t1p0" aria-selected="true">Java 25</button><button class="tab" type="button" role="tab" aria-controls="t1p1" aria-selected="false">Classic Java</button><button class="tab" type="button" role="tab" aria-controls="t1p2" aria-selected="false">Python</button><button class="tab" type="button" role="tab" aria-controls="t1p3" aria-selected="false">Go</button></div><div class="tabpanel" role="tabpanel" id="t1p0"><div class="code"><div class="code-head"><span>Hello.java</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="java">// Compact source file (Java 25): no class, no static, no String[] args
+void main() {
+    String name = IO.readln("Your name? ");
+    IO.println("Hello, " + name);
+}
+// run it:  java Hello.java</code></pre></div></div><div class="tabpanel" role="tabpanel" id="t1p1" hidden><div class="code"><div class="code-head"><span>Hello.java</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="java">public class Hello {
+    public static void main(String[] args) {
+        System.out.println("Hello, " + args[0]);
+    }
+}
+// compile then run:  javac Hello.java &amp;&amp; java Hello Ada</code></pre></div></div><div class="tabpanel" role="tabpanel" id="t1p2" hidden><div class="code"><div class="code-head"><span>Python</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="python">name = input("Your name? ")
+print(f"Hello, {name}")
+# python hello.py</code></pre></div></div><div class="tabpanel" role="tabpanel" id="t1p3" hidden><div class="code"><div class="code-head"><span>Go</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="go">package main
+
+import "fmt"
+
+func main() { fmt.Println("Hello") }
+// go run hello.go</code></pre></div></div></div>
+  <p><code>java Main.java</code> also works for small multi-file programs <span class="since">Since 22</span>: the launcher compiles other source files it finds in the same tree on demand. <code>jshell</code> is the REPL; it's handy for checking an API's behavior.</p>
+
+  <h3>Build tools and project layout</h3>
+  <p>Maven and Gradle both use the same directory convention. There's no <code>go.mod</code>-style built-in tool; the build tool owns dependencies, which come from Maven Central (the npm/PyPI of the JVM).</p>
+  <div class="code"><div class="code-head"><span>Standard layout</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="text">my-app/
+├── pom.xml                      # or build.gradle.kts + settings.gradle.kts
+├── mvnw, .mvn/                  # Maven wrapper: pins Maven's version (commit it)
+└── src/
+    ├── main/
+    │   ├── java/com/example/app/App.java     # package path mirrors folders
+    │   └── resources/                        # config files, bundled into the jar
+    └── test/
+        └── java/com/example/app/AppTest.java</code></pre></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Task</th><th>Maven</th><th>Gradle</th><th>Equivalent elsewhere</th></tr></thead>
+    <tbody>
+      <tr><td>Compile</td><td><code>./mvnw compile</code></td><td><code>./gradlew compileJava</code></td><td><code>go build</code>, <code>tsc</code></td></tr>
+      <tr><td>Test</td><td><code>./mvnw test</code></td><td><code>./gradlew test</code></td><td><code>pytest</code>, <code>go test ./...</code></td></tr>
+      <tr><td>Package a jar</td><td><code>./mvnw package</code></td><td><code>./gradlew build</code></td><td><code>go build</code> (but needs a JVM to run)</td></tr>
+      <tr><td>Full check</td><td><code>./mvnw verify</code></td><td><code>./gradlew check</code></td><td>CI script</td></tr>
+      <tr><td>Show deps tree</td><td><code>./mvnw dependency:tree</code></td><td><code>./gradlew dependencies</code></td><td><code>npm ls</code>, <code>go mod graph</code></td></tr>
+      <tr><td>Manifest</td><td><code>pom.xml</code> (XML, declarative)</td><td><code>build.gradle.kts</code> (Kotlin code)</td><td><code>package.json</code>, <code>pyproject.toml</code>, <code>go.mod</code></td></tr>
+    </tbody>
+  </table></div>
+  <p>Choosing: Maven is rigid and predictable, which is a feature on big teams. Gradle is faster on large multi-module builds and fully programmable, which is also how builds become hard to read. Both have a wrapper script; always use <code>./mvnw</code> or <code>./gradlew</code> rather than a globally installed tool, the same way you'd pin a Node version.</p>
+  <div class="code"><div class="code-head"><span>build.gradle.kts (minimal)</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="kotlin">plugins { application }
+
+java { toolchain { languageVersion = JavaLanguageVersion.of(25) } } // Gradle downloads the JDK if needed
+
+repositories { mavenCentral() }
+
+dependencies {
+    testImplementation(platform("org.junit:junit-bom:6.1.3"))
+    testImplementation("org.junit.jupiter:junit-jupiter")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+}
+
+application { mainClass = "com.example.app.App" }
+tasks.test { useJUnitPlatform() }</code></pre></div>
+
+  <h3>Formatter and linters</h3>
+  <p>There's no <code>gofmt</code> or Black built in. Pick one formatter and enforce it in the build with the Spotless plugin, which works for both Maven and Gradle.</p>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Need</th><th>Common choice</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td>Formatter</td><td>google-java-format or palantir-java-format, via Spotless</td><td>Like Black/Prettier: no options to argue about. Palantir is the same idea with a longer line length and lambda-friendlier output.</td></tr>
+      <tr><td>Bug-finding compiler plugin</td><td>Error Prone</td><td>Runs inside <code>javac</code>; catches real bugs (wrong <code>equals</code>, ignored return values). Closest thing to <code>go vet</code>.</td></tr>
+      <tr><td>Null checking</td><td>JSpecify annotations + NullAway</td><td><code>@Nullable</code>/<code>@NullMarked</code> give you a TypeScript-<code>strictNullChecks</code>-like experience at compile time.</td></tr>
+      <tr><td>Style and smells</td><td>Checkstyle, PMD, SpotBugs, Sonar</td><td>Use sparingly; a formatter plus Error Prone catches most of what matters.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Testing</h3>
+  <p>JUnit is the standard. JUnit 6 <span class="since">Sept 2025</span> keeps the JUnit 5 "Jupiter" API and needs Java 17+. Add AssertJ for fluent assertions, Mockito for mocks, and Testcontainers to run a real Postgres or Kafka in Docker during tests.</p>
+  <div class="tabs"><div class="tablist" role="tablist"><button class="tab" type="button" role="tab" aria-controls="t2p0" aria-selected="true">JUnit</button><button class="tab" type="button" role="tab" aria-controls="t2p1" aria-selected="false">pytest</button><button class="tab" type="button" role="tab" aria-controls="t2p2" aria-selected="false">Go</button></div><div class="tabpanel" role="tabpanel" id="t2p0"><div class="code"><div class="code-head"><span>PriceTest.java</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="java">import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import static org.junit.jupiter.api.Assertions.*;
+
+class PriceTest {
+    @Test
+    void appliesDiscount() {
+        assertEquals(90, Price.withDiscount(100, 10));
+    }
+
+    @ParameterizedTest              // table-driven, like Go's test tables
+    @CsvSource({"100,0,100", "100,50,50", "80,25,60"})
+    void table(int base, int pct, int expected) {
+        assertEquals(expected, Price.withDiscount(base, pct));
+    }
+
+    @Test
+    void rejectsNegative() {
+        var ex = assertThrows(IllegalArgumentException.class,
+                              () -&gt; Price.withDiscount(100, -1));
+        assertTrue(ex.getMessage().contains("pct"));
+    }
+}</code></pre></div></div><div class="tabpanel" role="tabpanel" id="t2p1" hidden><div class="code"><div class="code-head"><span>Python</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="python">import pytest
+
+def test_applies_discount():
+    assert with_discount(100, 10) == 90
+
+@pytest.mark.parametrize("base,pct,expected", [(100,0,100),(100,50,50)])
+def test_table(base, pct, expected):
+    assert with_discount(base, pct) == expected
+
+def test_rejects_negative():
+    with pytest.raises(ValueError, match="pct"):
+        with_discount(100, -1)</code></pre></div></div><div class="tabpanel" role="tabpanel" id="t2p2" hidden><div class="code"><div class="code-head"><span>Go</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="go">func TestWithDiscount(t *testing.T) {
+    cases := []struct{ base, pct, want int }{{100, 0, 100}, {100, 50, 50}}
+    for _, c := range cases {
+        if got := WithDiscount(c.base, c.pct); got != c.want {
+            t.Errorf("WithDiscount(%d,%d) = %d, want %d", c.base, c.pct, got, c.want)
+        }
+    }
+}</code></pre></div></div></div>
+  <div class="diff"><p><strong>What's different:</strong> tests are discovered by annotation (<code>@Test</code>), not by naming convention like <code>test_*</code> or <code>TestXxx</code>. Test classes live in a parallel <code>src/test/java</code> tree in the <em>same package</em> as the code, so they can see package-private members, much like Go's same-package <code>_test.go</code> files.</p></div>
+
+  <h3>Debugging and observing</h3>
+  <p>The IDE debugger is the main tool, and IntelliJ IDEA is the de facto Java IDE (VS Code with the Java extension pack is fine too). To debug a process that's already running somewhere, start it with the debug agent and attach:</p>
+  <div class="code"><div class="code-head"><span>Terminal</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="bash"># Start with a debug port open (attach from your IDE to localhost:5005)
+java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005 -jar app.jar
+
+jcmd                         # list running JVMs
+jcmd &lt;pid&gt; Thread.print      # thread dump: where is every thread stuck?
+jcmd &lt;pid&gt; GC.heap_info      # heap summary
+
+# Java Flight Recorder: low-overhead production profiling, open the file in JDK Mission Control
+java -XX:StartFlightRecording=duration=60s,filename=rec.jfr -jar app.jar</code></pre></div>
+  <p>Error messages got friendlier too: a <code>NullPointerException</code> now tells you exactly which expression was null (<code>Cannot invoke "String.length()" because "user.name" is null</code>).</p>
+
+  <div class="lists">
+    <div class="reach"><h4>Reach for it when</h4><ul>
+      <li><code>java File.java</code>: scripts, experiments, quick checks.</li>
+      <li>Maven: most services and libraries; it's the most common choice in industry.</li>
+      <li>Gradle: Android, big multi-module builds, or when you need custom build logic.</li>
+      <li>JFR + <code>jcmd</code>: "it's slow in production" before reaching for a profiler.</li>
+    </ul></div>
+    <div class="watch"><h4>Watch out for</h4><ul>
+      <li>Your IDE's JDK, your shell's JDK and the build's JDK can differ. Pin the toolchain in the build.</li>
+      <li>Set <code>maven.compiler.release</code> (not <code>source</code>/<code>target</code>) so you can't accidentally call APIs newer than your target.</li>
+      <li>Gradle's Kotlin DSL is not Java; copy-pasting Groovy-DSL snippets into it fails.</li>
+    </ul></div>
+  </div>
+  <div class="notes" data-note="toolchain"></div>
+</section>
+<section class="topic" id="syntax" data-short="Syntax essentials">
+  <h2>Syntax essentials</h2>
+  <p class="idea">C-family syntax: braces, semicolons, <code>for</code>/<code>while</code>, and every statement lives inside a method, which lives inside a type. Modern Java removed much of the old noise: <code>var</code> for locals, text blocks, switch expressions, records, and enhanced <code>instanceof</code>.</p>
+
+  <h3>Variables and constants</h3>
+  <p>A local variable is declared with its type (<code>int count = 3;</code>) or with <code>var</code>, which infers the type from the right-hand side but keeps it fixed. Adding <code>final</code> makes a variable assign-once, similar to <code>const</code> in JavaScript: the name can't be rebound, but an object it points to can still be mutated. A true constant is a <code>static final</code> field on a class, named in <code>UPPER_SNAKE_CASE</code> by convention (<code>static final int MAX_RETRIES = 3;</code>). There's no separate <code>const</code> keyword; it's reserved but unused.</p>
+  <div class="code"><div class="code-head"><span>Constants.java</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="java">public final class Limits {
+    public static final int MAX_RETRIES = 3;                // class-level constant
+    public static final Duration TIMEOUT = Duration.ofSeconds(10);
+    private Limits() {}                                     // no instances
+}
+
+void example() {
+    int attempts = 0;                // mutable local
+    final String region = "eu-west"; // assign once
+    var started = Instant.now();     // inferred as Instant, still statically typed
+    attempts++;                      // fine
+    // region = "us-east";           // compile error: cannot assign a value to final variable
+}</code></pre></div>
+
+  <h3>Strings and control flow</h3>
+  <div class="code"><div class="code-head"><span>Basics.java</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="java">var count = 3;                 // local type inference (Java 10+); type is still static: int
+final var name = "Ada";        // final = can't reassign (like const in JS, not deep immutability)
+long big = 9_000_000_000L;     // underscores allowed; L suffix for long literals
+double ratio = 0.75;
+
+String greeting = "Hi %s, you have %d items".formatted(name, count);  // printf-style
+String json = """
+    {"name": "%s", "count": %d}
+    """.formatted(name, count);                                     // text block (Java 15+)
+
+for (int i = 0; i &lt; count; i++) { /* classic */ }
+for (String s : List.of("a", "b")) { /* for-each over any Iterable */ }
+
+while (count &gt; 0) count--;
+
+// switch expression: no fall-through, must be exhaustive, yields a value (Java 14+)
+String size = switch (count) {
+    case 0 -&gt; "none";
+    case 1, 2 -&gt; "few";
+    default -&gt; {
+        String s = "many";
+        yield s;               // yield returns a value from a block arm
+    }
+};
+
+// pattern matching instanceof (Java 16+): test and bind in one step
+Object o = "text";
+if (o instanceof String s &amp;&amp; !s.isBlank()) {
+    IO.println(s.length());
+}</code></pre></div>
+  <p>There's no string interpolation. String templates were previewed and then withdrawn in 2024, so <code>"…".formatted(...)</code>, <code>String.format</code>, or plain <code>+</code> are what you have.</p>
+
+  <h3>The same code in other languages</h3>
+  <div class="tabs"><div class="tablist" role="tablist"><button class="tab" type="button" role="tab" aria-controls="t3p0" aria-selected="true">Java</button><button class="tab" type="button" role="tab" aria-controls="t3p1" aria-selected="false">Python</button><button class="tab" type="button" role="tab" aria-controls="t3p2" aria-selected="false">TypeScript</button><button class="tab" type="button" role="tab" aria-controls="t3p3" aria-selected="false">Go</button></div><div class="tabpanel" role="tabpanel" id="t3p0"><div class="code"><div class="code-head"><span>Java</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="java">var scores = Map.of("ada", 91, "lin", 78);
+for (var entry : scores.entrySet()) {
+    String grade = entry.getValue() &gt;= 90 ? "A" : "B";
+    IO.println("%s: %s".formatted(entry.getKey(), grade));
+}</code></pre></div></div><div class="tabpanel" role="tabpanel" id="t3p1" hidden><div class="code"><div class="code-head"><span>Python</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="python">scores = {"ada": 91, "lin": 78}
+for name, score in scores.items():
+    grade = "A" if score &gt;= 90 else "B"
+    print(f"{name}: {grade}")</code></pre></div></div><div class="tabpanel" role="tabpanel" id="t3p2" hidden><div class="code"><div class="code-head"><span>TypeScript</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="typescript">const scores = new Map([["ada", 91], ["lin", 78]]);
+for (const [name, score] of scores) {
+  const grade = score &gt;= 90 ? "A" : "B";
+  console.log(`${name}: ${grade}`);
+}</code></pre></div></div><div class="tabpanel" role="tabpanel" id="t3p3" hidden><div class="code"><div class="code-head"><span>Go</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="go">scores := map[string]int{"ada": 91, "lin": 78}
+for name, score := range scores {
+    grade := "B"
+    if score &gt;= 90 { grade = "A" }
+    fmt.Printf("%s: %s\n", name, grade)
+}</code></pre></div></div></div>
+  <div class="diff">
+    <p><strong>What's different:</strong> no destructuring in a for-each over a map (you get a <code>Map.Entry</code>), though record patterns get you destructuring elsewhere. No collection literals; <code>List.of</code>/<code>Map.of</code> are the substitutes. <code>var</code> works only for local variables, never fields, parameters or return types, because Java wants signatures to be readable without inference. No default or named arguments, which is why you see overloads and builders.</p>
+    <p><strong>Equality:</strong> <code>==</code> compares primitive values and object <em>identity</em>. Use <code>.equals()</code> for value equality. Python's <code>==</code>/<code>is</code> split maps onto Java's <code>equals</code>/<code>==</code>, flipped.</p>
+  </div>
+
+  <div class="lists">
+    <div class="reach"><h4>Reach for it when</h4><ul>
+      <li><code>var</code>: when the right-hand side makes the type obvious (<code>var users = new ArrayList&lt;User&gt;()</code>).</li>
+      <li>Switch expressions: any time you'd write an if/else chain that assigns one variable.</li>
+      <li>Text blocks: SQL, JSON, HTML, multi-line test fixtures.</li>
+    </ul></div>
+    <div class="watch"><h4>Watch out for</h4><ul>
+      <li>Old-style <code>case X:</code> with colons still falls through. Prefer arrows.</li>
+      <li><code>var x = 1;</code> infers <code>int</code>, <code>var list = new ArrayList&lt;&gt;();</code> infers <code>ArrayList&lt;Object&gt;</code>. Give the diamond a type when using <code>var</code>.</li>
+      <li><code>"a" == "a"</code> may be true (interning) and then false in production. Always <code>equals</code>.</li>
+    </ul></div>
+  </div>
+  <div class="notes" data-note="syntax"></div>
+</section>
+
+<section class="topic" id="types" data-short="Type system">
+  <h2>The type system</h2>
+  <p class="idea">Two worlds: eight <strong>primitives</strong> (<code>int</code>, <code>long</code>, <code>double</code>, <code>boolean</code>, <code>char</code>, <code>byte</code>, <code>short</code>, <code>float</code>) that hold raw values, and <strong>reference types</strong> (everything else) that point at objects on the heap. Generics only work with reference types, so each primitive has a wrapper class (<code>Integer</code>, <code>Long</code>…) and Java converts between them automatically, which is called boxing.</p>
+
+  <div class="viz" id="cacheViz">
+    <h4>Boxing makes <code>==</code> lie</h4>
+    <p class="hint">Java caches <code>Integer</code> objects for -128 to 127. Inside that range, two boxed values are the same object; outside it, they're different objects with the same value. Drag the slider.</p>
+    <div class="viz-controls">
+      <label for="cacheN">n =</label>
+      <input type="range" id="cacheN" min="-200" max="300" value="100" style="flex:1;min-width:160px">
+      <output id="cacheNOut" class="stat" style="font-family:var(--mono);min-width:3em">100</output>
+    </div>
+    <div class="code"><pre><code id="cacheCode"></code></pre></div>
+    <div class="viz-out" id="cacheOut"></div>
+  </div>
+
+  <h3>Generics are erased</h3>
+  <p>Generic type parameters exist at compile time and disappear in bytecode, which is the same deal TypeScript gives you. At runtime a <code>List&lt;String&gt;</code> is just a <code>List</code>. Go, by contrast, generates specialized code per type set, so its generics survive.</p>
+  <div class="code"><div class="code-head"><span>Erasure.java</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="java">List&lt;String&gt; names = new ArrayList&lt;&gt;();
+// names instanceof List&lt;String&gt;     // compile error: can't check erased type
+// new T()                           // compile error inside a generic class
+// List&lt;int&gt;                         // compile error: primitives can't be type args (use List&lt;Integer&gt;)
+
+static &lt;T extends Comparable&lt;T&gt;&gt; T max(List&lt;T&gt; items) {   // bounded type parameter
+    T best = items.getFirst();
+    for (T t : items) if (t.compareTo(best) &gt; 0) best = t;
+    return best;
+}
+
+// Wildcards: "producer extends, consumer super" (PECS)
+static double sum(List&lt;? extends Number&gt; nums) { /* read Numbers out */ return 0; }
+static void fill(List&lt;? super Integer&gt; sink) { sink.add(42); /* write Integers in */ }</code></pre></div>
+
+  <h3>Algebraic data types: records + sealed interfaces</h3>
+  <p>This is the biggest modern change. A <strong>record</strong> is an immutable data carrier with <code>equals</code>, <code>hashCode</code> and <code>toString</code> generated (Python's frozen dataclass, a TS readonly type, a Go struct with value equality). A <strong>sealed interface</strong> lists exactly which types implement it, so a switch over it can be checked for exhaustiveness, just like a TypeScript discriminated union.</p>
+  <div class="tabs"><div class="tablist" role="tablist"><button class="tab" type="button" role="tab" aria-controls="t4p0" aria-selected="true">Java 21+</button><button class="tab" type="button" role="tab" aria-controls="t4p1" aria-selected="false">TypeScript</button><button class="tab" type="button" role="tab" aria-controls="t4p2" aria-selected="false">Python</button><button class="tab" type="button" role="tab" aria-controls="t4p3" aria-selected="false">Go</button></div><div class="tabpanel" role="tabpanel" id="t4p0"><div class="code"><div class="code-head"><span>Java</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="java">sealed interface Shape permits Circle, Rect {}
+record Circle(double r) implements Shape {}
+record Rect(double w, double h) implements Shape {
+    Rect {                                   // compact constructor: validate
+        if (w &lt; 0 || h &lt; 0) throw new IllegalArgumentException("negative side");
+    }
+}
+
+static double area(Shape s) {
+    return switch (s) {                      // exhaustive: no default needed
+        case Circle(double r) -&gt; Math.PI * r * r;            // record pattern
+        case Rect(double w, double h) when w == h -&gt; w * w;  // guard
+        case Rect(var w, var h) -&gt; w * h;
+    };
+}</code></pre></div></div><div class="tabpanel" role="tabpanel" id="t4p1" hidden><div class="code"><div class="code-head"><span>TypeScript</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="typescript">type Shape =
+  | { kind: "circle"; r: number }
+  | { kind: "rect"; w: number; h: number };
+
+function area(s: Shape): number {
+  switch (s.kind) {
+    case "circle": return Math.PI * s.r ** 2;
+    case "rect":   return s.w * s.h;
+  }   // exhaustive thanks to the union + return type
+}</code></pre></div></div><div class="tabpanel" role="tabpanel" id="t4p2" hidden><div class="code"><div class="code-head"><span>Python</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="python">from dataclasses import dataclass
+
+@dataclass(frozen=True)
+class Circle: r: float
+@dataclass(frozen=True)
+class Rect: w: float; h: float
+
+def area(s: Circle | Rect) -&gt; float:
+    match s:
+        case Circle(r=r): return 3.14159 * r * r
+        case Rect(w=w, h=h): return w * h</code></pre></div></div><div class="tabpanel" role="tabpanel" id="t4p3" hidden><div class="code"><div class="code-head"><span>Go</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="go">type Shape interface{ isShape() }
+type Circle struct{ R float64 }
+type Rect struct{ W, H float64 }
+func (Circle) isShape() {}
+func (Rect) isShape()   {}
+
+func Area(s Shape) float64 {
+    switch v := s.(type) {   // not checked for exhaustiveness
+    case Circle: return math.Pi * v.R * v.R
+    case Rect:   return v.W * v.H
+    }
+    panic("unreachable")
+}</code></pre></div></div></div>
+  <div class="diff"><p><strong>What's different:</strong> Java's union is nominal (you name the permitted types) where TypeScript's is structural (any object with <code>kind: "circle"</code> fits). Exhaustiveness is enforced by <code>javac</code>; add a third shape and every switch without a <code>default</code> stops compiling, which is the point. Go has no sealed types, so its type switches can't be checked.</p></div>
+
+  <h3>Null</h3>
+  <p>Every reference type can be <code>null</code>, and the type system won't tell you which ones are. There's no <code>?.</code> or <code>??</code>. The tools you have: <code>Optional&lt;T&gt;</code> for return values that may be absent, <code>Objects.requireNonNull</code> at boundaries, and JSpecify + NullAway for compile-time checking (closest to TypeScript's strict null checks). Value classes with null-restricted types are in the works through Project Valhalla (value objects are targeted as a preview for JDK 28) but aren't usable yet.</p>
+
+  <div class="lists">
+    <div class="reach"><h4>Reach for it when</h4><ul>
+      <li>Records for DTOs, events, results, map keys, and anything you'd make a dataclass.</li>
+      <li>Sealed interfaces + switch for state machines, ASTs, API results (success/failure variants).</li>
+      <li>Primitives (<code>int</code>, <code>long</code>) in hot loops and large arrays; boxes only where generics force them.</li>
+    </ul></div>
+    <div class="watch"><h4>Watch out for</h4><ul>
+      <li><code>==</code> on <code>Integer</code>, <code>Long</code>, <code>String</code>. Use <code>equals</code>.</li>
+      <li>Unboxing a <code>null</code> <code>Integer</code> throws <code>NullPointerException</code>, e.g. <code>int n = map.get("missing");</code>.</li>
+      <li><code>int</code> overflow wraps silently (Python ints don't). Use <code>long</code>, <code>Math.addExact</code>, or <code>BigInteger</code>.</li>
+      <li>Records are shallowly immutable: a <code>List</code> field can still be mutated unless you copy it with <code>List.copyOf</code>.</li>
+    </ul></div>
+  </div>
+  <div class="notes" data-note="types"></div>
+</section>
+
+<section class="topic" id="collections" data-short="Collections">
+  <h2>Collections and data structures</h2>
+  <p class="idea">Collections are a hierarchy of interfaces (<code>List</code>, <code>Set</code>, <code>Map</code>, <code>Deque</code>) with several implementations each. You declare variables by the interface and choose the implementation for its performance and ordering. Streams sit on top for map/filter/reduce pipelines.</p>
+
+  <div class="viz" id="chooserViz">
+    <h4>Which collection do I want?</h4>
+    <p class="hint">Answer three questions to get the class, its costs, and the closest equivalents in Python, JavaScript and Go.</p>
+    <div class="chooser" id="chooser"></div>
+    <div class="choice-result viz-out" id="choiceOut"></div>
+  </div>
+
+  <h3>Creating and using them</h3>
+  <div class="code"><div class="code-head"><span>Collections.java</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="java">List&lt;String&gt; fixed = List.of("a", "b");            // immutable; add() throws
+List&lt;String&gt; names = new ArrayList&lt;&gt;(fixed);       // mutable copy
+names.add("c");
+names.getFirst(); names.getLast(); names.reversed();   // SequencedCollection (Java 21+)
+
+Map&lt;String, Integer&gt; stock = new HashMap&lt;&gt;();
+stock.put("apple", 3);
+stock.merge("apple", 1, Integer::sum);             // increment, like Counter / defaultdict
+stock.computeIfAbsent("pear", k -&gt; 0);
+int pears = stock.getOrDefault("pear", 0);
+
+Map&lt;String, List&lt;String&gt;&gt; byTeam = new TreeMap&lt;&gt;();   // sorted by key
+byTeam.computeIfAbsent("core", k -&gt; new ArrayList&lt;&gt;()).add("ada");
+
+Deque&lt;Integer&gt; stack = new ArrayDeque&lt;&gt;();          // use for both stacks and queues
+stack.push(1); stack.pop();
+Queue&lt;Task&gt; pq = new PriorityQueue&lt;&gt;(Comparator.comparing(Task::priority));
+
+// Streams: lazy pipelines, consumed once
+List&lt;String&gt; loud = names.stream()
+    .filter(n -&gt; n.length() &gt; 1)
+    .map(String::toUpperCase)
+    .sorted()
+    .toList();                                      // unmodifiable result (Java 16+)
+
+Map&lt;Integer, List&lt;String&gt;&gt; byLength = names.stream()
+    .collect(Collectors.groupingBy(String::length));
+
+// Gatherers (Java 24+): custom intermediate ops, e.g. sliding windows
+List&lt;List&lt;Integer&gt;&gt; windows = Stream.of(1, 2, 3, 4, 5)
+    .gather(Gatherers.windowSliding(3))
+    .toList();                                      // [[1,2,3],[2,3,4],[3,4,5]]</code></pre></div>
+
+  <h3>Compared with other languages</h3>
+  <div class="tabs"><div class="tablist" role="tablist"><button class="tab" type="button" role="tab" aria-controls="t5p0" aria-selected="true">Java</button><button class="tab" type="button" role="tab" aria-controls="t5p1" aria-selected="false">Python</button><button class="tab" type="button" role="tab" aria-controls="t5p2" aria-selected="false">JavaScript</button><button class="tab" type="button" role="tab" aria-controls="t5p3" aria-selected="false">Go</button></div><div class="tabpanel" role="tabpanel" id="t5p0"><div class="code"><div class="code-head"><span>Java</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="java">Map&lt;String, Long&gt; wordCounts = Arrays.stream(text.split("\\s+"))
+    .map(String::toLowerCase)
+    .collect(Collectors.groupingBy(w -&gt; w, Collectors.counting()));
+
+List&lt;Map.Entry&lt;String, Long&gt;&gt; top = wordCounts.entrySet().stream()
+    .sorted(Map.Entry.&lt;String, Long&gt;comparingByValue().reversed())
+    .limit(3)
+    .toList();</code></pre></div></div><div class="tabpanel" role="tabpanel" id="t5p1" hidden><div class="code"><div class="code-head"><span>Python</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="python">from collections import Counter
+word_counts = Counter(w.lower() for w in text.split())
+top = word_counts.most_common(3)</code></pre></div></div><div class="tabpanel" role="tabpanel" id="t5p2" hidden><div class="code"><div class="code-head"><span>JavaScript</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="javascript">const counts = new Map();
+for (const w of text.toLowerCase().split(/\s+/)) {
+  counts.set(w, (counts.get(w) ?? 0) + 1);
+}
+const top = [...counts].sort((a, b) =&gt; b[1] - a[1]).slice(0, 3);</code></pre></div></div><div class="tabpanel" role="tabpanel" id="t5p3" hidden><div class="code"><div class="code-head"><span>Go</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="go">counts := map[string]int{}
+for _, w := range strings.Fields(text) {
+    counts[strings.ToLower(w)]++
+}
+keys := slices.Collect(maps.Keys(counts))
+slices.SortFunc(keys, func(a, b string) int { return counts[b] - counts[a] })
+top := keys[:min(3, len(keys))]</code></pre></div></div></div>
+  <div class="diff">
+    <p><strong>What's different:</strong> Java streams are lazy and single-use, like a Python generator, not like a JS array whose <code>.map</code> runs immediately. Nothing runs until a terminal operation (<code>toList</code>, <code>collect</code>, <code>forEach</code>, <code>count</code>). Collections and streams are separate: you call <code>.stream()</code> to get into pipeline world and <code>.toList()</code> to get out.</p>
+    <p>Mutability is a property of the <em>instance</em>, not the type. A <code>List</code> might be mutable (<code>ArrayList</code>) or not (<code>List.of</code>), and you only find out when <code>add</code> throws <code>UnsupportedOperationException</code>. TypeScript's <code>ReadonlyArray</code> catches this at compile time; Java doesn't.</p>
+  </div>
+
+  <div class="lists">
+    <div class="reach"><h4>Reach for it when</h4><ul>
+      <li><code>ArrayList</code> and <code>HashMap</code> by default; you'll rarely need anything else.</li>
+      <li><code>LinkedHashMap</code> when insertion order matters (it's what Python's <code>dict</code> and JS's <code>Map</code> give you for free).</li>
+      <li>Streams for transform-and-collect; a plain loop when you need early exit, checked exceptions, or index arithmetic.</li>
+      <li><code>EnumMap</code>/<code>EnumSet</code> for enum keys: compact and fast.</li>
+    </ul></div>
+    <div class="watch"><h4>Watch out for</h4><ul>
+      <li><code>HashMap</code> iteration order is unspecified and changes between runs and versions.</li>
+      <li>Removing from a list inside a for-each throws <code>ConcurrentModificationException</code>. Use <code>removeIf</code>.</li>
+      <li><code>LinkedList</code> is almost never faster than <code>ArrayList</code> or <code>ArrayDeque</code>.</li>
+      <li><code>List.of(...)</code> and <code>Map.of(...)</code> reject <code>null</code> elements and duplicate keys.</li>
+      <li>Mutable objects as <code>HashMap</code> keys: change a field used in <code>hashCode</code> and the entry is lost. Use records.</li>
+    </ul></div>
+  </div>
+  <div class="notes" data-note="collections"></div>
+</section>
+<section class="topic" id="functions" data-short="Functions, closures, generics">
+  <h2>Functions, closures, and generics</h2>
+  <p class="idea">Java has no free-standing functions; it has methods on types. A lambda is shorthand for an object implementing a <strong>functional interface</strong>, meaning an interface with exactly one abstract method. So <code>x -&gt; x * 2</code> has no type of its own; it becomes whatever interface the context expects, such as <code>Function&lt;Integer,Integer&gt;</code> or <code>IntUnaryOperator</code>.</p>
+
+  <h3>Lambdas, method references, and the standard shapes</h3>
+  <div class="code"><div class="code-head"><span>Functions.java</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="java">Function&lt;String, Integer&gt; len = String::length;          // method reference
+BiFunction&lt;Integer, Integer, Integer&gt; add = (a, b) -&gt; a + b;
+Supplier&lt;List&lt;String&gt;&gt; fresh = ArrayList::new;           // constructor reference
+Predicate&lt;String&gt; blank = String::isBlank;
+Consumer&lt;String&gt; log = msg -&gt; IO.println("[log] " + msg);
+UnaryOperator&lt;String&gt; trim = String::strip;
+
+Function&lt;String, String&gt; pipeline = trim.andThen(String::toUpperCase);
+pipeline.apply("  hi  ");                                 // "HI": call it with .apply, not ()
+
+// Your own functional interface (annotation is optional but documents intent)
+@FunctionalInterface
+interface Retry { &lt;T&gt; T run(Callable&lt;T&gt; task) throws Exception; }
+
+// Static generic method
+static &lt;K, V&gt; Map&lt;V, K&gt; invert(Map&lt;K, V&gt; map) {
+    return map.entrySet().stream()
+        .collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
+}
+
+// Varargs: Python's *args, JS's ...rest, Go's ...T
+static int sum(int... xs) { return IntStream.of(xs).sum(); }</code></pre></div>
+
+  <h3>Closures capture values, not variables</h3>
+  <div class="tabs"><div class="tablist" role="tablist"><button class="tab" type="button" role="tab" aria-controls="t6p0" aria-selected="true">Java</button><button class="tab" type="button" role="tab" aria-controls="t6p1" aria-selected="false">JavaScript</button><button class="tab" type="button" role="tab" aria-controls="t6p2" aria-selected="false">Python</button><button class="tab" type="button" role="tab" aria-controls="t6p3" aria-selected="false">Go</button></div><div class="tabpanel" role="tabpanel" id="t6p0"><div class="code"><div class="code-head"><span>Java</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="java">int count = 0;
+Runnable r = () -&gt; IO.println(count);   // fine: count is "effectively final"
+// count++;                             // this line would make the lambda above a compile error
+
+// Mutable state needs a holder
+var counter = new AtomicInteger();
+List.of("a", "b").forEach(s -&gt; counter.incrementAndGet());</code></pre></div></div><div class="tabpanel" role="tabpanel" id="t6p1" hidden><div class="code"><div class="code-head"><span>JavaScript</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="javascript">let count = 0;
+const inc = () =&gt; count++;   // closes over the *variable*; mutation is visible outside
+inc(); inc();
+console.log(count);          // 2</code></pre></div></div><div class="tabpanel" role="tabpanel" id="t6p2" hidden><div class="code"><div class="code-head"><span>Python</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="python">def make_counter():
+    count = 0
+    def inc():
+        nonlocal count       # must declare to rebind
+        count += 1
+        return count
+    return inc</code></pre></div></div><div class="tabpanel" role="tabpanel" id="t6p3" hidden><div class="code"><div class="code-head"><span>Go</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="go">count := 0
+inc := func() { count++ }   // captures the variable by reference
+inc(); inc()
+fmt.Println(count)          // 2</code></pre></div></div></div>
+  <div class="diff"><p><strong>Why it's different:</strong> Java lambdas copy the captured value into the lambda object. To keep that safe (and to keep lambdas thread-friendly), the compiler only lets you capture locals that are never reassigned. JS and Go closures share the live variable, which is flexible and also a classic source of loop-variable bugs. Python sits in between with <code>nonlocal</code>.</p></div>
+
+  <h3>Generics compared</h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th></th><th>Java</th><th>TypeScript</th><th>Go</th></tr></thead>
+    <tbody>
+      <tr><td>Syntax</td><td><code>&lt;T extends Comparable&lt;T&gt;&gt; T max(...)</code></td><td><code>function max&lt;T extends Ord&gt;(...)</code></td><td><code>func Max[T cmp.Ordered](...)</code></td></tr>
+      <tr><td>At runtime</td><td>Erased</td><td>Erased</td><td>Specialized (reified)</td></tr>
+      <tr><td>Primitive type args</td><td>No (box them)</td><td>N/A</td><td>Yes</td></tr>
+      <tr><td>Variance</td><td>At use site: <code>? extends</code>, <code>? super</code></td><td>Structural, mostly inferred</td><td>Invariant</td></tr>
+      <tr><td>Constraints</td><td>Nominal bounds (<code>extends</code>/<code>&amp;</code>)</td><td>Structural</td><td>Type sets in interfaces</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="lists">
+    <div class="reach"><h4>Reach for it when</h4><ul>
+      <li>Method references (<code>String::length</code>) whenever a lambda just forwards its argument.</li>
+      <li>Built-in <code>java.util.function</code> types before inventing your own; define a custom one when a name adds meaning or you need checked exceptions.</li>
+      <li>Primitive specializations (<code>IntStream</code>, <code>ToIntFunction</code>) in hot numeric code to avoid boxing.</li>
+    </ul></div>
+    <div class="watch"><h4>Watch out for</h4><ul>
+      <li>Standard functional interfaces can't throw checked exceptions, so <code>stream.map(Files::readString)</code> won't compile.</li>
+      <li><code>this</code> in a lambda is the enclosing instance (like a JS arrow function), but in an anonymous class it's the anonymous object.</li>
+      <li>Overloads that take different functional interfaces can make a lambda ambiguous. Add a cast or rename the method.</li>
+    </ul></div>
+  </div>
+  <div class="notes" data-note="functions"></div>
+</section>
+
+<section class="topic" id="errors" data-short="Error handling">
+  <h2>Error handling</h2>
+  <p class="idea">Java uses exceptions, and it splits them in two. <strong>Checked</strong> exceptions (like <code>IOException</code>) are part of a method's signature: you must catch them or declare <code>throws</code>. <strong>Unchecked</strong> ones (<code>RuntimeException</code> and its subclasses) can be thrown anywhere, like Python or JS errors. Go makes every failure a return value; Java makes some failures a compile-time contract.</p>
+
+  <div class="viz" id="exViz">
+    <h4>The exception hierarchy</h4>
+    <p class="hint">Click a class to see whether the compiler forces you to handle it and when you'd see it.</p>
+    <div class="legend"><span style="--c:var(--warn)">Checked: must catch or declare</span><span style="--c:var(--good)">Unchecked</span><span style="--c:var(--muted)">Don't catch</span></div>
+    <div class="extree" id="exTree"></div>
+    <div class="viz-out" id="exOut" style="margin-top:12px;min-height:3em"></div>
+  </div>
+
+  <h3>The patterns you'll use</h3>
+  <div class="code"><div class="code-head"><span>Errors.java</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="java">// try-with-resources: closes in reverse order, even on exceptions (Python's `with`, Go's `defer`)
+static String firstLine(Path path) throws IOException {
+    try (var reader = Files.newBufferedReader(path)) {
+        return reader.readLine();
+    }
+}
+
+// Catch several types; wrap with a cause so the stack trace keeps the original
+try {
+    config = Config.load(path);
+} catch (NoSuchFileException e) {
+    config = Config.defaults();
+} catch (IOException | ParseException e) {
+    throw new ConfigException("cannot load " + path, e);   // always pass the cause
+} finally {
+    metrics.recordLoadAttempt();
+}
+
+// Your own unchecked exception: the common modern choice
+public class ConfigException extends RuntimeException {
+    public ConfigException(String message, Throwable cause) { super(message, cause); }
+}
+
+// Guard clauses at API boundaries
+Objects.requireNonNull(user, "user");
+if (amount &lt;= 0) throw new IllegalArgumentException("amount must be positive: " + amount);
+
+// InterruptedException: restore the flag if you can't rethrow it
+try { Thread.sleep(100); }
+catch (InterruptedException e) { Thread.currentThread().interrupt(); return; }</code></pre></div>
+
+  <h3>Errors as values, Java style</h3>
+  <p>When failure is an expected outcome rather than an exceptional one, sealed types give you a Go- or Rust-like result without a library:</p>
+  <div class="tabs"><div class="tablist" role="tablist"><button class="tab" type="button" role="tab" aria-controls="t7p0" aria-selected="true">Java</button><button class="tab" type="button" role="tab" aria-controls="t7p1" aria-selected="false">Go</button><button class="tab" type="button" role="tab" aria-controls="t7p2" aria-selected="false">Python</button><button class="tab" type="button" role="tab" aria-controls="t7p3" aria-selected="false">TypeScript</button></div><div class="tabpanel" role="tabpanel" id="t7p0"><div class="code"><div class="code-head"><span>Java</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="java">sealed interface Parse&lt;T&gt; {
+    record Ok&lt;T&gt;(T value) implements Parse&lt;T&gt; {}
+    record Err&lt;T&gt;(String reason) implements Parse&lt;T&gt; {}
+}
+
+static Parse&lt;Integer&gt; parsePort(String s) {
+    try {
+        int p = Integer.parseInt(s);
+        return (p &gt; 0 &amp;&amp; p &lt; 65536) ? new Parse.Ok&lt;&gt;(p) : new Parse.Err&lt;&gt;("out of range");
+    } catch (NumberFormatException e) {
+        return new Parse.Err&lt;&gt;("not a number: " + s);
+    }
+}
+
+String msg = switch (parsePort(input)) {
+    case Parse.Ok(var port) -&gt; "listening on " + port;
+    case Parse.Err(var why) -&gt; "bad port: " + why;
+};</code></pre></div></div><div class="tabpanel" role="tabpanel" id="t7p1" hidden><div class="code"><div class="code-head"><span>Go</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="go">func parsePort(s string) (int, error) {
+    p, err := strconv.Atoi(s)
+    if err != nil {
+        return 0, fmt.Errorf("not a number: %q: %w", s, err)
+    }
+    if p &lt;= 0 || p &gt;= 65536 {
+        return 0, errors.New("out of range")
+    }
+    return p, nil
+}</code></pre></div></div><div class="tabpanel" role="tabpanel" id="t7p2" hidden><div class="code"><div class="code-head"><span>Python</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="python">def parse_port(s: str) -&gt; int:
+    try:
+        p = int(s)
+    except ValueError as e:
+        raise ValueError(f"not a number: {s}") from e   # like Java's cause
+    if not 0 &lt; p &lt; 65536:
+        raise ValueError("out of range")
+    return p</code></pre></div></div><div class="tabpanel" role="tabpanel" id="t7p3" hidden><div class="code"><div class="code-head"><span>TypeScript</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="typescript">type Parse = { ok: true; value: number } | { ok: false; reason: string };
+
+function parsePort(s: string): Parse {
+  const p = Number(s);
+  if (!Number.isInteger(p)) return { ok: false, reason: `not a number: ${s}` };
+  return p &gt; 0 &amp;&amp; p &lt; 65536 ? { ok: true, value: p } : { ok: false, reason: "out of range" };
+}</code></pre></div></div></div>
+  <div class="diff"><p><strong>Why checked exceptions exist, and why people avoid them now:</strong> they were designed to make failure modes visible in signatures, which is the same goal as Go's <code>error</code> return. In practice they leak implementation details up the stack (why does <code>UserService</code> declare <code>SQLException</code>?) and they don't compose with lambdas. Modern Java code usually throws unchecked exceptions for programming errors and infrastructure failures, keeps checked exceptions near I/O, and uses sealed result types when the caller is expected to branch on the outcome.</p></div>
+
+  <div class="lists">
+    <div class="reach"><h4>Reach for it when</h4><ul>
+      <li>try-with-resources for anything <code>AutoCloseable</code>: files, sockets, JDBC connections, executors, HTTP clients.</li>
+      <li><code>IllegalArgumentException</code> for bad inputs, <code>IllegalStateException</code> for "called at the wrong time", <code>UnsupportedOperationException</code> for "not implemented".</li>
+      <li>Sealed result types when failure is a normal branch, such as validation or parsing user input.</li>
+    </ul></div>
+    <div class="watch"><h4>Watch out for</h4><ul>
+      <li><code>catch (Exception e) {}</code>: silent swallowing. At minimum log it, or rethrow wrapped.</li>
+      <li>Losing the cause: <code>throw new X(e.getMessage())</code> drops the original stack trace. Pass <code>e</code>.</li>
+      <li>Catching <code>InterruptedException</code> and continuing breaks cancellation. Re-set the interrupt flag.</li>
+      <li>Exceptions for control flow in hot paths: building a stack trace is expensive.</li>
+    </ul></div>
+  </div>
+  <div class="notes" data-note="errors"></div>
+</section>
+
+<section class="topic" id="objects" data-short="Objects &amp; code reuse">
+  <h2>Objects and code reuse</h2>
+  <p class="idea">Classes with single inheritance, interfaces with multiple implementation, and composition for most real reuse. Interfaces can carry <code>default</code> methods (behavior without state), which covers most of what traits and mixins do. Modern Java adds records for data, sealed hierarchies for closed sets of variants, and enums that are full classes.</p>
+
+  <h3>The building blocks</h3>
+  <div class="code"><div class="code-head"><span>Objects.java</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="java">public interface Notifier {
+    void send(String to, String body);                    // abstract
+    default void sendAll(List&lt;String&gt; to, String body) {  // shared behavior, no state
+        to.forEach(t -&gt; send(t, body));
+    }
+    static Notifier noop() { return (to, body) -&gt; {}; }    // factory on the interface
+}
+
+public final class EmailNotifier implements Notifier {    // final: can't be subclassed
+    private final SmtpClient smtp;                         // composition: has-a
+    private int sent;
+
+    public EmailNotifier(SmtpClient smtp) {
+        this.smtp = Objects.requireNonNull(smtp);
+    }
+
+    @Override
+    public void send(String to, String body) {
+        smtp.deliver(to, body);
+        sent++;
+    }
+
+    public int sent() { return sent; }
+}
+
+// Enums are classes: fields, constructors, methods, even per-constant behavior
+public enum Plan {
+    FREE(0), PRO(12), TEAM(30);
+    private final int monthlyUsd;
+    Plan(int monthlyUsd) { this.monthlyUsd = monthlyUsd; }
+    public int yearly() { return monthlyUsd * 12; }
+}
+
+// Abstract class: shared state + template method. Use sparingly.
+public abstract class Job {
+    private final Instant created = Instant.now();
+    public final void run() { before(); execute(); }
+    protected void before() {}
+    protected abstract void execute();
+}
+
+// Flexible constructor bodies (Java 25): validate before calling super(...)
+public class PositiveCounter extends Counter {
+    public PositiveCounter(int start) {
+        if (start &lt; 0) throw new IllegalArgumentException("start");
+        super(start);
+    }
+}</code></pre></div>
+
+  <h3>Same idea in other languages</h3>
+  <div class="tabs"><div class="tablist" role="tablist"><button class="tab" type="button" role="tab" aria-controls="t8p0" aria-selected="true">Java</button><button class="tab" type="button" role="tab" aria-controls="t8p1" aria-selected="false">Go</button><button class="tab" type="button" role="tab" aria-controls="t8p2" aria-selected="false">TypeScript</button><button class="tab" type="button" role="tab" aria-controls="t8p3" aria-selected="false">Python</button></div><div class="tabpanel" role="tabpanel" id="t8p0"><div class="code"><div class="code-head"><span>Java</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="java">interface Sized { int size(); default boolean isEmpty() { return size() == 0; } }
+
+record Basket(List&lt;String&gt; items) implements Sized {
+    public int size() { return items.size(); }
+}
+// Basket must *say* it implements Sized: nominal typing</code></pre></div></div><div class="tabpanel" role="tabpanel" id="t8p1" hidden><div class="code"><div class="code-head"><span>Go</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="go">type Sized interface{ Size() int }
+
+type Basket struct{ Items []string }
+func (b Basket) Size() int { return len(b.Items) }
+// Basket satisfies Sized implicitly: structural typing.
+// No default methods; write a helper func IsEmpty(s Sized) bool instead.</code></pre></div></div><div class="tabpanel" role="tabpanel" id="t8p2" hidden><div class="code"><div class="code-head"><span>TypeScript</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="typescript">interface Sized { size(): number }
+
+class Basket implements Sized {      // `implements` is optional; shape is what counts
+  constructor(readonly items: string[]) {}
+  size() { return this.items.length; }
+}</code></pre></div></div><div class="tabpanel" role="tabpanel" id="t8p3" hidden><div class="code"><div class="code-head"><span>Python</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="python">from typing import Protocol
+
+class Sized(Protocol):
+    def size(self) -&gt; int: ...
+
+class Basket:                # satisfies the Protocol structurally (checked by mypy)
+    def __init__(self, items): self.items = items
+    def size(self): return len(self.items)</code></pre></div></div></div>
+  <div class="diff">
+    <p><strong>What's different:</strong> in Java, a type implements an interface only by declaring it, so you can't make a third-party class satisfy your interface after the fact. Go, TypeScript and Python protocols let any matching shape fit. The usual Java workaround is an adapter or a lambda (if the interface is functional, <code>thirdParty::method</code> often just works).</p>
+    <p>Everything is virtual by default (overridable), the reverse of C#. Mark classes <code>final</code> unless you designed them for inheritance, and mark overrides with <code>@Override</code> so typos become compile errors.</p>
+  </div>
+
+  <h3>equals, hashCode, and why records exist</h3>
+  <p>A regular class inherits identity equality from <code>Object</code>. If you want value equality you must override <code>equals</code> <em>and</em> <code>hashCode</code> together, consistently, or <code>HashMap</code> and <code>HashSet</code> break in confusing ways. Records generate both from their components, which is the main reason to prefer them for data.</p>
+
+  <div class="lists">
+    <div class="reach"><h4>Reach for it when</h4><ul>
+      <li>Interfaces + composition for behavior; constructor injection for dependencies.</li>
+      <li>Records for data, sealed interfaces for "one of these variants".</li>
+      <li>Enums for fixed sets, including strategy-per-constant and singletons.</li>
+      <li>Default methods for convenience methods built on the abstract ones.</li>
+    </ul></div>
+    <div class="watch"><h4>Watch out for</h4><ul>
+      <li>Deep inheritance trees and "BaseAbstractManager" classes. Favor composition.</li>
+      <li>Calling overridable methods from a constructor: the subclass runs before it's initialized.</li>
+      <li>Non-static inner classes keep a hidden reference to the outer instance. Make nested classes <code>static</code> unless they need it.</li>
+      <li>Getters and setters on everything by reflex. Expose behavior, not fields.</li>
+    </ul></div>
+  </div>
+  <div class="notes" data-note="objects"></div>
+</section>
+<section class="topic" id="concurrency" data-short="Concurrency">
+  <h2>Concurrency</h2>
+  <p class="idea">Java uses real threads with shared memory, and since Java 21 it has <strong>virtual threads</strong>: lightweight threads the JVM schedules onto a few OS threads, like goroutines. You write plain blocking code (no <code>async</code>/<code>await</code>), and when a virtual thread blocks on I/O the JVM parks it and runs another one on the same OS thread.</p>
+
+  <div class="viz" id="vtViz">
+    <h4>Why virtual threads help I/O-heavy work</h4>
+    <p class="hint">12 requests, each doing 1 tick of CPU, 4 ticks waiting on the network, then 1 more tick of CPU. Four OS threads either way. Switch modes, then step or play.</p>
+    <div class="viz-controls">
+      <button class="btn" id="vtModePlatform" aria-pressed="true">Platform thread pool</button>
+      <button class="btn" id="vtModeVirtual" aria-pressed="false">Virtual threads</button>
+      <span style="flex:1"></span>
+      <button class="btn" id="vtStep">Step</button>
+      <button class="btn primary" id="vtPlay">Play</button>
+      <button class="btn" id="vtReset">Reset</button>
+    </div>
+    <div class="lanes" id="vtLanes"></div>
+    <div class="tasks" id="vtTasks" aria-label="Tasks"></div>
+    <div class="viz-out" id="vtOut"></div>
+  </div>
+
+  <h3>The modern toolkit</h3>
+  <div class="code"><div class="code-head"><span>Concurrency.java</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="java">// One virtual thread per task. Closing the executor waits for all of them.
+try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
+    List&lt;Future&lt;String&gt;&gt; pages = urls.stream()
+        .map(url -&gt; executor.submit(() -&gt; fetch(url)))   // fetch() just blocks; that's fine
+        .toList();
+    for (var page : pages) process(page.get());
+}
+
+// Start one directly
+Thread t = Thread.ofVirtual().name("worker").start(() -&gt; doWork());
+t.join();
+
+// Thread-safe building blocks
+var hits = new ConcurrentHashMap&lt;String, LongAdder&gt;();
+hits.computeIfAbsent(path, k -&gt; new LongAdder()).increment();
+
+var lock = new ReentrantLock();
+lock.lock();
+try { balance += amount; } finally { lock.unlock(); }
+
+// Async pipelines (the Promise-like API), still useful for composition
+CompletableFuture&lt;User&gt; user = CompletableFuture.supplyAsync(() -&gt; loadUser(id), executor);
+user.thenApply(User::email).thenAccept(mailer::welcome);</code></pre></div>
+
+  <h3>Structured concurrency <span class="since preview">Preview in 25–27</span></h3>
+  <p>The direction Java is heading: child tasks are scoped to a block, so if one fails the others are cancelled and nothing leaks, similar to Python's <code>asyncio.TaskGroup</code> or Go's <code>errgroup</code>. It needs <code>--enable-preview</code> and the API may still change.</p>
+  <div class="tabs"><div class="tablist" role="tablist"><button class="tab" type="button" role="tab" aria-controls="t9p0" aria-selected="true">Java (preview)</button><button class="tab" type="button" role="tab" aria-controls="t9p1" aria-selected="false">Go</button><button class="tab" type="button" role="tab" aria-controls="t9p2" aria-selected="false">Python</button><button class="tab" type="button" role="tab" aria-controls="t9p3" aria-selected="false">TypeScript</button></div><div class="tabpanel" role="tabpanel" id="t9p0"><div class="code"><div class="code-head"><span>Java</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="java">record Dashboard(User user, List&lt;Order&gt; orders) {}
+
+Dashboard load(long id) throws InterruptedException {
+    try (var scope = StructuredTaskScope.open()) {      // default: fail if any subtask fails
+        var user   = scope.fork(() -&gt; users.find(id));
+        var orders = scope.fork(() -&gt; orders.recent(id));
+        scope.join();                                    // waits; cancels siblings on failure
+        return new Dashboard(user.get(), orders.get());
+    }
+}</code></pre></div></div><div class="tabpanel" role="tabpanel" id="t9p1" hidden><div class="code"><div class="code-head"><span>Go</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="go">g, ctx := errgroup.WithContext(ctx)
+var user User
+var orders []Order
+g.Go(func() (err error) { user, err = users.Find(ctx, id); return })
+g.Go(func() (err error) { orders, err = ordersRepo.Recent(ctx, id); return })
+if err := g.Wait(); err != nil { return Dashboard{}, err }</code></pre></div></div><div class="tabpanel" role="tabpanel" id="t9p2" hidden><div class="code"><div class="code-head"><span>Python</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="python">async def load(id):
+    async with asyncio.TaskGroup() as tg:
+        user = tg.create_task(users.find(id))
+        orders = tg.create_task(orders_repo.recent(id))
+    return Dashboard(user.result(), orders.result())</code></pre></div></div><div class="tabpanel" role="tabpanel" id="t9p3" hidden><div class="code"><div class="code-head"><span>TypeScript</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="typescript">async function load(id: number) {
+  const [user, orders] = await Promise.all([users.find(id), orders.recent(id)]);
+  return { user, orders };   // note: the other promise keeps running if one rejects
+}</code></pre></div></div></div>
+  <div class="diff">
+    <p><strong>vs JS/TS and Python asyncio:</strong> there are no colored functions. A method that blocks is just a method; you don't mark it <code>async</code> and callers don't <code>await</code>. The trade: Java code can run truly in parallel on many cores, so shared mutable state needs locks or concurrent collections, which single-threaded JS never needed.</p>
+    <p><strong>vs Go:</strong> virtual threads are goroutines in spirit. The differences: Java has no channels in the standard library (use <code>BlockingQueue</code>), no <code>select</code>, and its "context" equivalents are interruption plus <code>ScopedValue</code> <span class="since">Final in 25</span> for passing request-scoped data down the call tree.</p>
+    <p><strong>The memory model:</strong> without synchronization, one thread may never see another thread's writes. <code>synchronized</code>, <code>volatile</code>, locks, atomics, concurrent collections, and thread start/join all create "happens-before" edges that guarantee visibility. Go has the same rule; Python's GIL hides it.</p>
+  </div>
+
+  <div class="lists">
+    <div class="reach"><h4>Reach for it when</h4><ul>
+      <li>Virtual threads for request handling, fan-out HTTP/DB calls, anything that mostly waits.</li>
+      <li>A bounded platform-thread pool (<code>Executors.newFixedThreadPool(cores)</code>) or parallel streams for CPU-bound work.</li>
+      <li><code>ConcurrentHashMap</code>, <code>AtomicLong</code>/<code>LongAdder</code>, <code>BlockingQueue</code> before hand-rolled locking.</li>
+      <li>A <code>Semaphore</code> to cap concurrency against a rate-limited downstream.</li>
+    </ul></div>
+    <div class="watch"><h4>Watch out for</h4><ul>
+      <li>Don't pool virtual threads; create one per task. Limit resources with semaphores instead.</li>
+      <li><code>ThreadLocal</code> caches multiply with millions of virtual threads; prefer <code>ScopedValue</code>.</li>
+      <li>Since Java 24, <code>synchronized</code> no longer pins a virtual thread to its carrier, but native calls still can. On 21–23, prefer <code>ReentrantLock</code> around blocking I/O.</li>
+      <li><code>HashMap</code>, <code>ArrayList</code> and <code>SimpleDateFormat</code> are not thread-safe.</li>
+      <li>Parallel streams share one global pool; don't do blocking I/O inside them.</li>
+    </ul></div>
+  </div>
+  <div class="notes" data-note="concurrency"></div>
+</section>
+
+<section class="topic" id="memory" data-short="Memory model">
+  <h2>Memory: garbage collection, values, and references</h2>
+  <p class="idea">Primitives live directly in variables (on the stack, or inside an object). Every object lives on the heap, and variables hold <em>references</em> to it. Java passes everything by value, but for objects the value being copied is the reference. A garbage collector frees objects once nothing reachable points to them.</p>
+
+  <div class="viz" id="memViz">
+    <h4>Step through stack and heap</h4>
+    <p class="hint">Watch what gets copied: the number, or the reference. <code>Point</code> here is a mutable class with fields <code>x</code> and <code>y</code>.</p>
+    <div class="mem">
+      <div class="col srccol"><h5>Code</h5><div class="src" id="memSrc"></div></div>
+      <div class="col"><h5>Stack (frames)</h5><div id="memStack"></div></div>
+      <div class="col"><h5>Heap (objects)</h5><div id="memHeap"></div></div>
+    </div>
+    <div class="viz-controls">
+      <button class="btn" id="memPrev">Previous</button>
+      <button class="btn primary" id="memNext">Next line</button>
+      <span class="hint" id="memCount" style="margin:0"></span>
+    </div>
+    <div class="viz-out" id="memOut" style="min-height:3.2em"></div>
+  </div>
+
+  <h3>Value vs. reference semantics compared</h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th></th><th>Java</th><th>Go</th><th>Python</th><th>JS / TS</th></tr></thead>
+    <tbody>
+      <tr><td>Numbers, booleans</td><td>Value (primitives)</td><td>Value</td><td>Reference to immutable object</td><td>Value</td></tr>
+      <tr><td>Structs / records</td><td>Reference (records too)</td><td>Value: copied on assign</td><td>Reference</td><td>Reference</td></tr>
+      <tr><td>Arrays</td><td>Reference</td><td>Value (arrays) / reference-ish (slices)</td><td>Reference (lists)</td><td>Reference</td></tr>
+      <tr><td>Explicit pointers</td><td>No</td><td>Yes (<code>*T</code>, <code>&amp;x</code>)</td><td>No</td><td>No</td></tr>
+      <tr><td>Who frees memory</td><td>Tracing GC (G1, ZGC…)</td><td>Tracing GC (concurrent)</td><td>Refcounting + cycle GC</td><td>Tracing GC</td></tr>
+    </tbody>
+  </table></div>
+  <div class="diff"><p><strong>Coming from Go:</strong> this is the big one. In Go, <code>p2 := p</code> copies a struct, and you choose pointers explicitly. In Java there's no way to have a struct "by value" today: every record or object is behind a reference, and assignment shares it. That's why immutability (records, <code>final</code> fields, <code>List.copyOf</code>) matters so much in Java: it's how you get value-like safety. Project Valhalla's value classes (targeted as a preview for JDK 28) will add identity-free objects the JVM can flatten, closing part of this gap.</p></div>
+
+  <h3>Garbage collection in practice</h3>
+  <p>The heap is split into generations because most objects die young. New objects go into a young region; survivors get promoted. You normally only pick a collector and a max heap size:</p>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Collector</th><th>Flag</th><th>Use when</th></tr></thead>
+    <tbody>
+      <tr><td>G1</td><td>default</td><td>Almost always. Balanced throughput and pauses. Default in every environment as of JDK 27.</td></tr>
+      <tr><td>ZGC (generational)</td><td><code>-XX:+UseZGC</code></td><td>Large heaps, strict latency needs: sub-millisecond pauses.</td></tr>
+      <tr><td>Parallel</td><td><code>-XX:+UseParallelGC</code></td><td>Batch jobs where only total throughput matters.</td></tr>
+      <tr><td>Serial</td><td><code>-XX:+UseSerialGC</code></td><td>Tiny containers, single core.</td></tr>
+    </tbody>
+  </table></div>
+  <div class="code"><div class="code-head"><span>Common JVM memory flags</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="bash">java -Xmx2g -Xms2g -jar app.jar              # fixed 2 GB heap
+java -XX:MaxRAMPercentage=75 -jar app.jar    # in containers: size heap relative to the cgroup limit
+java -Xlog:gc -jar app.jar                   # log each collection</code></pre></div>
+  <p>Also in recent JDKs: compact object headers shrink every object's header from 12 to 8 bytes, on by default in JDK 27 (opt-in with <code>-XX:+UseCompactObjectHeaders</code> on 25). It's a free memory win.</p>
+
+  <div class="lists">
+    <div class="reach"><h4>Reach for it when</h4><ul>
+      <li>Immutable records and <code>final</code> fields so sharing references is harmless.</li>
+      <li>Primitive arrays (<code>int[]</code>, <code>double[]</code>) for big numeric data: no per-element object.</li>
+      <li><code>MaxRAMPercentage</code> in containers instead of hard-coding <code>-Xmx</code>.</li>
+    </ul></div>
+    <div class="watch"><h4>Watch out for</h4><ul>
+      <li>"Leaks" in a GC language are references you forgot: static maps, listener lists, unbounded caches. Use a real cache library (Caffeine) with eviction.</li>
+      <li><code>List&lt;Integer&gt;</code> of a million items is a million objects. Use <code>int[]</code> or a primitive collection.</li>
+      <li><code>finalize()</code> is deprecated for removal; use try-with-resources or <code>Cleaner</code>.</li>
+      <li>A reassigned parameter doesn't change the caller's variable, but mutating the object it points to does.</li>
+    </ul></div>
+  </div>
+  <div class="notes" data-note="memory"></div>
+</section>
+
+<section class="topic" id="modules" data-short="Packages &amp; visibility">
+  <h2>Modules, packages, and visibility</h2>
+  <p class="idea">A <strong>package</strong> is a namespace that mirrors a directory (<code>com.example.billing</code> → <code>com/example/billing/</code>). Four access levels control what other code can see, and the default, with no keyword, is "package-private". Above packages, an optional <strong>module</strong> (<code>module-info.java</code>) declares which packages are exported at all.</p>
+
+  <div class="viz" id="accessViz">
+    <h4>Who can see a member?</h4>
+    <p class="hint">Click a row to highlight it. Toggle whether the package is exported from its module to see how modules add a second wall.</p>
+    <div class="viz-controls"><button class="btn" id="exportToggle" aria-pressed="true">Package is exported</button></div>
+    <div class="table-wrap" style="margin:0"><table class="access" id="accessTable"></table></div>
+    <div class="viz-out" id="accessOut" style="margin-top:12px;min-height:2.6em"></div>
+  </div>
+
+  <h3>What it looks like</h3>
+  <div class="code"><div class="code-head"><span>src/main/java/com/example/billing/Invoice.java</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="java">package com.example.billing;                // must match the folder path
+
+import java.time.LocalDate;
+import java.util.List;
+import static java.util.Objects.requireNonNull;   // static import: use a method unqualified
+
+public final class Invoice {                // one public top-level class per file, same name as file
+    private final List&lt;Line&gt; lines;          // private: this class only
+    final LocalDate issued;                  // package-private: anything in com.example.billing
+    protected void audit() {}                // package + subclasses anywhere
+    public long totalCents() { return 0; }   // everyone (that can see the package)
+
+    Invoice(List&lt;Line&gt; lines, LocalDate issued) {   // package-private constructor
+        this.lines = List.copyOf(requireNonNull(lines));
+        this.issued = issued;
+    }
+}</code></pre></div>
+  <div class="code"><div class="code-head"><span>src/main/java/module-info.java (optional)</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="java">module com.example.billing {
+    requires java.net.http;                 // modules I depend on
+    exports com.example.billing;            // public API
+    // com.example.billing.internal is NOT exported: public classes in it are invisible outside
+}</code></pre></div>
+  <p>Java 25 also lets you import a whole module at once: <code>import module java.base;</code> pulls in every exported package, which is handy in scripts and compact source files (where <code>java.base</code> is imported automatically).</p>
+
+  <h3>Compared with other languages</h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th></th><th>Java</th><th>Go</th><th>TypeScript / JS</th><th>Python</th></tr></thead>
+    <tbody>
+      <tr><td>Unit of namespace</td><td>Package (directory)</td><td>Package (directory)</td><td>File (ES module)</td><td>Module (file) / package (dir)</td></tr>
+      <tr><td>How you make things public</td><td><code>public</code> keyword</td><td>Capitalized name</td><td><code>export</code></td><td>Convention (<code>_private</code>)</td></tr>
+      <tr><td>Default visibility</td><td>Package-private</td><td>Package-private (lowercase)</td><td>File-private</td><td>Public</td></tr>
+      <tr><td>Hide a public thing from other libraries</td><td>Don't export the package in <code>module-info</code></td><td><code>internal/</code> directory</td><td>Don't list it in <code>exports</code> in package.json</td><td>Not enforced</td></tr>
+      <tr><td>Subpackages related?</td><td>No: <code>a.b</code> can't see <code>a.b.c</code>'s package-private</td><td>No</td><td>N/A</td><td>Somewhat</td></tr>
+    </tbody>
+  </table></div>
+  <div class="diff"><p><strong>What's different:</strong> Java's package-private default is similar to Go's lowercase names, and it's an underused tool: keep classes package-private unless another package needs them. Packages are flat. <code>com.example.billing.internal</code> is a completely separate package from <code>com.example.billing</code>, which surprises people expecting a hierarchy. Most applications skip <code>module-info.java</code> entirely; libraries and JDK-sized codebases use it.</p></div>
+
+  <div class="lists">
+    <div class="reach"><h4>Reach for it when</h4><ul>
+      <li>Package by feature (<code>billing</code>, <code>orders</code>) rather than by layer (<code>controllers</code>, <code>services</code>), so package-private actually hides things.</li>
+      <li><code>module-info.java</code> when publishing a library with a clear public API, or building a slim runtime with <code>jlink</code>.</li>
+      <li>Static imports for test assertions and a few well-known helpers.</li>
+    </ul></div>
+    <div class="watch"><h4>Watch out for</h4><ul>
+      <li><code>protected</code> also grants access to the whole package, not just subclasses.</li>
+      <li>Wildcard imports (<code>import java.util.*;</code>) can become ambiguous later (<code>java.util.List</code> vs <code>java.awt.List</code>). Let the IDE manage imports.</li>
+      <li>Reverse-domain package names are the convention; don't put classes in the default (unnamed) package except in scripts.</li>
+    </ul></div>
+  </div>
+  <div class="notes" data-note="modules"></div>
+</section>
+<section class="topic" id="style" data-short="Idiomatic style">
+  <h2>Idiomatic style: what good looks like</h2>
+  <p class="idea">Good modern Java is smaller than you'd expect: immutable data in records, behavior in small final classes behind interfaces, dependencies passed into constructors, exhaustive switches over sealed types, and plain blocking code on virtual threads. Most of the "enterprise Java" reputation comes from habits that predate these features.</p>
+
+  <h3>Before and after</h3>
+  <div class="tabs"><div class="tablist" role="tablist"><button class="tab" type="button" role="tab" aria-controls="t10p0" aria-selected="true">Old habits</button><button class="tab" type="button" role="tab" aria-controls="t10p1" aria-selected="false">Modern Java</button></div><div class="tabpanel" role="tabpanel" id="t10p0"><div class="code"><div class="code-head"><span>Java</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="java">public class UserDTO {
+    private String name;
+    private String email;
+    public UserDTO() {}
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
+    // + equals, hashCode, toString you forgot to update
+}
+
+public String describe(Object o) {
+    if (o instanceof Circle) {
+        Circle c = (Circle) o;
+        return "circle " + c.getR();
+    } else if (o instanceof Rect) {
+        Rect r = (Rect) o;
+        return "rect " + r.getW();
+    }
+    return null;                          // caller must remember to null-check
+}</code></pre></div></div><div class="tabpanel" role="tabpanel" id="t10p1" hidden><div class="code"><div class="code-head"><span>Java</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="java">public record User(String name, String email) {
+    public User {
+        requireNonNull(name);
+        if (!email.contains("@")) throw new IllegalArgumentException("email");
+    }
+}
+
+public String describe(Shape s) {
+    return switch (s) {                   // compiler checks every case
+        case Circle c -&gt; "circle " + c.r();
+        case Rect r   -&gt; "rect " + r.w();
+    };
+}
+
+public Optional&lt;User&gt; findByEmail(String email) {   // absence is in the type
+    return Optional.ofNullable(byEmail.get(email));
+}</code></pre></div></div></div>
+
+  <h3>Habits worth having</h3>
+  <p>Name things for what they do (<code>InvoiceRenderer</code>, not <code>InvoiceManager</code>). Keep classes package-private and <code>final</code> by default. Return empty collections, never <code>null</code> collections. Use <code>Optional</code> only as a return type. Validate at the edges (constructors, public methods) and trust values inside. Prefer <code>java.time</code> for anything involving dates, <code>Path</code>/<code>Files</code> over <code>java.io.File</code>, and <code>HttpClient</code> over <code>HttpURLConnection</code>. Write Javadoc for public APIs; Markdown doc comments (<code>///</code>) work since Java 23.</p>
+
+  <h3>Common anti-patterns in real codebases</h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Anti-pattern</th><th>Why it hurts</th><th>Do instead</th></tr></thead>
+    <tbody>
+      <tr><td>Interface for every class (<code>FooService</code> + <code>FooServiceImpl</code>)</td><td>Doubles the files, no second implementation ever arrives</td><td>Extract an interface when you have two implementations or a real seam (tests can use fakes of a concrete class's collaborators)</td></tr>
+      <tr><td>Getters/setters on all fields (JavaBeans by reflex)</td><td>Mutable everything, invariants nowhere</td><td>Records, or classes with behavior methods</td></tr>
+      <tr><td><code>Optional</code> as a field or parameter</td><td>Adds a third state (null Optional), clunky APIs</td><td>Nullable field + <code>Optional</code> getter, or an overload</td></tr>
+      <tr><td><code>catch (Exception e) { e.printStackTrace(); }</code></td><td>Swallows failures; prints to stderr nobody reads</td><td>Handle specifically, or wrap and rethrow, or log with context</td></tr>
+      <tr><td>Static utility "god" classes, singletons with mutable state</td><td>Hidden global state; untestable</td><td>Small objects passed through constructors</td></tr>
+      <tr><td>Field injection (<code>@Autowired private Foo foo;</code>)</td><td>Can't construct without a framework; hides dependencies</td><td>Constructor injection, <code>final</code> fields</td></tr>
+      <tr><td>Stream pipelines nested three deep with side effects</td><td>Harder to read than the loop</td><td>A loop, or named helper methods</td></tr>
+      <tr><td>Stringly-typed status fields</td><td>Typos compile</td><td>Enums or sealed types</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="lists">
+    <div class="reach"><h4>Reach for it when</h4><ul>
+      <li>A record + compact constructor any time you'd write a class "just to hold data".</li>
+      <li>Static factory methods (<code>Money.of(...)</code>, <code>List.of(...)</code>) for readable construction.</li>
+      <li>Builders only when there are many optional parameters; Java has no default arguments.</li>
+    </ul></div>
+    <div class="watch"><h4>Watch out for</h4><ul>
+      <li>Copying framework patterns (Spring) into plain library code that doesn't need them.</li>
+      <li>Lombok: popular, but records now cover its most common use, and it's an annotation processor that hooks into compiler internals.</li>
+      <li>Over-abstracting for flexibility nobody asked for. YAGNI applies here as much as in Go.</li>
+    </ul></div>
+  </div>
+  <div class="notes" data-note="style"></div>
+</section>
+
+<section class="topic" id="gotchas" data-short="Gotchas">
+  <h2>Gotchas</h2>
+  <p class="idea">Many of Java's surprises come from habits that are correct in other languages, so the first groups below are organized by the language that habit comes from. The last group is traps specific to Java.</p>
+
+  <h3>From Python</h3>
+  <div class="code"><div class="code-head"><span>Try these in jshell</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="java">int max = Integer.MAX_VALUE;
+max + 1;                      // -2147483648: silent overflow. Python ints never overflow.
+7 / 2;                        // 3: int division truncates (like Python's //), 7 / 2.0 is 3.5
+-7 / 2;                       // -3: truncates toward zero. Python's -7 // 2 is -4.
+-7 % 3;                       // -1: sign follows dividend. Python gives 2. Use Math.floorMod.
+
+"abc" == new String("abc");   // false: == is identity (Python's `is`); use equals()
+map.get("missing");           // null, no KeyError. Unboxing it into an int throws NPE.
+List.of(1, 2).add(3);         // UnsupportedOperationException: immutable at runtime only</code></pre></div>
+  <p>Also: no negative indexing (<code>list.getLast()</code> instead of <code>[-1]</code>), no slicing syntax (<code>subList(a, b)</code> returns a <em>view</em>, not a copy), and truthiness doesn't exist: <code>if (list)</code> doesn't compile; write <code>if (!list.isEmpty())</code>.</p>
+
+  <h3>From JavaScript and TypeScript</h3>
+  <div class="code"><div class="code-head"><span>Try these in jshell</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="java">"😀".length();                // 2: UTF-16 code units, same as JS. Use codePointCount for characters.
+0.1 + 0.2;                    // 0.30000000000000004: same as JS. Use BigDecimal for money.
+new BigDecimal(0.1);          // 0.1000000000000000055511151231257827…  use BigDecimal("0.1")
+new BigDecimal("2.0").equals(new BigDecimal("2.00"));   // false: scale matters. Use compareTo.
+
+String s = null;
+s.length();                   // NPE. No ?. operator, no ??. Use Objects.requireNonNullElse.
+
+byte b = (byte) 200;          // -56: bytes are signed. Mask with b &amp; 0xFF.
+char c = 'a' + 1;             // 'b', and 'a' + 'b' is the int 195, not "ab"</code></pre></div>
+  <p>TypeScript-specific: types are not structural, so an object with the right methods does not satisfy an interface unless it declares <code>implements</code>. Overloading is real (multiple methods with the same name, chosen at compile time by static types), unlike TS's single implementation with overload signatures. And there's no <code>any</code> escape hatch except <code>Object</code> plus a cast that is checked at runtime.</p>
+
+  <h3>From Go</h3>
+  <div class="code"><div class="code-head"><span>FromGo.java</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="java">var a = new Point(1, 2);
+var b = a;                    // NOT a copy: both names refer to the same object
+b.x = 9;                      // a.x is now 9 too
+
+// Zero values: fields default to 0/false/null, but LOCAL variables must be assigned before use.
+int n;
+// IO.println(n);             // compile error: variable might not have been initialized
+
+// A method that doesn't declare 'throws' can still throw any RuntimeException.
+// There's no (value, err) convention; read the Javadoc for what's thrown.
+
+// No defer: use try-with-resources or try/finally
+// No multiple return values: return a record
+record MinMax(int min, int max) {}</code></pre></div>
+  <p>Also: unused imports and variables are warnings at most, not errors. <code>switch</code> over a type works only with patterns, and exhaustiveness is checked only over sealed types and enums. Interfaces with one method aren't interchangeable just because their signatures match: a <code>Runnable</code> is not a <code>Callable&lt;Void&gt;</code>.</p>
+
+  <h3>Java-specific traps</h3>
+  <div class="code"><div class="code-head"><span>Try these in jshell</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="java">List&lt;Integer&gt; nums = new ArrayList&lt;&gt;(List.of(10, 20, 30));
+nums.remove(1);                        // removes INDEX 1 (20), not the value 1
+nums.remove(Integer.valueOf(10));      // removes the value 10
+
+Arrays.asList(new int[]{1, 2, 3});     // List&lt;int[]&gt; of size 1, not a List&lt;Integer&gt;
+Arrays.asList("a", "b").add("c");      // UnsupportedOperationException: fixed size
+
+Integer x = null;
+int y = flag ? x : 0;                  // NPE: the ternary unboxes x
+
+Object[] objs = new String[1];
+objs[0] = 42;                          // ArrayStoreException: arrays are covariant at runtime
+
+for (String s : list) if (s.isBlank()) list.remove(s);   // ConcurrentModificationException
+list.removeIf(String::isBlank);                           // correct</code></pre></div>
+
+  <div class="lists">
+    <div class="reach"><h4>Reach for it when</h4><ul>
+      <li><code>Math.addExact</code>, <code>Math.floorMod</code>, <code>Math.floorDiv</code> when Python-like arithmetic matters.</li>
+      <li><code>BigDecimal</code> (constructed from strings) for money; <code>long</code> cents is often simpler.</li>
+      <li><code>Objects.equals(a, b)</code> for null-safe comparison.</li>
+    </ul></div>
+    <div class="watch"><h4>Watch out for</h4><ul>
+      <li>Default locale and time zone leaking into formatting and parsing. Pass <code>Locale.ROOT</code> and an explicit <code>ZoneId</code>.</li>
+      <li>Since Java 18 the default charset is UTF-8 everywhere, but old code may still pass platform charsets explicitly.</li>
+      <li><code>String.split</code> takes a regex: <code>"a.b".split(".")</code> returns an empty array. Use <code>split("\\.")</code> or <code>Pattern.quote</code>.</li>
+    </ul></div>
+  </div>
+  <div class="notes" data-note="gotchas"></div>
+</section>
+
+<section class="topic" id="stdlib" data-short="Stdlib &amp; ecosystem">
+  <h2>Standard library and ecosystem</h2>
+  <p class="idea">The JDK's standard library is broad and stable: collections, concurrency, I/O, networking, HTTP, time, text, crypto, and a lot of legacy you should skip. The ecosystem on Maven Central fills in the rest, and it's one of the deepest anywhere. There's still no JSON in the JDK; a simple JSON API is targeted as an incubator for JDK 28.</p>
+
+  <h3>The stdlib pieces you'll use most</h3>
+  <div class="code"><div class="code-head"><span>Stdlib.java</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="java">// Files: Python's pathlib, Go's os/io
+Path p = Path.of("data", "users.csv");
+List&lt;String&gt; lines = Files.readAllLines(p);
+try (Stream&lt;String&gt; stream = Files.lines(p)) { /* lazy, must close */ }
+Files.writeString(p.resolveSibling("out.txt"), "done\n");
+
+// HTTP client (Java 11+): Go's net/http client, fetch()
+var client = HttpClient.newHttpClient();
+var req = HttpRequest.newBuilder(URI.create("https://api.example.com/users")).GET().build();
+HttpResponse&lt;String&gt; res = client.send(req, HttpResponse.BodyHandlers.ofString());
+
+// Time: java.time, modeled on Joda-Time. Never java.util.Date or Calendar.
+Instant now = Instant.now();                                  // a point on the timeline
+LocalDate due = LocalDate.of(2026, 12, 31);                   // a calendar date, no zone
+ZonedDateTime meeting = ZonedDateTime.of(due.atTime(9, 0), ZoneId.of("America/New_York"));
+Duration took = Duration.between(start, now);
+String iso = DateTimeFormatter.ISO_LOCAL_DATE.format(due);
+
+// Text
+"  hi  ".strip(); "a,b,,c".split(",");  String.join("-", parts);  "ab".repeat(3);
+var m = Pattern.compile("(\\d+)-(\\d+)").matcher("10-20");
+if (m.matches()) Integer.parseInt(m.group(1));
+
+// Random, UUIDs, hashing
+var rng = RandomGenerator.getDefault();
+UUID id = UUID.randomUUID();
+byte[] digest = MessageDigest.getInstance("SHA-256").digest(bytes);
+String hex = HexFormat.of().formatHex(digest);</code></pre></div>
+
+  <h3>Ecosystem map</h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Need</th><th>Go-to libraries</th><th>Rough equivalent</th></tr></thead>
+    <tbody>
+      <tr><td>Web framework</td><td>Spring Boot; Quarkus and Micronaut (fast startup, native images); Javalin or Helidon SE (small)</td><td>Django/FastAPI, Express/Nest, Gin/chi</td></tr>
+      <tr><td>JSON</td><td>Jackson (default), Gson, Moshi</td><td><code>json</code>, <code>JSON.parse</code>, <code>encoding/json</code></td></tr>
+      <tr><td>Database</td><td>JDBC + HikariCP pool; jOOQ (typed SQL); Hibernate/JPA (ORM); Flyway or Liquibase (migrations)</td><td>SQLAlchemy, Prisma, sqlc/pgx</td></tr>
+      <tr><td>Logging</td><td>SLF4J API + Logback or Log4j 2</td><td><code>logging</code>, pino, slog</td></tr>
+      <tr><td>Testing</td><td>JUnit 6, AssertJ, Mockito, Testcontainers, ArchUnit</td><td>pytest, Vitest/Jest, testing + testify</td></tr>
+      <tr><td>Caching</td><td>Caffeine</td><td><code>functools.lru_cache</code>, lru-cache</td></tr>
+      <tr><td>CLI apps</td><td>picocli</td><td>argparse/click, commander, cobra</td></tr>
+      <tr><td>Messaging / streaming</td><td>Kafka clients, Kafka Streams, Flink</td><td>confluent-kafka, kafkajs, sarama</td></tr>
+      <tr><td>Observability</td><td>Micrometer, OpenTelemetry Java agent, JFR</td><td>prometheus_client, OTel SDKs</td></tr>
+      <tr><td>Native binaries</td><td>GraalVM Native Image</td><td><code>go build</code></td></tr>
+    </tbody>
+  </table></div>
+  <p>Other JVM languages share all of this: Kotlin (Android and increasingly back-end), Scala, Clojure, and Groovy. A Java library is usable from all of them.</p>
+
+  <div class="lists">
+    <div class="reach"><h4>Reach for it when</h4><ul>
+      <li>Stdlib first for HTTP, files, time, concurrency; it's better than its reputation.</li>
+      <li>Spring Boot when the team already knows it or you need its integrations; Javalin/Helidon SE for a small service you want to understand fully.</li>
+      <li>jOOQ or plain JDBC when you'd rather write SQL than map objects.</li>
+    </ul></div>
+    <div class="watch"><h4>Watch out for</h4><ul>
+      <li>Legacy APIs that still compile: <code>Date</code>, <code>Calendar</code>, <code>Vector</code>, <code>Hashtable</code>, <code>StringBuffer</code>, <code>java.io.File</code>.</li>
+      <li>Transitive dependency conflicts. Use a BOM (bill of materials) and check <code>dependency:tree</code>.</li>
+      <li>Log4j 1.x and old Log4j 2 versions in inherited codebases (Log4Shell).</li>
+    </ul></div>
+  </div>
+  <div class="notes" data-note="stdlib"></div>
+</section>
+
+<section class="topic" id="comingfrom" data-short="Language comparison">
+  <h2>Java compared with Python, JavaScript, TypeScript and Go</h2>
+  <p class="idea">The same topics answered side by side. Pick a language to compare against Java.</p>
+  <div class="viz" id="cfViz" style="padding-bottom:6px">
+    <div class="tablist" role="tablist" id="cfTabs" style="margin-bottom:12px"></div>
+    <div class="table-wrap" style="margin:0 0 12px"><table id="cfTable"></table></div>
+  </div>
+  <div class="notes" data-note="comingfrom"></div>
+</section>
+<section class="topic" id="project" data-short="Example project">
+  <h2>End-to-end project: a concurrent uptime checker</h2>
+  <p class="idea"><code>pulse</code> reads a list of URLs, checks them all at once on virtual threads, and prints a report with a non-zero exit code if anything is down. It's about 150 lines and uses most of this primer: a Maven layout, records and a sealed result type, a functional interface with checked exceptions, try-with-resources, streams and collectors, pattern-matching switches, the built-in HTTP client, package-private visibility, and a JUnit test with a fake.</p>
+
+  <h3>Layout</h3>
+  <div class="code"><div class="code-head"><span>pulse/</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="text">pulse/
+├── pom.xml
+├── urls.txt
+└── src/
+    ├── main/java/dev/example/pulse/
+    │   ├── App.java           # entry point: parse input, wire things up, exit code
+    │   ├── CheckResult.java   # sealed interface + three records
+    │   ├── Probe.java         # functional interface: "give me a status code for this URI"
+    │   ├── HttpProbe.java     # real implementation using java.net.http
+    │   ├── Checker.java       # fan-out on virtual threads, map failures to results
+    │   └── Report.java        # rendering + summary with pattern matching
+    └── test/java/dev/example/pulse/
+        └── CheckerTest.java</code></pre></div>
+
+  <h3>The files</h3>
+  <p class="hint" style="font-family:var(--sans);color:var(--muted);font-size:.9rem">Each tab is one file. Read them in this order; it's the order data flows.</p>
+  <div class="tabs"><div class="tablist" role="tablist"><button class="tab" type="button" role="tab" aria-controls="t11p0" aria-selected="true">CheckResult.java</button><button class="tab" type="button" role="tab" aria-controls="t11p1" aria-selected="false">Probe.java</button><button class="tab" type="button" role="tab" aria-controls="t11p2" aria-selected="false">HttpProbe.java</button><button class="tab" type="button" role="tab" aria-controls="t11p3" aria-selected="false">Checker.java</button><button class="tab" type="button" role="tab" aria-controls="t11p4" aria-selected="false">Report.java</button><button class="tab" type="button" role="tab" aria-controls="t11p5" aria-selected="false">App.java</button><button class="tab" type="button" role="tab" aria-controls="t11p6" aria-selected="false">CheckerTest.java</button><button class="tab" type="button" role="tab" aria-controls="t11p7" aria-selected="false">pom.xml</button></div><div class="tabpanel" role="tabpanel" id="t11p0"><div class="code"><div class="code-head"><span>src/main/java/dev/example/pulse/CheckResult.java</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="java">package dev.example.pulse;
+
+import java.net.URI;
+import java.time.Duration;
+
+/// The outcome of checking one URL. Sealed: these three are the only possibilities,
+/// so every switch over a CheckResult is checked for exhaustiveness.
+public sealed interface CheckResult {
+    URI uri();
+
+    record Up(URI uri, int status, Duration took) implements CheckResult {}
+    record Down(URI uri, int status, Duration took) implements CheckResult {}
+    record Failed(URI uri, String reason) implements CheckResult {}
+}</code></pre></div></div><div class="tabpanel" role="tabpanel" id="t11p1" hidden><div class="code"><div class="code-head"><span>src/main/java/dev/example/pulse/Probe.java</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="java">package dev.example.pulse;
+
+import java.io.IOException;
+import java.net.URI;
+
+/// One method, so a lambda can implement it (handy in tests).
+/// Declares checked exceptions, which java.util.function types can't.
+@FunctionalInterface
+interface Probe {                          // package-private: an internal seam
+    int status(URI uri) throws IOException, InterruptedException;
+}</code></pre></div></div><div class="tabpanel" role="tabpanel" id="t11p2" hidden><div class="code"><div class="code-head"><span>src/main/java/dev/example/pulse/HttpProbe.java</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="java">package dev.example.pulse;
+
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
+
+final class HttpProbe implements Probe {
+    private final HttpClient client = HttpClient.newBuilder()
+            .connectTimeout(Duration.ofSeconds(5))
+            .followRedirects(HttpClient.Redirect.NORMAL)
+            .build();                       // thread-safe; share one per app
+
+    @Override
+    public int status(URI uri) throws IOException, InterruptedException {
+        var request = HttpRequest.newBuilder(uri)
+                .method("HEAD", HttpRequest.BodyPublishers.noBody())
+                .timeout(Duration.ofSeconds(10))
+                .build();
+        return client.send(request, HttpResponse.BodyHandlers.discarding()).statusCode();
+    }
+}</code></pre></div></div><div class="tabpanel" role="tabpanel" id="t11p3" hidden><div class="code"><div class="code-head"><span>src/main/java/dev/example/pulse/Checker.java</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="java">package dev.example.pulse;
+
+import dev.example.pulse.CheckResult.Down;
+import dev.example.pulse.CheckResult.Failed;
+import dev.example.pulse.CheckResult.Up;
+
+import java.io.IOException;
+import java.net.URI;
+import java.time.Duration;
+import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+
+final class Checker {
+    private final Probe probe;
+
+    Checker(Probe probe) {                  // constructor injection
+        this.probe = Objects.requireNonNull(probe);
+    }
+
+    /// Checks every target concurrently, one virtual thread each.
+    /// Results come back in the same order as the input.
+    List&lt;CheckResult&gt; checkAll(List&lt;URI&gt; targets) {
+        try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
+            List&lt;Future&lt;CheckResult&gt;&gt; futures = targets.stream()
+                    .map(uri -&gt; executor.submit(() -&gt; check(uri)))
+                    .toList();              // submit everything first...
+            return futures.stream()
+                    .map(Checker::await)    // ...then collect, in order
+                    .toList();
+        }                                   // close() waits for any stragglers
+    }
+
+    CheckResult check(URI uri) {            // package-private so tests can call it
+        long start = System.nanoTime();
+        try {
+            int status = probe.status(uri);
+            var took = Duration.ofNanos(System.nanoTime() - start);
+            return status &lt; 400 ? new Up(uri, status, took) : new Down(uri, status, took);
+        } catch (IOException e) {
+            return new Failed(uri, e.getClass().getSimpleName() + ": " + e.getMessage());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();  // keep the cancellation signal
+            return new Failed(uri, "interrupted");
+        }
+    }
+
+    private static CheckResult await(Future&lt;CheckResult&gt; future) {
+        try {
+            return future.get();
+        } catch (ExecutionException e) {        // check() threw something unexpected
+            throw new IllegalStateException("check crashed", e.getCause());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("interrupted while waiting", e);
+        }
+    }
+}</code></pre></div></div><div class="tabpanel" role="tabpanel" id="t11p4" hidden><div class="code"><div class="code-head"><span>src/main/java/dev/example/pulse/Report.java</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="java">package dev.example.pulse;
+
+import dev.example.pulse.CheckResult.Down;
+import dev.example.pulse.CheckResult.Failed;
+import dev.example.pulse.CheckResult.Up;
+
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.stream.Collectors;
+
+record Report(List&lt;CheckResult&gt; results) {
+    Report {
+        results = List.copyOf(results);     // defensive copy: records are only shallowly immutable
+    }
+
+    boolean allUp() {
+        return results.stream().allMatch(r -&gt; r instanceof Up);
+    }
+
+    String render() {
+        var out = new StringBuilder();
+        for (CheckResult r : results) {
+            out.append(switch (r) {         // exhaustive over the sealed interface
+                case Up(var uri, var status, var took) -&gt;
+                        "UP    %d %5d ms  %s".formatted(status, took.toMillis(), uri);
+                case Down(var uri, var status, var took) -&gt;
+                        "DOWN  %d %5d ms  %s".formatted(status, took.toMillis(), uri);
+                case Failed(var uri, var reason) -&gt;
+                        "FAIL  ---          %s  (%s)".formatted(uri, reason);
+            }).append('\n');
+        }
+        Map&lt;String, Long&gt; counts = results.stream()
+                .collect(Collectors.groupingBy(Report::label, TreeMap::new, Collectors.counting()));
+        return out.append("summary: ").append(counts).append('\n').toString();
+    }
+
+    private static String label(CheckResult r) {
+        return switch (r) {
+            case Up _ -&gt; "up";              // unnamed pattern: match the type, ignore the value
+            case Down _ -&gt; "down";
+            case Failed _ -&gt; "failed";
+        };
+    }
+}</code></pre></div></div><div class="tabpanel" role="tabpanel" id="t11p5" hidden><div class="code"><div class="code-head"><span>src/main/java/dev/example/pulse/App.java</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="java">package dev.example.pulse;
+
+import java.io.IOException;
+import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+
+public final class App {
+    private App() {}
+
+    public static void main(String[] args) throws IOException {
+        List&lt;URI&gt; targets = args.length &gt; 0 ? readTargets(Path.of(args[0])) : defaults();
+        var checker = new Checker(new HttpProbe());
+        var report = new Report(checker.checkAll(targets));
+        System.out.print(report.render());
+        System.exit(report.allUp() ? 0 : 1);      // CI-friendly exit code
+    }
+
+    static List&lt;URI&gt; readTargets(Path file) throws IOException {
+        return Files.readAllLines(file).stream()
+                .map(String::strip)
+                .filter(line -&gt; !line.isEmpty() &amp;&amp; !line.startsWith("#"))
+                .map(URI::create)
+                .toList();
+    }
+
+    private static List&lt;URI&gt; defaults() {
+        return List.of(URI.create("https://openjdk.org"), URI.create("https://example.com"));
+    }
+}</code></pre></div></div><div class="tabpanel" role="tabpanel" id="t11p6" hidden><div class="code"><div class="code-head"><span>src/test/java/dev/example/pulse/CheckerTest.java</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="java">package dev.example.pulse;          // same package: can see package-private Checker and Probe
+
+import dev.example.pulse.CheckResult.Down;
+import dev.example.pulse.CheckResult.Failed;
+import dev.example.pulse.CheckResult.Up;
+import org.junit.jupiter.api.Test;
+
+import java.io.IOException;
+import java.net.URI;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+class CheckerTest {
+    // A fake Probe as a lambda: no mocking library needed
+    private final Probe fake = uri -&gt; switch (uri.getHost()) {
+        case "up.test" -&gt; 200;
+        case "down.test" -&gt; 503;
+        default -&gt; throw new IOException("no route to " + uri.getHost());
+    };
+
+    @Test
+    void classifiesEachResultAndKeepsInputOrder() {
+        var results = new Checker(fake).checkAll(List.of(
+                URI.create("http://up.test"),
+                URI.create("http://down.test"),
+                URI.create("http://nowhere.test")));
+
+        assertInstanceOf(Up.class, results.get(0));
+        assertInstanceOf(Down.class, results.get(1));
+        var failed = assertInstanceOf(Failed.class, results.get(2));
+        assertTrue(failed.reason().contains("no route"));
+    }
+
+    @Test
+    void reportIsAllUpOnlyWhenEverythingIsUp() {
+        var checker = new Checker(fake);
+        assertTrue(new Report(checker.checkAll(List.of(URI.create("http://up.test")))).allUp());
+        assertFalse(new Report(checker.checkAll(List.of(URI.create("http://down.test")))).allUp());
+    }
+}</code></pre></div></div><div class="tabpanel" role="tabpanel" id="t11p7" hidden><div class="code"><div class="code-head"><span>pom.xml</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="xml">&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd"&gt;
+  &lt;modelVersion&gt;4.0.0&lt;/modelVersion&gt;
+  &lt;groupId&gt;dev.example&lt;/groupId&gt;
+  &lt;artifactId&gt;pulse&lt;/artifactId&gt;
+  &lt;version&gt;0.1.0&lt;/version&gt;
+
+  &lt;properties&gt;
+    &lt;maven.compiler.release&gt;25&lt;/maven.compiler.release&gt;
+    &lt;project.build.sourceEncoding&gt;UTF-8&lt;/project.build.sourceEncoding&gt;
+  &lt;/properties&gt;
+
+  &lt;dependencies&gt;
+    &lt;dependency&gt;
+      &lt;groupId&gt;org.junit.jupiter&lt;/groupId&gt;
+      &lt;artifactId&gt;junit-jupiter&lt;/artifactId&gt;
+      &lt;version&gt;6.1.3&lt;/version&gt; &lt;!-- check Maven Central for the latest 6.x --&gt;
+      &lt;scope&gt;test&lt;/scope&gt;
+    &lt;/dependency&gt;
+  &lt;/dependencies&gt;
+
+  &lt;build&gt;
+    &lt;plugins&gt;
+      &lt;plugin&gt;
+        &lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+        &lt;artifactId&gt;maven-surefire-plugin&lt;/artifactId&gt;
+        &lt;version&gt;3.5.2&lt;/version&gt; &lt;!-- runs JUnit tests; any recent 3.x works --&gt;
+      &lt;/plugin&gt;
+      &lt;plugin&gt;
+        &lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+        &lt;artifactId&gt;maven-jar-plugin&lt;/artifactId&gt;
+        &lt;version&gt;3.4.2&lt;/version&gt;
+        &lt;configuration&gt;
+          &lt;archive&gt;
+            &lt;manifest&gt;&lt;mainClass&gt;dev.example.pulse.App&lt;/mainClass&gt;&lt;/manifest&gt;
+          &lt;/archive&gt;
+        &lt;/configuration&gt;
+      &lt;/plugin&gt;
+    &lt;/plugins&gt;
+  &lt;/build&gt;
+&lt;/project&gt;</code></pre></div></div></div>
+
+  <h3>Build and run</h3>
+  <div class="code"><div class="code-head"><span>Terminal</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="bash">mvn -N wrapper:wrapper            # once: generate ./mvnw so the Maven version is pinned
+./mvnw verify                     # compile, run tests, build target/pulse-0.1.0.jar
+
+printf "https://openjdk.org\nhttps://example.com\nhttps://does-not-exist.invalid\n" &gt; urls.txt
+java -jar target/pulse-0.1.0.jar urls.txt
+echo $?                           # 1, because one URL failed
+
+# No Maven at all? The source launcher compiles the other files on demand (Java 22+):
+java src/main/java/dev/example/pulse/App.java urls.txt</code></pre></div>
+  <div class="code"><div class="code-head"><span>Example output</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="text">UP    200   312 ms  https://openjdk.org
+UP    200    95 ms  https://example.com
+FAIL  ---          https://does-not-exist.invalid  (ConnectException: null)
+summary: {failed=1, up=2}</code></pre></div>
+
+  <h3>How it compares in other languages</h3>
+  <div class="diff">
+    <p><strong>In Go</strong> this would be a <code>[]Result</code> filled by goroutines and a <code>sync.WaitGroup</code>, with <code>Result</code> as an interface you can't make exhaustive. Java's sealed interface gives you the exhaustive switch; the virtual-thread executor plays the role of <code>WaitGroup</code> when it closes.</p>
+    <p><strong>In TypeScript</strong> you'd write <code>await Promise.all(urls.map(check))</code> and a discriminated union. Same shape, but Java's <code>check()</code> is ordinary blocking code with no <code>async</code>, and it runs on multiple cores.</p>
+    <p><strong>In Python</strong> it'd be <code>asyncio.gather</code> with <code>httpx</code>, or a <code>ThreadPoolExecutor</code>. The Java version is closest to the thread-pool approach, minus the pool-size tuning and the GIL.</p>
+  </div>
+
+  <h3>Ways to extend it (good practice)</h3>
+  <p>Add a <code>--concurrency N</code> flag and cap in-flight requests with a <code>Semaphore</code>. Parse arguments with picocli. Emit JSON with Jackson (records serialize out of the box). Retry <code>Failed</code> results once with backoff. Rewrite <code>checkAll</code> with <code>StructuredTaskScope</code> under <code>--enable-preview</code> and compare. Package it as a native binary with GraalVM and compare startup time.</p>
+
+  <div class="lists">
+    <div class="reach"><h4>Reach for this shape when</h4><ul>
+      <li>Any fan-out job: health checks, crawlers, batch API calls, parallel file processing.</li>
+      <li>You want a testable seam: a one-method interface that a lambda can fake.</li>
+    </ul></div>
+    <div class="watch"><h4>Watch out for</h4><ul>
+      <li>Thousands of URLs at once can overwhelm a single host; cap concurrency per host.</li>
+      <li><code>System.exit</code> in library code; keep it in <code>main</code> only.</li>
+    </ul></div>
+  </div>
+  <div class="notes" data-note="project"></div>
+</section>
+
+<section class="topic" id="cheatsheet" data-short="Cheat sheet">
+  <h2>Cheat sheet</h2>
+  <p class="idea">The things you'll look up most, on one page. Every block has a copy button.</p>
+  <div class="cheat-grid">
+    <section><h4>Declarations</h4>
+      <div class="code"><div class="code-head"><span>Java</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="java">var n = 42;                 // local inference
+final int max = 10;         // no reassign
+long big = 3_000_000_000L;
+int[] xs = {1, 2, 3};
+int[][] grid = new int[3][4];
+String s = null;            // any reference can be null</code></pre></div>
+    </section>
+    <section><h4>Strings</h4>
+      <div class="code"><div class="code-head"><span>Java</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="java">"Hi %s".formatted(name)
+s.strip()  s.isBlank()  s.lines()
+s.split("\\s+")   String.join(",", list)
+s.chars()  s.repeat(3)  s.equalsIgnoreCase(t)
+new StringBuilder().append(a).append(b).toString()
+"""
+  text block
+  """</code></pre></div>
+    </section>
+    <section><h4>Control flow</h4>
+      <div class="code"><div class="code-head"><span>Java</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="java">var label = switch (code) {
+    case 200, 204 -&gt; "ok";
+    case 404 -&gt; "missing";
+    default -&gt; "other";
+};
+if (o instanceof String str &amp;&amp; !str.isEmpty()) { }
+for (var item : items) { }
+outer: for (...) { break outer; }   // labeled break</code></pre></div>
+    </section>
+    <section><h4>Records, sealed, patterns</h4>
+      <div class="code"><div class="code-head"><span>Java</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="java">record Point(int x, int y) {
+    Point { if (x &lt; 0) throw new IllegalArgumentException(); }
+    Point withX(int nx) { return new Point(nx, y); }
+}
+sealed interface Expr permits Num, Add {}
+record Num(int v) implements Expr {}
+record Add(Expr l, Expr r) implements Expr {}
+int eval(Expr e) { return switch (e) {
+    case Num(var v) -&gt; v;
+    case Add(var l, var r) -&gt; eval(l) + eval(r);
+}; }</code></pre></div>
+    </section>
+    <section><h4>Collections</h4>
+      <div class="code"><div class="code-head"><span>Java</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="java">List.of(1, 2)  Set.of("a")  Map.of("k", 1)   // immutable
+new ArrayList&lt;&gt;(xs)  new HashMap&lt;&gt;()  new ArrayDeque&lt;&gt;()
+list.getFirst()  list.getLast()  list.reversed()
+list.removeIf(x -&gt; x &lt; 0)
+map.getOrDefault(k, 0)  map.merge(k, 1, Integer::sum)
+map.computeIfAbsent(k, _ -&gt; new ArrayList&lt;&gt;()).add(v)
+Collections.unmodifiableList(list)  List.copyOf(list)</code></pre></div>
+    </section>
+    <section><h4>Streams</h4>
+      <div class="code"><div class="code-head"><span>Java</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="java">xs.stream().filter(p).map(f).toList()
+.sorted(Comparator.comparing(User::age).reversed())
+.collect(Collectors.groupingBy(User::team))
+.collect(Collectors.toMap(User::id, u -&gt; u))
+.collect(Collectors.joining(", "))
+.mapToInt(Integer::intValue).sum()
+IntStream.range(0, n)   .anyMatch(p)   .findFirst()
+.gather(Gatherers.windowFixed(3))       // Java 24+</code></pre></div>
+    </section>
+    <section><h4>Functions</h4>
+      <div class="code"><div class="code-head"><span>Java</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="java">Function&lt;A, B&gt;        f.apply(a)
+BiFunction&lt;A, B, C&gt;   f.apply(a, b)
+Supplier&lt;T&gt;           s.get()
+Consumer&lt;T&gt;           c.accept(t)
+Predicate&lt;T&gt;          p.test(t)
+Runnable              r.run()
+Callable&lt;T&gt;           c.call()   // may throw
+String::length   Foo::new   this::handle</code></pre></div>
+    </section>
+    <section><h4>Optional</h4>
+      <div class="code"><div class="code-head"><span>Java</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="java">Optional.ofNullable(x)   Optional.empty()
+opt.map(User::email).orElse("none")
+opt.orElseThrow()        opt.orElseGet(this::load)
+opt.ifPresentOrElse(this::use, this::fallback)
+opt.isEmpty()            opt.stream()</code></pre></div>
+    </section>
+    <section><h4>Exceptions</h4>
+      <div class="code"><div class="code-head"><span>Java</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="java">try (var in = Files.newInputStream(p)) { ... }
+catch (IOException | ParseException e) { throw new AppException("ctx", e); }
+finally { ... }
+throw new IllegalArgumentException("why: " + v);
+Objects.requireNonNull(x, "x");
+Objects.requireNonNullElse(x, fallback);</code></pre></div>
+    </section>
+    <section><h4>Concurrency</h4>
+      <div class="code"><div class="code-head"><span>Java</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="java">try (var ex = Executors.newVirtualThreadPerTaskExecutor()) {
+    Future&lt;T&gt; f = ex.submit(() -&gt; work());
+    f.get();
+}
+Thread.ofVirtual().start(runnable);
+new ConcurrentHashMap&lt;&gt;()   new AtomicLong()   new LongAdder()
+new ReentrantLock()  new Semaphore(10)  new LinkedBlockingQueue&lt;&gt;()
+CompletableFuture.supplyAsync(s).thenApply(f).join()</code></pre></div>
+    </section>
+    <section><h4>Files and HTTP</h4>
+      <div class="code"><div class="code-head"><span>Java</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="java">Files.readString(p)   Files.writeString(p, s)
+Files.readAllLines(p) Files.lines(p)   // close the stream!
+Files.list(dir)  Files.walk(dir)  Files.createDirectories(dir)
+Path.of("a", "b")  p.resolve("c")  p.getFileName()
+var c = HttpClient.newHttpClient();
+c.send(HttpRequest.newBuilder(URI.create(u)).build(),
+       HttpResponse.BodyHandlers.ofString()).body();</code></pre></div>
+    </section>
+    <section><h4>Time</h4>
+      <div class="code"><div class="code-head"><span>Java</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="java">Instant.now()                       // UTC timestamp
+LocalDate.now(zone)  LocalDate.parse("2026-10-16")
+ZonedDateTime.now(ZoneId.of("Europe/Paris"))
+Duration.ofSeconds(30)  Period.ofMonths(1)
+date.plusDays(7)  ChronoUnit.DAYS.between(a, b)
+DateTimeFormatter.ofPattern("yyyy-MM-dd")</code></pre></div>
+    </section>
+    <section><h4>Commands</h4>
+      <div class="code"><div class="code-head"><span>Shell</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="bash">java File.java            # run source directly
+jshell                    # REPL
+javac -d out $(find src -name '*.java')
+java -cp out com.x.Main
+javap -c Foo.class        # see bytecode
+./mvnw verify  |  ./gradlew build
+jcmd &lt;pid&gt; Thread.print   # thread dump
+jar --create --file app.jar --main-class com.x.Main -C out .</code></pre></div>
+    </section>
+    <section><h4>JVM flags</h4>
+      <div class="code"><div class="code-head"><span>Shell</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="bash">-Xmx2g -Xms2g                  # heap size
+-XX:MaxRAMPercentage=75        # containers
+-XX:+UseZGC                    # low-latency GC
+-Xlog:gc                       # GC log
+-XX:StartFlightRecording       # JFR profiling
+--enable-preview               # preview features (javac too, with --release N)
+-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005</code></pre></div>
+    </section>
+  </div>
+  <div class="notes" data-note="cheatsheet"></div>
+  <p class="footer">Reflects Java SE 25 (LTS) and JDK 27 (feature release, September 2026). Preview features need <code>--enable-preview</code> and can change between releases. Checked October 2026.</p>
+</section>
+</main>
+</div>
+<script>
+(function(){
+"use strict";
+const $ = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
+const esc = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+const store = {
+  get(k){ try { return localStorage.getItem(k); } catch(e){ return null; } },
+  set(k,v){ try { localStorage.setItem(k,v); return true; } catch(e){ return false; } },
+  keys(){ try { return Object.keys(localStorage); } catch(e){ return []; } }
+};
+
+
+/* ---------------- nav ---------------- */
+const sections = $$("#main > section[data-short]");
+const navList = $("#navList");
+let n = 0;
+sections.forEach(sec => {
+  const li = document.createElement("li");
+  const a = document.createElement("a");
+  a.href = "#" + sec.id;
+  const isTopic = sec.classList.contains("topic");
+  if (isTopic) n++;
+  a.innerHTML = '<span class="num">' + (isTopic ? n : "") + '</span><span>' + sec.dataset.short + '</span>';
+  li.appendChild(a); navList.appendChild(li);
+  if (isTopic){
+    const h2 = $("h2", sec);
+    if (h2 && !$(".chap", h2)) h2.insertAdjacentHTML("afterbegin", '<span class="chap">' + String(n).padStart(2,"0") + '</span>');
+  }
+});
+const sidebar = $("#sidebar"), backdrop = $("#backdrop"), openNav = $("#openNav");
+function setDrawer(open){
+  sidebar.classList.toggle("open", open); backdrop.classList.toggle("show", open);
+  openNav.setAttribute("aria-expanded", String(open));
+  if (open) { const a = $(".nav a.active", sidebar) || $(".nav a", sidebar); a && a.focus(); }
+}
+openNav.addEventListener("click", () => setDrawer(!sidebar.classList.contains("open")));
+backdrop.addEventListener("click", () => setDrawer(false));
+document.addEventListener("keydown", e => { if (e.key === "Escape" && sidebar.classList.contains("open")) { setDrawer(false); openNav.focus(); } });
+navList.addEventListener("click", e => { if (e.target.closest("a")) setDrawer(false); });
+const links = new Map($$(".nav a").map(a => [a.getAttribute("href").slice(1), a]));
+if ("IntersectionObserver" in window){
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(en => {
+      if (en.isIntersecting){
+        links.forEach(a => a.classList.remove("active"));
+        const a = links.get(en.target.id); a && a.classList.add("active");
+      }
+    });
+  }, { rootMargin: "-35% 0px -60% 0px" });
+  sections.forEach(s => io.observe(s));
+}
+
+/* ---------------- highlighter ---------------- */
+const KW = {
+  java: "abstract assert boolean break byte case catch char class continue default do double else enum extends final finally float for if implements import instanceof int interface long native new package private protected public return short static super switch synchronized this throw throws transient try void volatile while var record sealed permits yield when module requires exports true false null",
+  python: "and as assert async await break class continue def del elif else except finally for from global if import in is lambda nonlocal not or pass raise return try while with yield True False None match case",
+  javascript: "async await break case catch class const continue default delete do else export extends finally for function if import in instanceof let new of return switch this throw try typeof var void while yield true false null undefined",
+  go: "break case chan const continue default defer else fallthrough for func go goto if import interface map package range return select struct switch type var nil true false int string error bool float64 any",
+  kotlin: "plugins repositories dependencies java toolchain application tasks val var fun",
+  bash: "sdk java javac jshell jcmd javap jar mvn printf echo curl find"
+};
+KW.typescript = KW.javascript + " type interface readonly implements number string boolean enum keyof as any unknown never";
+const sets = {}; Object.keys(KW).forEach(k => sets[k] = new Set(KW[k].split(" ")));
+const STR_C = '"""[\\s\\S]*?"""|"(?:\\\\.|[^"\\\\\\n])*"|\'(?:\\\\.|[^\'\\\\\\n])*\'';
+const RX = {
+  java: new RegExp('(?<com>\\/\\/[^\\n]*|\\/\\*[\\s\\S]*?\\*\\/)|(?<str>' + STR_C + ')|(?<ann>@\\w+)|(?<num>\\b(?:0x[0-9A-Fa-f_]+|\\d[\\d_]*(?:\\.\\d+)?[LlFfDd]?)\\b)|(?<word>[A-Za-z_]\\w*)', "g"),
+  python: new RegExp('(?<com>#[^\\n]*)|(?<str>' + STR_C + ')|(?<ann>@\\w+)|(?<num>\\b\\d[\\d_]*(?:\\.\\d+)?\\b)|(?<word>[A-Za-z_]\\w*)', "g"),
+  javascript: new RegExp('(?<com>\\/\\/[^\\n]*|\\/\\*[\\s\\S]*?\\*\\/)|(?<str>`(?:\\\\.|[^`\\\\])*`|"(?:\\\\.|[^"\\\\\\n])*"|\'(?:\\\\.|[^\'\\\\\\n])*\')|(?<num>\\b\\d[\\d_]*(?:\\.\\d+)?\\b)|(?<word>[A-Za-z_$][\\w$]*)', "g"),
+  go: new RegExp('(?<com>\\/\\/[^\\n]*|\\/\\*[\\s\\S]*?\\*\\/)|(?<str>`[^`]*`|"(?:\\\\.|[^"\\\\\\n])*"|\'(?:\\\\.|[^\'\\\\\\n])*\')|(?<num>\\b\\d[\\d_]*(?:\\.\\d+)?\\b)|(?<word>[A-Za-z_]\\w*)', "g"),
+  bash: new RegExp('(?<com>#[^\\n]*)|(?<str>"(?:\\\\.|[^"\\\\])*"|\'[^\'\\n]*\')|(?<word>[A-Za-z_][\\w-]*)', "g"),
+  xml: new RegExp('(?<com><!--[\\s\\S]*?-->)|(?<str>"[^"]*")|(?<tag><\\/?[\\w:.-]+|\\/?>|<\\?xml|\\?>)', "g")
+};
+RX.typescript = RX.javascript; RX.kotlin = RX.java;
+const TYPED = new Set(["java","typescript","kotlin","go"]);
+function highlight(code, lang){
+  const re = RX[lang]; if (!re) return esc(code);
+  const kws = sets[lang] || new Set();
+  re.lastIndex = 0; let out = "", last = 0, m;
+  while ((m = re.exec(code))){
+    if (!m[0]) { re.lastIndex++; continue; }
+    out += esc(code.slice(last, m.index));
+    const g = m.groups || {}; let cls = null;
+    if (g.com !== undefined) {
+      cls = "com";
+      if (lang === "bash" && m.index > 0 && !/\s/.test(code[m.index-1])) cls = null;
+    }
+    else if (g.str !== undefined) cls = "str";
+    else if (g.ann !== undefined) cls = "ann";
+    else if (g.num !== undefined) cls = "num";
+    else if (g.tag !== undefined) cls = "kw";
+    else if (g.word !== undefined) {
+      if (kws.has(g.word)) cls = "kw";
+      else if (TYPED.has(lang) && /^[A-Z][a-z]/.test(g.word)) cls = "type";
+    }
+    out += cls ? '<span class="tk-' + cls + '">' + esc(m[0]) + '</span>' : esc(m[0]);
+    last = re.lastIndex;
+  }
+  return out + esc(code.slice(last));
+}
+$$("pre code[data-lang]").forEach(el => { el.innerHTML = highlight(el.textContent, el.dataset.lang); });
+
+/* ---------------- copy ---------------- */
+async function copyText(text){
+  try { await navigator.clipboard.writeText(text); return true; }
+  catch(e){
+    const ta = document.createElement("textarea"); ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select();
+    let ok = false; try { ok = document.execCommand("copy"); } catch(_){}
+    ta.remove(); return ok;
+  }
+}
+document.addEventListener("click", async e => {
+  const btn = e.target.closest(".copy"); if (!btn) return;
+  const code = btn.closest(".code").querySelector("pre").textContent;
+  const ok = await copyText(code);
+  btn.textContent = ok ? "Copied" : "Select and copy"; btn.classList.toggle("done", ok);
+  setTimeout(() => { btn.textContent = "Copy"; btn.classList.remove("done"); }, 1600);
+});
+
+/* ---------------- tabs ---------------- */
+document.addEventListener("click", e => {
+  const tab = e.target.closest(".tabs .tab"); if (!tab) return;
+  const wrap = tab.closest(".tabs");
+  $$(".tab", wrap).forEach(t => t.setAttribute("aria-selected", String(t === tab)));
+  $$(".tabpanel", wrap).forEach(p => p.hidden = p.id !== tab.getAttribute("aria-controls"));
+});
+document.addEventListener("keydown", e => {
+  const tab = e.target.closest && e.target.closest(".tablist .tab"); if (!tab) return;
+  if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+  const tabs = $$(".tab", tab.parentElement); const i = tabs.indexOf(tab);
+  const next = tabs[(i + (e.key === "ArrowRight" ? 1 : tabs.length - 1)) % tabs.length];
+  next.focus(); next.click();
+});
+
+/* ---------------- notes ---------------- */
+const NOTE = "javaprimer:notes:";
+$$(".notes[data-note]").forEach(box => {
+  const id = box.dataset.note;
+  box.innerHTML = '<label for="note-' + id + '"><span>Your notes</span><span class="status" aria-live="polite"></span></label><textarea id="note-' + id + '" placeholder="Anything you want to remember about this topic. Saved in this browser."></textarea>';
+  const ta = $("textarea", box), status = $(".status", box);
+  ta.value = store.get(NOTE + id) || "";
+  let timer;
+  ta.addEventListener("input", () => {
+    clearTimeout(timer); status.textContent = "Saving…";
+    timer = setTimeout(() => {
+      status.textContent = store.set(NOTE + id, ta.value) ? "Saved" : "Not saved: this browser blocks storage";
+    }, 400);
+  });
+});
+$("#exportNotes").addEventListener("click", async e => {
+  const data = {};
+  store.keys().filter(k => k.startsWith(NOTE)).forEach(k => { const v = store.get(k); if (v) data[k.slice(NOTE.length)] = v; });
+  const ok = await copyText(JSON.stringify(data, null, 2));
+  const b = e.currentTarget; const old = b.textContent;
+  b.textContent = ok ? "Copied " + Object.keys(data).length + " notes" : "Copy failed";
+  setTimeout(() => b.textContent = old, 1800);
+});
+$("#importNotes").addEventListener("click", () => {
+  let panel = $("#importPanel");
+  if (panel) { panel.remove(); return; }
+  panel = document.createElement("div"); panel.id = "importPanel"; panel.style.width = "100%";
+  panel.innerHTML = '<textarea aria-label="Paste exported notes JSON" style="width:100%;min-height:90px;border:1px solid var(--line);border-radius:7px;background:var(--bg);color:var(--ink);font:13px/1.4 var(--mono);padding:8px"></textarea><div style="display:flex;gap:8px;margin-top:6px"><button class="btn primary" type="button">Import</button><span class="hint" style="font-size:.8rem;color:var(--muted)"></span></div>';
+  $(".side-tools").appendChild(panel);
+  $("button", panel).addEventListener("click", () => {
+    const msg = $(".hint", panel);
+    try {
+      const data = JSON.parse($("textarea", panel).value);
+      let count = 0;
+      Object.entries(data).forEach(([k, v]) => {
+        if (typeof v !== "string") return;
+        store.set(NOTE + k, v); count++;
+        const ta = document.getElementById("note-" + k); if (ta) ta.value = v;
+      });
+      msg.textContent = "Imported " + count + " notes.";
+    } catch(err){ msg.textContent = "That isn't valid exported JSON."; }
+  });
+});
+
+/* ---------------- hero bytes ---------------- */
+const BYTE_TEXT = {
+  magic: "CA FE BA BE is the magic number. Every .class file starts with it so tools can recognize the format at a glance. It's been the same since Java 1.0.",
+  minor: "00 00 is the minor version. It's zero unless the class was compiled with preview features enabled, in which case it's FF FF and only that exact JDK will run it.",
+  major: "00 45 is the major version: 0x45 = 69, which means Java 25. Java 8 was 52, and it goes up by one each release. A JVM refuses classes newer than itself, which is what causes UnsupportedClassVersionError."
+};
+$$("#bytes .byte").forEach(b => {
+  const show = () => {
+    $$("#bytes .byte").forEach(x => x.classList.toggle("on", x.dataset.g === b.dataset.g));
+    $("#byteCaption").textContent = BYTE_TEXT[b.dataset.g];
+  };
+  b.addEventListener("click", show); b.addEventListener("mouseenter", show); b.addEventListener("focus", show);
+});
+
+/* ---------------- version timeline ---------------- */
+const VERSIONS = [
+  { v:"8", y:"2014", lts:true, items:["Lambdas and method references", "Streams API", "<code>Optional</code>", "<code>java.time</code> (finally, sane dates)", "Default methods on interfaces"] },
+  { v:"11", y:"2018", lts:true, items:["<code>var</code> for locals (10)", "Modules, <code>jshell</code>, <code>List.of</code>/<code>Map.of</code> (9)", "<code>HttpClient</code> with HTTP/2", "<code>String.isBlank</code>, <code>strip</code>, <code>lines</code>, <code>repeat</code>", "Run a single file with <code>java Foo.java</code>"] },
+  { v:"17", y:"2021", lts:true, items:["Records (16)", "Sealed classes and interfaces", "Text blocks (15)", "Switch expressions with arrows (14)", "Pattern matching for <code>instanceof</code> (16)", "Helpful NullPointerException messages (14)", "<code>Stream.toList()</code> (16)"] },
+  { v:"21", y:"2023", lts:true, items:["Virtual threads", "Pattern matching for <code>switch</code> and record patterns", "Sequenced collections: <code>getFirst</code>, <code>getLast</code>, <code>reversed</code>", "Generational ZGC"] },
+  { v:"25", y:"2025", lts:true, items:["Compact source files: <code>void main()</code> with no class, plus <code>IO.println</code>", "Module import declarations (<code>import module java.base;</code>)", "Flexible constructor bodies: code before <code>super(...)</code>", "Scoped values (replacement for many <code>ThreadLocal</code> uses)", "Also since 21: unnamed variables <code>_</code> (22), stream gatherers (24), Markdown doc comments (23), Foreign Function &amp; Memory API (22), multi-file <code>java Main.java</code> (22), virtual threads no longer pinned by <code>synchronized</code> (24)", "Compact object headers available as a product feature"] },
+  { v:"26", y:"Mar 2026", lts:false, items:["HTTP/3 support in <code>HttpClient</code>", "Warnings when deep reflection mutates <code>final</code> fields (preparing to make final mean final)", "Applet API removed", "Further rounds of the preview features listed under 27"] },
+  { v:"27", y:"Sep 2026", lts:false, items:["G1 is the default collector in every environment", "Compact object headers on by default (smaller heaps)", "Post-quantum hybrid key exchange for TLS 1.3 by default", "JFR redacts sensitive data in recordings", "Preview: structured concurrency (7th), lazy constants (3rd), primitive types in patterns (5th), PEM encodings (3rd); Vector API still incubating", "Next up: value objects (Project Valhalla) targeted as a preview in JDK 28"] }
+];
+const vWrap = $("#versions"), vOut = $("#versionOut");
+VERSIONS.forEach((ver, i) => {
+  const b = document.createElement("button");
+  b.className = "ver" + (ver.lts ? " lts" : ""); b.type = "button";
+  b.setAttribute("aria-pressed", "false");
+  b.innerHTML = "Java " + ver.v + "<small>" + ver.y + (ver.lts ? ", LTS" : "") + "</small>";
+  b.addEventListener("click", () => showVersion(i));
+  vWrap.appendChild(b);
+});
+function showVersion(i){
+  $$(".ver", vWrap).forEach((b, j) => b.setAttribute("aria-pressed", String(i === j)));
+  const ver = VERSIONS[i];
+  const later = VERSIONS.slice(i + 1).map(v => v.v).join(", ");
+  vOut.innerHTML = "<p style='margin:0 0 8px'><strong>Java " + ver.v + "</strong> added:</p><ul class='ver-list'>" + ver.items.map(x => "<li>" + x + "</li>").join("") + "</ul>" +
+    (later ? "<p style='margin:10px 0 0;color:var(--muted)'>Added in later releases: Java " + later + ".</p>" : "<p style='margin:10px 0 0;color:var(--muted)'>This is the newest release as of this guide.</p>");
+}
+showVersion(4);
+
+/* ---------------- pipeline ---------------- */
+const STAGES = [
+  { t:"Source", s:"App.java", d:"You write <code>.java</code> files. Nothing runs yet.", code:"static int add(int a, int b) {\n    return a + b;\n}" },
+  { t:"javac", s:"compile", d:"<code>javac</code> parses, type-checks, resolves overloads, and erases generics. Type errors stop here, before anything runs. TypeScript's <code>tsc</code> does the checking part but outputs JS; Python skips this step entirely.", code:"$ javac -d out App.java" },
+  { t:"Bytecode", s:".class", d:"The output is portable bytecode for a stack machine, not machine code. The same <code>.class</code> runs on any OS and CPU with a JVM. CPython also has bytecode (<code>.pyc</code>), but Java's is statically typed and verified.", code:"$ javap -c out/App.class\n  static int add(int, int);\n    Code:\n       0: iload_0\n       1: iload_1\n       2: iadd\n       3: ireturn" },
+  { t:"Load + verify", s:"class loader", d:"Classes load lazily, the first time something touches them. The verifier proves the bytecode is type-safe before it runs, so a corrupted or hostile class can't smash the stack." },
+  { t:"Interpret", s:"profile", d:"Bytecode starts running immediately in the interpreter, which is slow but has no warm-up delay. Meanwhile the JVM records profiles: which methods are hot, which branches are taken, which concrete types show up at each call site." },
+  { t:"JIT tier 1", s:"C1", d:"Methods that get called often are compiled quickly by C1 into native code with light optimization. This is why a Java service gets noticeably faster in its first seconds or minutes." },
+  { t:"JIT tier 2", s:"C2", d:"Very hot methods get recompiled by C2 using the profiles: aggressive inlining, escape analysis (allocating objects on the stack when they don't escape), and speculation such as \"this call site has only ever seen <code>ArrayList</code>\". If a speculation breaks, the JVM deoptimizes back to the interpreter and tries again. Go does all its optimizing ahead of time in <code>go build</code> and never revisits it; V8 does something very similar to this for JavaScript." }
+];
+let stageI = 0;
+const stagesEl = $("#stages");
+STAGES.forEach(st => { const d = document.createElement("div"); d.className = "stage"; d.innerHTML = "<b>" + st.t + "</b>" + st.s; stagesEl.appendChild(d); });
+function renderStage(){
+  $$(".stage", stagesEl).forEach((el, i) => { el.classList.toggle("on", i === stageI); el.classList.toggle("past", i < stageI); });
+  const st = STAGES[stageI];
+  $("#stageDetail").innerHTML = "<p style='margin:0'>" + st.d + "</p>" + (st.code ? "<pre>" + esc(st.code) + "</pre>" : "");
+  $("#stageCount").textContent = "Step " + (stageI + 1) + " of " + STAGES.length;
+  $("#stagePrev").disabled = stageI === 0;
+  $("#stageNext").textContent = stageI === STAGES.length - 1 ? "Start over" : "Next step";
+}
+$("#stagePrev").addEventListener("click", () => { if (stageI > 0) { stageI--; renderStage(); } });
+$("#stageNext").addEventListener("click", () => { stageI = stageI === STAGES.length - 1 ? 0 : stageI + 1; renderStage(); });
+renderStage();
+
+/* ---------------- integer cache ---------------- */
+const cacheN = $("#cacheN");
+function renderCache(){
+  const v = +cacheN.value; $("#cacheNOut").textContent = v;
+  const same = v >= -128 && v <= 127;
+  $("#cacheCode").innerHTML = highlight("Integer a = " + v + ";        // really Integer.valueOf(" + v + ")\nInteger b = " + v + ";\n\na == b        // " + same + "\na.equals(b)   // true", "java");
+  $("#cacheOut").innerHTML = same
+    ? "<span class='pill ok'>Same object</span> " + v + " is inside the cache range, so <code>valueOf</code> hands back the same cached <code>Integer</code> both times and <code>==</code> happens to be true. Tests with small numbers pass."
+    : "<span class='pill bad'>Different objects</span> " + v + " is outside -128 to 127, so each boxing creates a new object. <code>==</code> compares references and returns false. This is how a bug passes every test and fails in production with real IDs.";
+}
+cacheN.addEventListener("input", renderCache); renderCache();
+
+/* ---------------- collection chooser ---------------- */
+const Q = [
+  { id:"shape", label:"What are you storing?", opts:[["seq","A sequence"],["set","Unique items"],["map","Key → value"],["queue","Queue or stack"]] },
+  { id:"order", label:"Does order matter?", opts:[["any","No"],["ins","Insertion order"],["sorted","Sorted"]] },
+  { id:"conc", label:"Shared across threads?", opts:[["no","No"],["yes","Yes"]] }
+];
+const pick = { shape:"map", order:"any", conc:"no" };
+const R = {
+  "seq|any|no":     { c:"ArrayList", cost:"get/set O(1), add at end amortized O(1), insert/remove in middle O(n)", eq:"Python <code>list</code>, JS <code>Array</code>, Go slice" },
+  "seq|ins|no":     { c:"ArrayList", cost:"Lists always keep insertion order. Same costs as above.", eq:"Python <code>list</code>, JS <code>Array</code>, Go slice" },
+  "seq|sorted|no":  { c:"ArrayList + list.sort(cmp)", cost:"Sort once O(n log n), then <code>Collections.binarySearch</code> O(log n). If you need it sorted continuously, use a <code>TreeSet</code> or <code>PriorityQueue</code>.", eq:"<code>sorted()</code> / <code>bisect</code>, <code>arr.sort()</code>, <code>slices.Sort</code>" },
+  "seq|any|yes":    { c:"CopyOnWriteArrayList", cost:"Reads are lock-free; every write copies the whole array. Good for rarely-changing listener lists. For write-heavy work, use a <code>ConcurrentLinkedQueue</code> or guard an <code>ArrayList</code> with a lock.", eq:"No direct equivalent: Python's GIL, JS's single thread, Go's mutex + slice" },
+  "set|any|no":     { c:"HashSet", cost:"add/contains/remove O(1) average. Iteration order is unspecified.", eq:"Python <code>set</code>, JS <code>Set</code> (but JS keeps insertion order), Go <code>map[T]struct{}</code>" },
+  "set|ins|no":     { c:"LinkedHashSet", cost:"O(1) like HashSet, plus a linked list that remembers insertion order.", eq:"JS <code>Set</code>, Python <code>dict.fromkeys(...)</code>" },
+  "set|sorted|no":  { c:"TreeSet", cost:"O(log n) operations; also <code>first()</code>, <code>ceiling(x)</code>, <code>headSet</code>, range views.", eq:"Python <code>sortedcontainers.SortedSet</code>, no built-in in JS or Go" },
+  "set|any|yes":    { c:"ConcurrentHashMap.newKeySet()", cost:"O(1) average, safe for concurrent reads and writes without a global lock.", eq:"Go <code>sync.Map</code> used as a set" },
+  "set|sorted|yes": { c:"ConcurrentSkipListSet", cost:"O(log n), sorted and thread-safe.", eq:"No standard equivalent" },
+  "map|any|no":     { c:"HashMap", cost:"get/put O(1) average. Iteration order unspecified; may change between runs.", eq:"Python <code>dict</code> (but dict keeps insertion order), JS <code>Map</code>, Go <code>map</code>" },
+  "map|ins|no":     { c:"LinkedHashMap", cost:"O(1) like HashMap, iterates in insertion order. With <code>accessOrder=true</code> and <code>removeEldestEntry</code> it's a tiny LRU cache.", eq:"Python <code>dict</code>, JS <code>Map</code>" },
+  "map|sorted|no":  { c:"TreeMap", cost:"O(log n); <code>firstKey</code>, <code>floorEntry</code>, <code>subMap</code> for range queries. A red-black tree.", eq:"No built-in in Python, JS or Go" },
+  "map|any|yes":    { c:"ConcurrentHashMap", cost:"O(1) average, fine-grained locking. Use <code>compute</code>/<code>merge</code> for atomic updates rather than get-then-put.", eq:"Go <code>sync.Map</code> or map + <code>sync.RWMutex</code>" },
+  "map|sorted|yes": { c:"ConcurrentSkipListMap", cost:"O(log n), sorted, thread-safe.", eq:"No standard equivalent" },
+  "queue|any|no":   { c:"ArrayDeque", cost:"O(1) at both ends. <code>offer</code>/<code>poll</code> for FIFO, <code>push</code>/<code>pop</code> for LIFO. Faster than <code>LinkedList</code> and <code>Stack</code>.", eq:"Python <code>collections.deque</code>, JS array <code>push</code>/<code>shift</code>, Go slice or <code>container/list</code>" },
+  "queue|sorted|no":{ c:"PriorityQueue", cost:"offer/poll O(log n), peek O(1). A binary min-heap; pass a <code>Comparator</code> for max-heap or custom order.", eq:"Python <code>heapq</code>, Go <code>container/heap</code>" },
+  "queue|any|yes":  { c:"LinkedBlockingQueue / ArrayBlockingQueue", cost:"<code>put</code> blocks when full, <code>take</code> blocks when empty: a producer-consumer pipe. <code>ArrayBlockingQueue</code> is bounded.", eq:"Go buffered <code>chan</code>, Python <code>queue.Queue</code>" },
+  "queue|sorted|yes":{ c:"PriorityBlockingQueue", cost:"Heap ordering plus blocking <code>take</code>. Unbounded.", eq:"Python <code>queue.PriorityQueue</code>" }
+};
+const chooser = $("#chooser");
+Q.forEach(q => {
+  const fs = document.createElement("fieldset");
+  fs.innerHTML = "<legend>" + q.label + "</legend><div class='seg'>" + q.opts.map(o => "<button type='button' class='btn' data-q='" + q.id + "' data-v='" + o[0] + "'>" + o[1] + "</button>").join("") + "</div>";
+  chooser.appendChild(fs);
+});
+chooser.addEventListener("click", e => { const b = e.target.closest("button[data-q]"); if (!b) return; pick[b.dataset.q] = b.dataset.v; renderChoice(); });
+function renderChoice(){
+  $$("button[data-q]", chooser).forEach(b => b.setAttribute("aria-pressed", String(pick[b.dataset.q] === b.dataset.v)));
+  let order = pick.order;
+  if (pick.shape === "queue" && order === "ins") order = "any";
+  let key = pick.shape + "|" + order + "|" + pick.conc;
+  let note = "";
+  if (pick.conc === "yes" && order === "ins") {
+    key = pick.shape + "|any|yes";
+    if (pick.shape === "map" || pick.shape === "set") note = "<p style='margin:8px 0 0;color:var(--muted)'>There's no concurrent insertion-ordered " + pick.shape + " in the JDK. Common fixes: guard a " + (pick.shape === "map" ? "<code>LinkedHashMap</code>" : "<code>LinkedHashSet</code>") + " with a lock, or keep a separate sequence number.</p>";
+  }
+  if (pick.shape === "seq" && pick.conc === "yes" && order === "sorted") {
+    key = "seq|any|yes";
+    note = "<p style='margin:8px 0 0;color:var(--muted)'>For sorted and concurrent, a list is the wrong shape: use <code>ConcurrentSkipListSet</code> (unique items) or <code>PriorityBlockingQueue</code> (duplicates allowed).</p>";
+  }
+  if (pick.shape === "queue" && pick.order === "ins") note = "<p style='margin:8px 0 0;color:var(--muted)'>Queues are ordered by definition (FIFO or LIFO).</p>";
+  const r = R[key];
+  $("#choiceOut").innerHTML = "<div class='cls'>" + r.c + "</div><p style='margin:6px 0 0'>" + r.cost + "</p><p style='margin:6px 0 0'><strong>Equivalents:</strong> " + r.eq + "</p>" + note +
+    "<p style='margin:8px 0 0;color:var(--muted)'>Declare it by its interface: <code>" + ({seq:"List", set:"Set", map:"Map", queue:"Queue"})[pick.shape] + "&lt;…&gt; x = " + (r.c.includes("newKeySet") ? "ConcurrentHashMap.newKeySet()" : "new " + r.c.split(" ")[0] + "&lt;&gt;()") + ";</code></p>";
+}
+renderChoice();
+
+/* ---------------- exception tree ---------------- */
+const EX = { n:"Throwable", k:"neutral", d:"The root of everything throwable. Never catch it directly.", c:[
+  { n:"Error", k:"neutral", d:"Serious JVM problems you can't sensibly recover from. Unchecked. Let them crash the process (or the request) and fix the cause.", c:[
+    { n:"OutOfMemoryError", k:"neutral", d:"Heap (or metaspace, or native memory) exhausted. Look for leaks or raise <code>-Xmx</code>." },
+    { n:"StackOverflowError", k:"neutral", d:"Recursion too deep. Java has no tail-call optimization, same as Python and Go." }
+  ]},
+  { n:"Exception", k:"checked", d:"Checked, along with every subclass that isn't a RuntimeException. The compiler makes callers catch it or declare <code>throws</code>.", c:[
+    { n:"IOException", k:"checked", d:"Anything file- or network-related: <code>Files.readString</code>, <code>HttpClient.send</code>, sockets. The checked exception you'll see most. Subclasses include <code>FileNotFoundException</code> and <code>NoSuchFileException</code>. Wrap one in <code>UncheckedIOException</code> when you must throw from a lambda.", c:[
+      { n:"NoSuchFileException", k:"checked", d:"From <code>java.nio.file.Files</code> when a path doesn't exist. Python's <code>FileNotFoundError</code>, Go's <code>fs.ErrNotExist</code>." }
+    ]},
+    { n:"InterruptedException", k:"checked", d:"Thrown by blocking calls (<code>sleep</code>, <code>join</code>, <code>Future.get</code>, <code>BlockingQueue.take</code>) when the thread is asked to stop. It's Java's cancellation signal, like a cancelled Go <code>context</code>. Rethrow it, or restore the flag with <code>Thread.currentThread().interrupt()</code>." },
+    { n:"RuntimeException", k:"unchecked", d:"Unchecked: no <code>throws</code> needed. Represents programming errors and most modern custom exceptions. This is the whole hierarchy Python and JS give you.", c:[
+      { n:"NullPointerException", k:"unchecked", d:"Dereferenced <code>null</code>. JS's \"Cannot read properties of undefined\", Python's <code>AttributeError: 'NoneType'</code>, Go's nil pointer panic." },
+      { n:"IllegalArgumentException", k:"unchecked", d:"Caller passed a bad value. Python's <code>ValueError</code>. <code>NumberFormatException</code> is a subclass." },
+      { n:"IllegalStateException", k:"unchecked", d:"The object isn't in a state where this call makes sense (e.g. using a closed resource)." },
+      { n:"IndexOutOfBoundsException", k:"unchecked", d:"Bad index into a list, array or string. Python's <code>IndexError</code>, Go's index-out-of-range panic. JS silently returns <code>undefined</code>." },
+      { n:"ClassCastException", k:"unchecked", d:"A cast failed at runtime. TypeScript casts are never checked; Java's always are." },
+      { n:"UnsupportedOperationException", k:"unchecked", d:"Most often: calling <code>add</code> on an immutable list from <code>List.of</code> or <code>toList()</code>." },
+      { n:"ConcurrentModificationException", k:"unchecked", d:"A collection changed while being iterated. Usually single-threaded: removing inside a for-each." }
+    ]}
+  ]}
+]};
+function exNode(node){
+  return "<li><button type='button' class='exbtn " + node.k + "' data-d=\"" + encodeURIComponent(node.d) + "\" data-k='" + node.k + "'>" + node.n + "</button>" +
+    (node.c ? "<ul>" + node.c.map(exNode).join("") + "</ul>" : "") + "</li>";
+}
+$("#exTree").innerHTML = "<ul>" + exNode(EX) + "</ul>";
+$("#exTree").addEventListener("click", e => {
+  const b = e.target.closest(".exbtn"); if (!b) return;
+  $$(".exbtn", $("#exTree")).forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+  const tag = b.dataset.k === "checked" ? "<span class='pill bad'>Checked</span>" : b.dataset.k === "unchecked" ? "<span class='pill ok'>Unchecked</span>" : "<span class='pill'>Don't catch</span>";
+  $("#exOut").innerHTML = tag + " <strong style='font-family:var(--mono)'>" + b.textContent + "</strong>: " + decodeURIComponent(b.dataset.d);
+});
+$("#exTree .exbtn").click();
+
+/* ---------------- access grid ---------------- */
+const ACC = [
+  { m:"private", r:[1,0,0,0,0], d:"Only code inside the same top-level class (nested classes included). Go has nothing this narrow; it's like a JS <code>#private</code> field or TS <code>private</code>, except enforced by the compiler and JVM." },
+  { m:"(no modifier)", r:[1,1,0,0,0], d:"Package-private, the default. Visible to every class in the same package and nothing else. This is exactly Go's lowercase names. Use it far more than you think." },
+  { m:"protected", r:[1,1,1,0,0], d:"Package-private plus subclasses in other packages. Surprising part: anything in the same package can also use it." },
+  { m:"public", r:[1,1,1,1,"x"], d:"Everyone, provided they can see the package. In a modular app, a public class in a package that isn't exported is still invisible to other modules, like Go's <code>internal/</code>." }
+];
+const COLS = ["Same class", "Same package", "Subclass, other package", "Any other package", "Another module"];
+let accSel = 1, exported = true;
+function renderAccess(){
+  const t = $("#accessTable");
+  t.innerHTML = "<thead><tr><th>Modifier</th>" + COLS.map(c => "<th>" + c + "</th>").join("") + "</tr></thead><tbody>" +
+    ACC.map((a, i) => "<tr data-i='" + i + "' tabindex='0' class='" + (i === accSel ? "sel" : "") + "'><td><code>" + a.m + "</code></td>" +
+      a.r.map(v => { const y = v === "x" ? exported : !!v; return "<td class='" + (y ? "y" : "n") + "'>" + (y ? "Yes" : "No") + "</td>"; }).join("") + "</tr>").join("") + "</tbody>";
+  $("#accessOut").innerHTML = ACC[accSel].d + (accSel === 3 ? (exported ? " The package is exported, so other modules see it." : " <strong>The package isn't exported, so other modules can't see it even though it's public.</strong>") : "");
+  $("#exportToggle").setAttribute("aria-pressed", String(exported));
+  $("#exportToggle").textContent = exported ? "Package is exported" : "Package is not exported";
+}
+$("#accessTable").addEventListener("click", e => { const tr = e.target.closest("tr[data-i]"); if (tr) { accSel = +tr.dataset.i; renderAccess(); } });
+$("#accessTable").addEventListener("keydown", e => { const tr = e.target.closest("tr[data-i]"); if (tr && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); accSel = +tr.dataset.i; renderAccess(); $("tr[data-i='" + accSel + "']").focus(); } });
+$("#exportToggle").addEventListener("click", () => { exported = !exported; accSel = 3; renderAccess(); });
+renderAccess();
+
+/* ---------------- virtual threads sim ---------------- */
+const VT = { mode:"platform", tick:0, tasks:[], workers:[], queue:[], parked:[], blocked:0, timer:null };
+function vtReset(){
+  clearInterval(VT.timer); VT.timer = null; $("#vtPlay").textContent = "Play";
+  VT.tick = 0; VT.blocked = 0;
+  VT.tasks = Array.from({length:12}, (_, i) => ({ id:i+1, phase:"new", rem:0, parkTick:0 }));
+  VT.queue = VT.tasks.slice(); VT.workers = [null, null, null, null]; VT.parked = [];
+  vtRender();
+}
+const vtDone = () => VT.tasks.every(t => t.phase === "done");
+function vtStep(){
+  if (vtDone()) return;
+  VT.tick++;
+  VT.workers.forEach((w, i) => {
+    if (!w && VT.queue.length){
+      const t = VT.queue.shift();
+      if (t.phase === "new") { t.phase = "cpu1"; t.rem = 1; } else if (t.phase === "ready") { t.phase = "cpu2"; t.rem = 1; }
+      VT.workers[i] = t;
+    }
+  });
+  VT.workers.forEach((t, i) => {
+    if (!t) return;
+    if (t.phase === "io"){                       // platform mode only: the OS thread sits blocked
+      VT.blocked++; t.rem--;
+      if (t.rem === 0) { t.phase = "cpu2"; t.rem = 1; }
+      return;
+    }
+    t.rem--;
+    if (t.rem > 0) return;
+    if (t.phase === "cpu1"){
+      t.phase = "io"; t.rem = 4;
+      if (VT.mode === "virtual"){ VT.workers[i] = null; t.parkTick = VT.tick; VT.parked.push(t); }
+    } else { t.phase = "done"; VT.workers[i] = null; }
+  });
+  if (VT.mode === "virtual"){
+    VT.parked = VT.parked.filter(t => {
+      if (t.parkTick >= VT.tick) return true;
+      t.rem--;
+      if (t.rem === 0) { t.phase = "ready"; VT.queue.push(t); return false; }
+      return true;
+    });
+  }
+  vtRender();
+  if (vtDone() && VT.timer){ clearInterval(VT.timer); VT.timer = null; $("#vtPlay").textContent = "Play"; }
+}
+function vtRender(){
+  const virt = VT.mode === "virtual";
+  $("#vtLanes").innerHTML = VT.workers.map((t, i) => {
+    let cls = "slot", txt = virt ? "idle" : "idle";
+    if (t){
+      if (t.phase === "io") { cls += " blocked"; txt = "T" + t.id + " blocked on I/O"; }
+      else { cls += " busy"; txt = "T" + t.id + (t.phase === "cpu1" ? " computing (start)" : " computing (finish)"); }
+    }
+    return "<div class='lane'><span>" + (virt ? "Carrier " : "OS thread ") + (i + 1) + "</span><div class='" + cls + "'>" + txt + "</div></div>";
+  }).join("");
+  $("#vtTasks").innerHTML = VT.tasks.map(t => {
+    const onWorker = VT.workers.includes(t);
+    let cls = "task", label = "queued";
+    if (t.phase === "done") { cls += " done"; label = "done"; }
+    else if (t.phase === "io") { cls += " io"; label = onWorker ? "blocking a thread" : "parked, waiting"; }
+    else if (onWorker) { cls += " run"; label = "running"; }
+    else if (t.phase === "ready") label = "ready to resume";
+    return "<span class='" + cls + "' title='" + label + "'>T" + t.id + " " + label + "</span>";
+  }).join("");
+  const done = VT.tasks.filter(t => t.phase === "done").length;
+  let msg = "<span class='stat'>Tick " + VT.tick + "</span>, <span class='stat'>" + done + "/12 done</span>. " +
+    (virt ? "When a virtual thread blocks, the JVM unmounts it and the carrier picks up another task." : "OS-thread time wasted blocked so far: <span class='stat'>" + VT.blocked + " ticks</span>.");
+  if (vtDone()){
+    msg = virt
+      ? "<span class='pill ok'>Finished in " + VT.tick + " ticks</span> The carriers never sat idle while work was waiting. The code you'd write is identical blocking code; only the executor changed."
+      : "<span class='pill bad'>Finished in " + VT.tick + " ticks</span> The four threads spent " + VT.blocked + " thread-ticks blocked on I/O doing nothing. With platform threads, the fix used to be a bigger pool (memory-hungry) or async callbacks (hard to read). Now switch to virtual threads.";
+  }
+  $("#vtOut").innerHTML = msg;
+}
+function vtSetMode(m){
+  VT.mode = m;
+  $("#vtModePlatform").setAttribute("aria-pressed", String(m === "platform"));
+  $("#vtModeVirtual").setAttribute("aria-pressed", String(m === "virtual"));
+  vtReset();
+}
+$("#vtModePlatform").addEventListener("click", () => vtSetMode("platform"));
+$("#vtModeVirtual").addEventListener("click", () => vtSetMode("virtual"));
+$("#vtStep").addEventListener("click", vtStep);
+$("#vtReset").addEventListener("click", vtReset);
+$("#vtPlay").addEventListener("click", () => {
+  if (VT.timer){ clearInterval(VT.timer); VT.timer = null; $("#vtPlay").textContent = "Play"; return; }
+  if (vtDone()) vtReset();
+  VT.timer = setInterval(vtStep, 500); $("#vtPlay").textContent = "Pause";
+});
+vtReset();
+
+/* ---------------- memory stepper ---------------- */
+const MEM_SRC = [
+  "void main() {",
+  "    int count = 3;",
+  "    Point p = new Point(1, 2);",
+  "    Point q = p;",
+  "    q.x = 9;",
+  "    int copy = count; copy++;",
+  "    move(p);",
+  "    p = null; q = null;",
+  "}",
+  "void move(Point pt) {",
+  "    pt.y = 7;",
+  "    pt = new Point(0, 0);",
+  "}"
+];
+const R1 = "<span class='ref c1'>→ @1</span>", R2 = "<span class='ref c2'>→ @2</span>", NUL = "<span style='color:var(--muted)'>null</span>";
+const MEM = [
+  { l:1, f:[["main()", [["count","3"]]]], h:[], ch:["count"], m:"A primitive. The value 3 lives directly in <code>main</code>'s stack frame. No object, nothing for the GC to do." },
+  { l:2, f:[["main()", [["count","3"],["p",R1]]]], h:[["@1","Point{x=1, y=2}","c1"]], ch:["p","@1"], m:"<code>new</code> allocates an object on the heap. <code>p</code> holds a reference to it, not the object itself." },
+  { l:3, f:[["main()", [["count","3"],["p",R1],["q",R1]]]], h:[["@1","Point{x=1, y=2}","c1"]], ch:["q"], m:"Assignment copies the <em>reference</em>. Two names, one Point. In Go, <code>q := p</code> on a struct would copy the whole struct; Java has no way to do that implicitly." },
+  { l:4, f:[["main()", [["count","3"],["p",R1],["q",R1]]]], h:[["@1","Point{x=9, y=2}","c1"]], ch:["@1"], m:"Mutating through <code>q</code> changes the one shared object, so <code>p.x</code> is 9 too. This is why immutable records matter." },
+  { l:5, f:[["main()", [["count","3"],["p",R1],["q",R1],["copy","4"]]]], h:[["@1","Point{x=9, y=2}","c1"]], ch:["copy"], m:"Primitives copy the value. Incrementing <code>copy</code> leaves <code>count</code> at 3." },
+  { l:9, f:[["main()", [["count","3"],["p",R1],["q",R1],["copy","4"]]],["move(pt)", [["pt",R1]]]], h:[["@1","Point{x=9, y=2}","c1"]], ch:["pt"], m:"Calling <code>move(p)</code> pushes a new frame and copies <code>p</code>'s value into the parameter <code>pt</code>. Java is always pass-by-value; here the value happens to be a reference." },
+  { l:10, f:[["main()", [["count","3"],["p",R1],["q",R1],["copy","4"]]],["move(pt)", [["pt",R1]]]], h:[["@1","Point{x=9, y=7}","c1"]], ch:["@1"], m:"Mutating the object through <code>pt</code> is visible to the caller, because it's the same object." },
+  { l:11, f:[["main()", [["count","3"],["p",R1],["q",R1],["copy","4"]]],["move(pt)", [["pt",R2]]]], h:[["@1","Point{x=9, y=7}","c1"],["@2","Point{x=0, y=0}","c2"]], ch:["pt","@2"], m:"Reassigning <code>pt</code> only changes the method's local copy of the reference. <code>main</code>'s <code>p</code> still points at @1. You can't write a Java <code>swap(a, b)</code> for this reason." },
+  { l:12, f:[["main()", [["count","3"],["p",R1],["q",R1],["copy","4"]]]], h:[["@1","Point{x=9, y=7}","c1"],["@2","Point{x=0, y=0}","c2",true]], ch:[], m:"<code>move</code> returns and its frame disappears. Nothing references @2 anymore, so it's garbage. It isn't freed right now; the collector will reclaim it whenever it next runs." },
+  { l:7, f:[["main()", [["count","3"],["p",NUL],["q",NUL],["copy","4"]]]], h:[["@1","Point{x=9, y=7}","c1",true]], ch:["p","q"], m:"With both references cleared, @1 is unreachable too (and @2 is already collected). The GC traces from roots, meaning stack variables, static fields and live threads, and frees everything it can't reach. No reference counts, no <code>free()</code>, and cycles are no problem." }
+];
+let memI = 0;
+function renderMem(){
+  const s = MEM[memI];
+  $("#memSrc").innerHTML = MEM_SRC.map((ln, i) => "<span class='ln" + (i === s.l ? " cur" : "") + "'>" + (highlight(ln, "java") || " ") + "</span>").join("");
+  $("#memStack").innerHTML = s.f.map(fr => "<div class='frame'><div class='fname'>" + fr[0] + "</div>" + fr[1].map(v => "<div class='var" + (s.ch.includes(v[0]) && fr === s.f[s.f.length-1] || (s.ch.includes(v[0]) && fr[0]==="main()" && s.f.length===1) ? " changed" : "") + "'><span>" + v[0] + "</span><span>" + v[1] + "</span></div>").join("") + "</div>").reverse().join("");
+  $("#memHeap").innerHTML = s.h.length ? s.h.map(o => "<div class='obj" + (o[3] ? " garbage" : "") + (s.ch.includes(o[0]) ? " changed" : "") + "'><span class='ref " + o[2] + "'>" + o[0] + "</span> " + o[1] + (o[3] ? "<br><small>unreachable</small>" : "") + "</div>").join("") : "<p class='hint' style='margin:0'>Empty</p>";
+  $("#memOut").innerHTML = s.m;
+  $("#memCount").textContent = "Step " + (memI + 1) + " of " + MEM.length;
+  $("#memPrev").disabled = memI === 0;
+  $("#memNext").textContent = memI === MEM.length - 1 ? "Start over" : "Next line";
+}
+$("#memPrev").addEventListener("click", () => { if (memI > 0) { memI--; renderMem(); } });
+$("#memNext").addEventListener("click", () => { memI = memI === MEM.length - 1 ? 0 : memI + 1; renderMem(); });
+renderMem();
+
+/* ---------------- coming from X ---------------- */
+const CF = {
+  Python: [
+    ["Typing", "Static, nominal, checked by <code>javac</code> and the JVM", "Dynamic; type hints checked only by mypy/pyright", "Type hints become mandatory, and they're enforced. No duck typing: declare <code>implements</code>."],
+    ["Running code", "<code>java App.java</code> or build a jar with Maven/Gradle", "<code>python app.py</code>", "Scripts are fine with the source launcher; real projects need a build tool."],
+    ["Absence", "<code>null</code>, <code>Optional&lt;T&gt;</code> for returns", "<code>None</code>, <code>Optional[T]</code> hints", "Same idea, but <code>map.get</code> returns <code>null</code> instead of raising <code>KeyError</code>."],
+    ["Errors", "Exceptions; checked ones in signatures", "Exceptions, all unchecked", "<code>raise X from e</code> becomes <code>new X(msg, e)</code>. Expect to declare or catch <code>IOException</code>."],
+    ["Integers", "Fixed-width <code>int</code>/<code>long</code>, overflow wraps", "Arbitrary precision", "Reach for <code>long</code>, <code>Math.addExact</code>, or <code>BigInteger</code>."],
+    ["Data classes", "<code>record</code>", "<code>@dataclass(frozen=True)</code>", "Records are always immutable and get <code>equals</code>/<code>hashCode</code>/<code>toString</code>."],
+    ["Pattern matching", "<code>switch</code> with type and record patterns", "<code>match</code>/<code>case</code>", "Very similar, plus compile-time exhaustiveness over sealed types."],
+    ["Comprehensions", "Streams", "List/dict comprehensions, generators", "Streams are lazy like generators. <code>.toList()</code> to materialize."],
+    ["Concurrency", "Real parallel threads; virtual threads for I/O", "GIL (free-threaded build is optional); asyncio", "No <code>async</code>/<code>await</code>; you need locks or concurrent collections for shared state."],
+    ["Equality", "<code>equals()</code> for value, <code>==</code> for identity", "<code>==</code> for value, <code>is</code> for identity", "Reversed: <code>==</code> in Java behaves like Python's <code>is</code>."],
+    ["Visibility", "Enforced <code>private</code>/package/<code>protected</code>/<code>public</code>", "Convention: <code>_name</code>", "Privacy is real and checked."],
+    ["Packages", "Maven Central via Maven/Gradle", "PyPI via pip/uv/poetry", "<code>pom.xml</code> ≈ <code>pyproject.toml</code>; no virtualenvs, the build tool isolates deps."],
+    ["Formatting", "google-java-format / Palantir via Spotless", "Black, Ruff", "Same philosophy; just not built in."]
+  ],
+  JavaScript: [
+    ["Typing", "Static, nominal", "Dynamic", "Every variable has one type forever. Variables are block-scoped like <code>let</code>."],
+    ["Runtime", "JVM: multithreaded, JIT-compiled", "V8 etc.: single-threaded event loop, JIT", "Code really runs in parallel. Shared mutable state needs synchronization."],
+    ["Async", "Blocking calls on virtual threads; <code>CompletableFuture</code> for composition", "Promises, <code>async</code>/<code>await</code>", "Write straight-line blocking code. <code>CompletableFuture</code> ≈ Promise if you need it."],
+    ["Absence", "<code>null</code> only", "<code>null</code> and <code>undefined</code>", "No <code>?.</code> or <code>??</code>. Use <code>Optional</code>, <code>Objects.requireNonNullElse</code>."],
+    ["Numbers", "<code>int</code>, <code>long</code>, <code>double</code>, <code>BigDecimal</code>…", "One <code>number</code> (double) + <code>BigInt</code>", "Integer division truncates: <code>7/2 == 3</code>."],
+    ["Objects", "Classes, records; no object literals", "Object literals, prototypes", "Use a <code>record</code> where you'd write <code>{ name, email }</code>."],
+    ["Functions", "Lambdas implement functional interfaces", "First-class functions", "Call with <code>f.apply(x)</code>, not <code>f(x)</code>. Closures capture effectively-final values only."],
+    ["Collections", "<code>List</code>, <code>Map</code>, <code>Set</code> interfaces", "Array, Map, Set", "No literals; <code>List.of</code>/<code>Map.of</code>. Streams are lazy, unlike <code>Array.map</code>."],
+    ["Errors", "Typed exceptions; checked ones in signatures", "Throw anything", "Catch by type, multiple <code>catch</code> blocks, <code>finally</code> and try-with-resources."],
+    ["Modules", "Packages (directories) + <code>import</code> of types", "ES modules (files) + <code>export</code>", "Visibility uses keywords, not exports; default is package-wide."],
+    ["Strings", "UTF-16 like JS; no interpolation", "Template literals", "<code>\"%s\".formatted(x)</code> or <code>+</code>. Compare with <code>equals</code>."],
+    ["Packages", "Maven Central", "npm", "<code>pom.xml</code> ≈ <code>package.json</code>; no <code>node_modules</code> folder, jars cached in <code>~/.m2</code>."]
+  ],
+  TypeScript: [
+    ["Type compatibility", "Nominal: must declare <code>implements</code>", "Structural: shape is enough", "The biggest adjustment. Adapters or lambdas bridge third-party types."],
+    ["Runtime types", "Enforced by the JVM; casts checked", "Erased; casts are unchecked assertions", "A bad cast throws <code>ClassCastException</code> instead of silently lying."],
+    ["Generics", "Erased, with use-site variance (<code>? extends</code>)", "Erased, structural, inferred variance", "Similar erasure. No conditional or mapped types; Java's type system is much less expressive."],
+    ["Unions", "Sealed interfaces + records", "Union types, discriminated unions", "Name each variant as a record; <code>switch</code> is exhaustive like a TS <code>never</code> check."],
+    ["Null safety", "None built in; JSpecify + NullAway", "<code>strictNullChecks</code>", "Add NullAway to get close to the TS experience."],
+    ["Readonly", "<code>final</code> fields, records, <code>List.copyOf</code>", "<code>readonly</code>, <code>ReadonlyArray</code>", "Immutable collections aren't a separate type; misuse fails at runtime."],
+    ["Overloading", "Real overloads chosen by static type", "One implementation, many signatures", "Overloads are separate methods; common substitute for default params."],
+    ["Enums", "Full classes with fields and methods", "Numeric/string enums or unions", "Java enums are much richer; use them freely."],
+    ["Async", "Virtual threads, blocking style", "Promises", "No function coloring. CPU work runs in parallel too."],
+    ["Decorators vs annotations", "Annotations are metadata read by tools/frameworks", "Decorators wrap behavior at runtime", "An annotation does nothing by itself; a processor or framework must read it."],
+    ["Tooling", "javac + Maven/Gradle + IDE", "tsc + npm + bundler", "One compile step to bytecode; no bundling. IntelliJ is to Java what VS Code is to TS."]
+  ],
+  Go: [
+    ["Interfaces", "Nominal, declared with <code>implements</code>; default methods", "Structural, implicit", "You can't retrofit an interface onto someone else's type."],
+    ["Value semantics", "Everything non-primitive is a reference", "Structs are values; pointers explicit", "Assignment shares the object. Make records immutable to get value-like safety."],
+    ["Errors", "Exceptions (checked + unchecked)", "<code>error</code> return values", "No <code>if err != nil</code>. Use sealed result types when you want errors as values."],
+    ["Concurrency", "Virtual threads, executors, <code>BlockingQueue</code>", "Goroutines, channels, <code>select</code>", "Virtual threads ≈ goroutines. No channels or <code>select</code> in the stdlib."],
+    ["Cancellation", "Interruption, structured concurrency (preview), <code>ScopedValue</code>", "<code>context.Context</code>", "Handle <code>InterruptedException</code> properly; there's no context parameter convention."],
+    ["Cleanup", "try-with-resources, <code>finally</code>", "<code>defer</code>", "Resources implement <code>AutoCloseable</code>; open them in the <code>try (...)</code> header."],
+    ["Generics", "Erased; no primitive type args", "Reified; type sets", "<code>List&lt;int&gt;</code> isn't allowed; use <code>List&lt;Integer&gt;</code> or <code>int[]</code>."],
+    ["Inheritance", "Single class inheritance + interfaces", "Embedding only", "Prefer composition, as in Go. Inheritance exists but use it sparingly."],
+    ["Multiple returns", "Return a record", "Native", "<code>record Pair(A a, B b)</code> is cheap and named."],
+    ["Visibility", "Keywords; package-private default", "Capitalization", "Package-private = lowercase. <code>public</code> = Capitalized. Unexported module packages ≈ <code>internal/</code>."],
+    ["Build output", "Jar of bytecode; needs a JVM (or GraalVM native image)", "Single static binary", "Ship a container with a JRE, or use <code>jlink</code> to build a slim runtime."],
+    ["Tooling", "Pick: formatter, linter, test framework", "<code>gofmt</code>, <code>go vet</code>, <code>go test</code> built in", "Wire Spotless, Error Prone and JUnit into the build once per project."],
+    ["Zero values", "Fields default to 0/false/null; locals must be assigned", "Everything has a zero value", "Uninitialized local use is a compile error."]
+  ]
+};
+let cfLang = "Python";
+const cfTabs = $("#cfTabs");
+Object.keys(CF).forEach(lang => {
+  const b = document.createElement("button"); b.className = "tab"; b.type = "button"; b.setAttribute("role", "tab"); b.textContent = lang;
+  b.style.borderBottomColor = "var(--line)"; b.style.borderRadius = "8px";
+  b.addEventListener("click", () => { cfLang = lang; renderCF(); });
+  cfTabs.appendChild(b);
+});
+function renderCF(){
+  $$(".tab", cfTabs).forEach(b => b.setAttribute("aria-selected", String(b.textContent === cfLang)));
+  $("#cfTable").innerHTML = "<thead><tr><th>Topic</th><th>Java</th><th>" + cfLang + "</th><th>Key difference</th></tr></thead><tbody>" +
+    CF[cfLang].map(r => "<tr><td><strong>" + r[0] + "</strong></td><td>" + r[1] + "</td><td>" + r[2] + "</td><td>" + r[3] + "</td></tr>").join("") + "</tbody>";
+}
+renderCF();
+})();
+</script>
+<script type="module" src="../explainer.js"></script>
+</body>
+</html>

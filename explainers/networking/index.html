@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- Theme: light by default, applied before first paint. Same key as the rest of the
+     site, so the choice made on the home page carries here and back. -->
+<script>
+  (function () {
+    var KEY = 'theme';
+    var DEFAULT = 'light';
+    function apply(choice) {
+      document.documentElement.setAttribute('data-theme', choice);
+    }
+    function stored() {
+      try {
+        var v = localStorage.getItem(KEY);
+        return v === 'light' || v === 'dark' ? v : null;
+      } catch (e) {
+        return null;
+      }
+    }
+    apply(stored() || DEFAULT);
+    window.setTheme = function (choice) {
+      apply(choice);
+      try {
+        localStorage.setItem(KEY, choice);
+      } catch (e) {}
+    };
+  })();
+</script>
+<link rel="stylesheet" href="../../css/tokens.css">
+<title>How things connect — Alex McIvor</title>
+<meta name="description" content="A field guide to network protocols: the layers that wrap every request, the handshakes, real-time options, and which to choose.">
+<style>
+/* Palette: mapped onto Cream & Ink (../../css/tokens.css, ../explainer.css). One colour
+   per layer of the stack, from link (ochre) up to application (clay). */
+:root{
+  --bg:var(--paper); --surface:var(--paper-raised); --surface2:var(--paper-sunken); --muted:var(--ink-muted); --line:var(--paper-line);
+  --app:var(--cat-clay); --sec:var(--cat-plum); --transport:var(--cat-slate); --internet:var(--cat-sage); --link:var(--cat-ochre); --bad:var(--clay-strong);
+  --app-bg:var(--cat-clay-tint); --sec-bg:var(--cat-plum-tint); --transport-bg:var(--cat-slate-tint); --internet-bg:var(--cat-sage-tint); --link-bg:var(--cat-ochre-tint);
+  --sans:var(--font-sans);
+  --mono:var(--font-mono);
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 64px); scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto} *{animation:none!important; transition:none!important}}
+body{margin:0; background:var(--bg); color:var(--ink); font:17px/1.6 var(--sans); -webkit-font-smoothing:antialiased}
+body::before{content:""; position:fixed; inset:0 0 auto; height:env(safe-area-inset-top,0px); z-index:10; background:var(--surface)}
+a{color:var(--clay)}
+button{font:inherit; color:inherit}
+:focus-visible{outline:2px solid var(--clay); outline-offset:2px; border-radius:4px}
+code,.mono{font-family:var(--mono); font-size:.88em}
+
+/* top bar */
+.top{position:sticky; top:env(safe-area-inset-top,0px); z-index:9; background:var(--surface); border-bottom:1px solid var(--line)}
+.top-in{max-width:1180px; margin:0 auto; display:flex; align-items:center; gap:16px; padding:10px 20px}
+.brand{font-weight:700; letter-spacing:-.01em; white-space:nowrap; display:flex; align-items:center; gap:8px}
+.wire{display:inline-flex; gap:2px}
+.wire i{width:4px; height:16px; border-radius:2px; display:block}
+.top nav{display:flex; gap:4px; overflow-x:auto; scrollbar-width:none; flex:1}
+.top nav::-webkit-scrollbar{display:none}
+.top nav a{color:var(--muted); text-decoration:none; font-size:14px; padding:6px 10px; border-radius:6px; white-space:nowrap}
+.top nav a:hover{color:var(--ink); background:var(--surface2)}
+.theme-btn{border:1px solid var(--line); background:var(--surface2); border-radius:6px; padding:5px 10px; font-size:13px; cursor:pointer; white-space:nowrap}
+
+main{max-width:1180px; margin:0 auto; padding:0 20px 80px}
+section{padding:56px 0 8px}
+h1,h2,h3{letter-spacing:-.01em; line-height:1.15; margin:0}
+h2{font-size:clamp(1.6rem,3vw,2rem); font-weight:650; margin-bottom:10px}
+h3{font-size:18px; font-weight:600}
+.lede{color:var(--muted); max-width:68ch; margin:0 0 24px}
+
+/* hero */
+.hero{display:grid; grid-template-columns:minmax(0,5fr) minmax(0,7fr); gap:40px; padding-top:44px; align-items:start}
+.hero h1{font-family:var(--font-serif); font-size:clamp(2.4rem,5.5vw,4rem); font-weight:400; letter-spacing:-.01em; line-height:1.05}
+.hero h1 span{display:block}
+.hero h1 span:nth-child(1){color:var(--link)}
+.hero h1 span:nth-child(2){color:var(--internet)}
+.hero h1 span:nth-child(3){color:var(--transport)}
+.hero h1 span:nth-child(4){color:var(--sec)}
+.hero h1 span:nth-child(5){color:var(--app)}
+.hero p{color:var(--muted); max-width:46ch; margin:18px 0 22px}
+.scen{display:flex; flex-direction:column; gap:4px; margin-bottom:18px}
+.scen button{text-align:left; border:1px solid transparent; background:none; padding:8px 12px; border-radius:6px; cursor:pointer; color:var(--muted)}
+.scen button:hover{background:var(--surface)}
+.scen button[aria-pressed="true"]{background:var(--surface); border-color:var(--line); color:var(--ink); font-weight:600}
+.switch{display:flex; align-items:center; gap:10px; cursor:pointer; user-select:none; font-size:15px}
+.switch input{appearance:none; width:38px; height:22px; border-radius:11px; background:var(--line); position:relative; cursor:pointer; margin:0; flex:none}
+.switch input::after{content:""; position:absolute; top:3px; left:3px; width:16px; height:16px; border-radius:50%; background:var(--surface); transition:left .2s}
+.switch input:checked{background:var(--sec)}
+.switch input:checked::after{left:19px}
+
+.env-wrap{background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:16px}
+.env{border-radius:7px; padding:8px 8px 8px 10px; border-left:4px solid; cursor:pointer; transition:box-shadow .15s}
+.env + .who{margin-top:12px}
+.env > .env, .env > .payload, .env > .cipher{margin-top:8px}
+.env-link{background:var(--link-bg); border-color:var(--link)}
+.env-internet{background:var(--internet-bg); border-color:var(--internet)}
+.env-transport{background:var(--transport-bg); border-color:var(--transport)}
+.env-sec{background:var(--sec-bg); border-color:var(--sec)}
+.env-app{background:var(--app-bg); border-color:var(--app)}
+.env.sel{box-shadow:0 0 0 2px var(--ink) inset}
+.env-h{display:flex; flex-wrap:wrap; align-items:baseline; gap:6px 10px}
+.env-name{font-weight:600; font-size:14.5px}
+.env-link>.env-h .env-name{color:var(--link)} .env-internet>.env-h .env-name{color:var(--internet)} .env-transport>.env-h .env-name{color:var(--transport)} .env-sec>.env-h .env-name{color:var(--sec)} .env-app>.env-h .env-name{color:var(--app)}
+.tag{font:12px/1.4 var(--mono); background:var(--surface); border:1px solid var(--line); padding:1px 6px; border-radius:4px; color:var(--ink)}
+.lock{font-size:12px; color:var(--sec); font-weight:600}
+.payload{background:var(--surface); border:1px dashed var(--line); border-radius:6px; padding:10px 12px; font:13px/1.5 var(--mono); white-space:pre-wrap; word-break:break-word}
+.cipher{background:repeating-linear-gradient(135deg,var(--surface) 0 6px,var(--surface2) 6px 12px); border:1px solid var(--line); border-radius:6px; padding:12px; font:12px/1.5 var(--mono); color:var(--muted); word-break:break-all}
+.cipher b{display:block; color:var(--sec); font-family:var(--sans); font-size:13px; margin-bottom:4px}
+.who{border-top:1px solid var(--line); padding-top:12px; font-size:15px}
+.who strong{display:block; margin-bottom:2px}
+.who .see{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:4px}
+.who .see div{font-size:14px} .who .see b{display:block; font-size:13px; color:var(--muted); font-weight:600}
+
+/* stack */
+.bands{display:flex; flex-direction:column; gap:8px}
+.band{display:grid; grid-template-columns:230px 1fr; gap:16px; border-radius:8px; padding:14px 16px; border-left:5px solid}
+.band-app{background:var(--app-bg); border-color:var(--app)} .band-sec{background:var(--sec-bg); border-color:var(--sec)} .band-transport{background:var(--transport-bg); border-color:var(--transport)} .band-internet{background:var(--internet-bg); border-color:var(--internet)} .band-link{background:var(--link-bg); border-color:var(--link)}
+.band h3{font-size:17px} .band .osi{font-size:13px; color:var(--muted)} .band p{margin:4px 0 0; font-size:14px; color:var(--muted)}
+.chips{display:flex; flex-wrap:wrap; gap:6px; align-content:flex-start}
+.chip{border:1px solid var(--line); background:var(--surface); border-radius:999px; padding:4px 11px; font-size:14px; cursor:pointer}
+.chip:hover{border-color:var(--ink)}
+.chip[aria-pressed="true"]{background:var(--ink); color:var(--surface); border-color:var(--ink)}
+.stack-note{font-size:14px; color:var(--muted); margin-top:12px; max-width:80ch}
+
+/* guide */
+.tools{display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:16px}
+.search{flex:1 1 240px; max-width:360px; border:1px solid var(--line); background:var(--surface); border-radius:8px; padding:9px 12px; font:inherit; color:var(--ink)}
+.grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(270px,1fr)); gap:10px}
+.card{text-align:left; background:var(--surface); border:1px solid var(--line); border-left:4px solid; border-radius:8px; padding:12px 14px; cursor:pointer; display:flex; flex-direction:column; gap:4px}
+.card:hover{border-top-color:var(--ink); border-right-color:var(--ink); border-bottom-color:var(--ink)}
+.card .nm{font-weight:600; font-size:16px; display:flex; justify-content:space-between; gap:8px}
+.card .fl{font-size:13px; color:var(--muted)}
+.card .sm{font-size:14px; margin-top:2px}
+.card .pt{font:12px var(--mono); color:var(--muted); margin-top:auto; padding-top:6px}
+.has-notes{font:500 11px var(--sans); color:var(--sec); white-space:nowrap}
+.L-app{border-left-color:var(--app)} .L-sec{border-left-color:var(--sec)} .L-transport{border-left-color:var(--transport)} .L-internet{border-left-color:var(--internet)} .L-link{border-left-color:var(--link)}
+.empty{color:var(--muted); padding:20px 0}
+
+/* sequence player */
+.tabs{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:14px}
+.panel{background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:16px}
+.seq-head{display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:10px; margin-bottom:10px}
+.seq-ctrls{display:flex; gap:6px; align-items:center; flex-wrap:wrap}
+.btn{border:1px solid var(--line); background:var(--surface2); padding:6px 12px; border-radius:6px; cursor:pointer; font-size:14px}
+.btn:hover:not(:disabled){border-color:var(--ink)}
+.btn:disabled{opacity:.45; cursor:default}
+.btn.primary{background:var(--ink); color:var(--surface); border-color:var(--ink)}
+.count{font:13px var(--mono); color:var(--muted); min-width:52px; text-align:right}
+.seq-scroll{overflow-x:auto; -webkit-overflow-scrolling:touch}
+.seq-scroll svg{display:block; margin:0 auto}
+.seq-note{margin:10px 0 0; padding:12px 14px; background:var(--surface2); border-radius:8px; min-height:3.2em; font-size:15px; max-width:none}
+svg.seq text{font-family:var(--mono); font-size:11.5px; fill:var(--ink)}
+svg.seq .actor-box{fill:var(--surface2); stroke:var(--line)}
+svg.seq .actor-txt{font-family:var(--sans); font-size:13px; font-weight:600}
+svg.seq .life{stroke:var(--line); stroke-dasharray:3 4}
+svg.seq .num{fill:var(--muted); font-size:11px}
+svg.seq .step{transition:opacity .25s}
+svg.seq .step.future{opacity:.1}
+svg.seq .step.current text.lbl{font-weight:500}
+svg.seq .step.current .draw{animation:draw .45s ease-out}
+@keyframes draw{from{stroke-dashoffset:1} to{stroke-dashoffset:0}}
+svg.seq .draw{stroke-dasharray:1; stroke-dashoffset:0}
+.k-ctrl line,.k-ctrl .head{stroke:var(--transport); fill:var(--transport)}
+.k-data line,.k-data .head{stroke:var(--app); fill:var(--app)}
+.k-secure line,.k-secure .head{stroke:var(--sec); fill:var(--sec)}
+.k-push line,.k-push .head{stroke:var(--internet); fill:var(--internet)}
+.k-lost line{stroke:var(--bad)} .k-lost .x{stroke:var(--bad); stroke-width:2.2}
+svg line{stroke-width:1.7}
+.k-self rect{fill:var(--surface2); stroke:var(--muted)}
+.k-self text.lbl{fill:var(--muted); font-style:italic}
+.legend{display:flex; flex-wrap:wrap; gap:14px; font-size:13px; color:var(--muted); margin-top:10px}
+.legend span{display:inline-flex; align-items:center; gap:6px}
+.legend i{width:18px; height:3px; border-radius:2px; display:inline-block}
+
+/* realtime */
+svg.rt text{font-family:var(--sans); font-size:12px; fill:var(--ink)}
+svg.rt .lname{font-weight:600; font-size:14px}
+svg.rt .lnote{fill:var(--muted); font-size:12px}
+svg.rt .rail{stroke:var(--line); stroke-width:1.2}
+svg.rt .guide{stroke:var(--muted); stroke-dasharray:2 4; stroke-width:1; opacity:.6}
+svg.rt .ev{fill:var(--app)}
+svg.rt .hold{fill:var(--transport); opacity:.28}
+svg.rt .stream{fill:var(--internet); opacity:.12}
+svg.rt .empty-r line, svg.rt .empty-r .head{stroke:var(--muted); fill:var(--muted)}
+svg.rt .empty-r line{stroke-dasharray:3 3}
+svg.rt .dot{fill:var(--internet)}
+svg.rt .rl{fill:var(--muted); font-size:11px}
+.rt-take{display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px; margin-top:16px}
+.rt-take div{font-size:14px} .rt-take b{display:block; font-size:15px}
+
+/* table */
+.tbl-wrap{overflow-x:auto; border:1px solid var(--line); border-radius:10px; background:var(--surface)}
+table{border-collapse:collapse; width:100%; font-size:14px; min-width:880px}
+th,td{text-align:left; padding:9px 12px; border-bottom:1px solid var(--line); vertical-align:top}
+th{position:sticky; top:0; background:var(--surface2); font-weight:600; font-size:13px; color:var(--muted)}
+td:first-child{font-weight:600; white-space:nowrap}
+td .dotl{display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px}
+tr:hover td{background:var(--surface2)}
+td button{all:unset; cursor:pointer} td button:hover{text-decoration:underline}
+td button:focus-visible{outline:2px solid var(--transport)}
+
+/* choose */
+.choose{display:grid; grid-template-columns:minmax(0,5fr) minmax(0,7fr); gap:20px; align-items:start}
+.needs{display:flex; flex-direction:column; gap:4px}
+.needs button{text-align:left; background:none; border:1px solid transparent; border-radius:6px; padding:8px 12px; cursor:pointer; color:var(--muted)}
+.needs button:hover{background:var(--surface)}
+.needs button[aria-pressed="true"]{background:var(--surface); border-color:var(--line); color:var(--ink); font-weight:600}
+.answer{position:sticky; top:calc(env(safe-area-inset-top,0px) + 70px)}
+.answer .pick{font-size:24px; font-weight:700; letter-spacing:-.02em; margin:0 0 8px}
+.answer p{margin:0 0 12px}
+.answer .alt{font-size:14px; color:var(--muted)}
+
+/* confusables */
+.conf{display:grid; grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); gap:10px}
+details{background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:0 14px}
+summary{cursor:pointer; padding:12px 0; font-weight:600; list-style:none; display:flex; justify-content:space-between; gap:10px}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+"; color:var(--muted); font-weight:400}
+details[open] summary::after{content:"−"}
+details div{padding:0 0 14px; font-size:15px; color:var(--ink)}
+details div p{margin:0 0 8px}
+
+/* dialog */
+dialog{border:1px solid var(--line); border-radius:12px; background:var(--surface); color:var(--ink); padding:0; width:min(860px,calc(100vw - 24px)); max-height:calc(100dvh - 32px)}
+dialog::backdrop{background:rgba(10,16,24,.55)}
+.dlg-in{padding:22px 24px 24px; overflow:auto; max-height:calc(100dvh - 34px)}
+.dlg-top{display:flex; justify-content:space-between; gap:12px; align-items:flex-start}
+.dlg-top h2{margin:0}
+.dlg-full{color:var(--muted); margin:2px 0 10px}
+.close{border:1px solid var(--line); background:var(--surface2); border-radius:6px; padding:4px 10px; cursor:pointer}
+.facts{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:8px; margin:14px 0 18px}
+.facts div{background:var(--surface2); border-radius:7px; padding:8px 10px; font-size:14px}
+.facts b{display:block; font-size:12px; color:var(--muted); font-weight:600}
+.dlg-sec{margin:0 0 14px} .dlg-sec h3{font-size:15px; margin-bottom:3px} .dlg-sec p{margin:0; max-width:75ch}
+.watch{border-left:3px solid var(--bad); padding-left:12px}
+.badge{display:inline-block; font-size:12px; font-weight:600; padding:2px 8px; border-radius:999px; margin-right:6px}
+.notes textarea{width:100%; min-height:110px; border:1px solid var(--line); border-radius:8px; background:var(--surface2); color:var(--ink); font:15px/1.5 var(--sans); padding:10px 12px; resize:vertical}
+.notes small{color:var(--muted)}
+footer{max-width:1180px; margin:0 auto; padding:24px 20px 48px; color:var(--muted); font-size:14px; border-top:1px solid var(--line)}
+
+@media (max-width:860px){
+  .hero,.choose{grid-template-columns:1fr; gap:24px}
+  .band{grid-template-columns:1fr; gap:8px}
+  .answer{position:static}
+  .brand .txt{display:none}
+  .who .see{grid-template-columns:1fr}
+  .scen{flex-direction:row; flex-wrap:wrap}
+  .scen button{border-color:var(--line); padding:6px 10px; font-size:14px}
+}
+</style>
+<link rel="stylesheet" href="../explainer.css">
+</head>
+<body>
+<div class="site-strip">
+  <nav class="site-strip__crumbs" aria-label="Site">
+    <a class="site-strip__home" href="../../">Alex McIvor</a>
+    <span class="site-strip__sep" aria-hidden="true">/</span>
+    <a href="../">Explainers</a>
+  </nav>
+  <button id="theme-toggle" type="button" class="site-strip__toggle" aria-label="Toggle dark mode" title="Toggle dark mode">
+    <span class="theme-icon theme-icon-sun" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path></svg></span>
+    <span class="theme-icon theme-icon-moon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg></span>
+  </button>
+</div>
+<header class="top"><div class="top-in">
+  <div class="brand"><span class="wire" aria-hidden="true"><i style="background:var(--link)"></i><i style="background:var(--internet)"></i><i style="background:var(--transport)"></i><i style="background:var(--sec)"></i><i style="background:var(--app)"></i></span><span class="txt">How Things Connect</span></div>
+  <nav aria-label="Sections">
+    <a href="#envelopes">Envelopes</a><a href="#stack">The stack</a><a href="#guide">Field guide</a><a href="#handshakes">Handshakes</a><a href="#realtime">Real-time</a><a href="#journey">End to end</a><a href="#compare">Compare</a><a href="#choose">Choose</a><a href="#confusables">Easily confused</a>
+  </nav>
+</div></header>
+
+<main>
+<section id="envelopes" class="hero">
+  <div>
+    <h1><span>Every</span><span>connection</span><span>is envelopes</span><span>inside</span><span>envelopes.</span></h1>
+    <p>Pick something you do every day. See which protocols wrap it, who reads each layer, and what someone snooping on café Wi-Fi actually sees.</p>
+    <div class="scen" id="scen"></div>
+    <label class="switch"><input type="checkbox" id="snoop"> Eavesdropper view</label>
+  </div>
+  <div class="env-wrap" id="envWrap"></div>
+</section>
+
+<section id="stack">
+  <h2>The stack</h2>
+  <p class="lede">Each protocol does one job and hands the rest to the layer below. Higher bands are closer to what your code says; lower bands are closer to the wire. Tap any protocol for details.</p>
+  <div class="bands" id="bands"></div>
+  <p class="stack-note">The textbook OSI model has seven layers; the real internet uses roughly these four, plus security, which doesn't fit neatly anywhere. TLS sits between transport and application, SSH brings its own encryption, and QUIC folds transport and TLS together. Treat the bands as a mental model, not law.</p>
+</section>
+
+<section id="guide">
+  <h2>Protocol field guide</h2>
+  <p class="lede">What each one is, how it actually works, when to reach for it, and what tends to bite. Open any entry to add your own notes.</p>
+  <div class="tools">
+    <input class="search" id="q" type="search" placeholder="Search protocols, ports, ideas…" aria-label="Search protocols">
+    <div class="chips" id="cats"></div>
+  </div>
+  <div class="grid" id="grid"></div>
+</section>
+
+<section id="handshakes">
+  <h2>Handshakes, step by step</h2>
+  <p class="lede">Most of the cost of a new connection is round trips before any useful data moves. Step through what each protocol actually says.</p>
+  <div class="tabs" id="seqTabs" role="tablist" aria-label="Choose a handshake"></div>
+  <div class="panel" id="seqPanel"></div>
+  <div class="legend" aria-hidden="true">
+    <span><i style="background:var(--transport)"></i>setup and control</span>
+    <span><i style="background:var(--app)"></i>data</span>
+    <span><i style="background:var(--sec)"></i>encrypted</span>
+    <span><i style="background:var(--internet)"></i>server push</span>
+    <span><i style="background:var(--bad)"></i>lost</span>
+  </div>
+</section>
+
+<section id="realtime">
+  <h2>Real-time options on one timeline</h2>
+  <p class="lede">The same four server-side events, delivered four different ways. In each row the top line is the browser and the bottom line is the server. Watch the gap between each dotted event line and when the browser actually finds out.</p>
+  <div class="panel"><div class="seq-scroll" id="rt"></div></div>
+  <div class="rt-take">
+    <div><b>Short polling</b>Simple and cache-friendly, but you wait up to a full interval and most requests come back empty.</div>
+    <div><b>Long polling</b>Near-instant over plain HTTP, at the cost of a new request after every event.</div>
+    <div><b>Server-Sent Events</b>One request, events streamed instantly, automatic reconnect. Server to browser only.</div>
+    <div><b>WebSocket</b>One connection, instant in both directions. You own reconnects and message semantics.</div>
+  </div>
+</section>
+
+<section id="journey">
+  <h2>Opening https://example.com, end to end</h2>
+  <p class="lede">Nearly everything above shows up in a single page load: DNS, TCP, TLS, HTTP/2, a load balancer, a connection pool, and a database protocol.</p>
+  <div class="panel" id="journeyPanel"></div>
+</section>
+
+<section id="compare">
+  <h2>Side by side</h2>
+  <p class="lede">Every entry in one scannable table. Tap a name for the full write-up.</p>
+  <div class="tbl-wrap"><table id="tbl"></table></div>
+</section>
+
+<section id="choose">
+  <h2>Which one should I use?</h2>
+  <p class="lede">Start from what you need to do, not from the protocol.</p>
+  <div class="choose">
+    <div class="needs" id="needs"></div>
+    <div class="panel answer" id="answer" aria-live="polite"></div>
+  </div>
+</section>
+
+<section id="confusables">
+  <h2>Easily confused</h2>
+  <p class="lede">The pairs and trios that trip people up most.</p>
+  <div class="conf" id="conf"></div>
+</section>
+</main>
+
+<footer>Your notes are saved in this browser only. Last updated October 2026 — ask Claude to add protocols, sections, or diagrams and this page gets republished in place.</footer>
+
+<dialog id="dlg" aria-labelledby="dlgTitle"><div class="dlg-in" id="dlgIn"></div></dialog>
+
+<script>
+"use strict";
+const LAYERS = {
+  app:{name:`Application`, osi:`OSI layers 5–7`, desc:`What the programs are actually saying to each other.`},
+  sec:{name:`Security`, osi:`Wraps the layers above`, desc:`Encryption and proof of identity around whatever travels inside.`},
+  transport:{name:`Transport`, osi:`OSI layer 4`, desc:`Which program on the machine, and how reliably.`},
+  internet:{name:`Internet`, osi:`OSI layer 3`, desc:`Which machine, anywhere in the world.`},
+  link:{name:`Link`, osi:`OSI layers 1–2`, desc:`The next hop on this physical or wireless network.`}
+};
+const ORDER = ["app","sec","transport","internet","link"];
+
+const P = [
+{id:`ethernet`, name:`Ethernet & Wi-Fi`, full:`IEEE 802.3 / 802.11`, cat:`Foundations`, layer:`link`, port:`—`, tr:`The physical medium`, conn:`Frames on one local link`, dir:`—`, enc:`Wi-Fi WPA2/3, this hop only`,
+ sum:`Moves frames between devices on the same local network, addressed by MAC address.`,
+ how:`Every network card has a MAC address. Switches learn which MAC lives on which port and forward frames accordingly. A frame only survives one hop: each router strips it off and builds a fresh one for the next link.`,
+ use:`Everything. It is the bottom of nearly every connection you make.`,
+ watch:`Wi-Fi encryption protects you only between your device and the access point, not across the internet.`, rel:[`arp`,`ip`]},
+{id:`arp`, name:`ARP / NDP`, full:`Address Resolution Protocol; IPv6 Neighbor Discovery`, cat:`Foundations`, layer:`link`, port:`—`, tr:`Directly on the link`, conn:`Broadcast question`, dir:`—`, enc:`No`,
+ sum:`Answers "which MAC address has this IP?" on the local network.`,
+ how:`Your machine broadcasts "who has 192.168.1.1?" and the router replies with its MAC. The answer is cached briefly. IPv6 does the same job with Neighbor Discovery.`,
+ use:`Automatic: the glue between IP addresses and physical delivery.`,
+ watch:`It is unauthenticated, so someone on the same network can lie (ARP spoofing) to intercept traffic. One more reason TLS matters on shared networks.`, rel:[`ethernet`,`ip`]},
+{id:`ip`, name:`IP`, full:`Internet Protocol (IPv4 / IPv6)`, cat:`Foundations`, layer:`internet`, port:`Addresses, not ports`, tr:`Link layer`, conn:`Connectionless, best effort`, dir:`—`, enc:`No (IPsec can add it)`,
+ sum:`Gives every device an address and routes packets hop by hop across networks.`,
+ how:`Each packet carries a source and destination address. Routers look at the destination and pass the packet toward the next router. Packets can arrive late, out of order, duplicated, or not at all; IP makes no promises, and TCP or QUIC above it repair that.`,
+ use:`Every internet connection. IPv4 looks like 93.184.215.14; IPv6 like 2606:2800:21f:cb07::1.`,
+ watch:`IPv4 addresses ran out, which is why NAT exists. The TTL (hop limit) counts down at each router so misrouted packets cannot loop forever.`, rel:[`icmp`,`nat`,`tcp`,`udp`]},
+{id:`icmp`, name:`ICMP`, full:`Internet Control Message Protocol`, cat:`Foundations`, layer:`internet`, port:`Message types, not ports`, tr:`Directly on IP`, conn:`Single messages`, dir:`—`, enc:`No`,
+ sum:`The internet's error and diagnostic messages, used by ping and traceroute.`,
+ how:`Routers send ICMP back when something goes wrong: destination unreachable, time exceeded, packet too big. Ping sends an Echo Request and waits for an Echo Reply. Traceroute sends packets with increasing TTL so each router on the path reveals itself when it drops them.`,
+ use:`Debugging reachability and latency; path MTU discovery.`,
+ watch:`Blocking all ICMP breaks things subtly, since oversized packets then vanish silently. A failed ping does not prove a host is down; many hosts ignore it.`, rel:[`ip`]},
+{id:`nat`, name:`NAT`, full:`Network Address Translation`, cat:`Foundations`, layer:`internet`, port:`Rewrites ports`, tr:`TCP / UDP`, conn:`Keeps a mapping table`, dir:`Outbound-friendly`, enc:`—`,
+ sum:`Lets a whole household share one public IP by rewriting addresses and ports at the router.`,
+ how:`When your laptop (192.168.1.20:52144) connects out, the router swaps in its public IP and a fresh port and remembers the mapping so replies find their way back. Unsolicited inbound traffic has no mapping, so it is dropped.`,
+ use:`Almost every home and office network; cloud NAT gateways.`,
+ watch:`It is why peer-to-peer is hard and why WebRTC needs STUN and TURN. Mappings expire, so long-lived idle connections need keepalives.`, rel:[`ip`,`webrtc`]},
+{id:`ports`, name:`Ports & sockets`, full:`Transport-layer addressing`, cat:`Foundations`, layer:`transport`, port:`0–65535`, tr:`TCP / UDP`, conn:`—`, dir:`—`, enc:`—`,
+ sum:`A port picks which program on a machine gets the data; a socket is your program's handle on one end of a connection.`,
+ how:`A TCP connection is identified by four values: client IP, client port, server IP, server port. Servers listen on well-known ports (443, 22, 5432); clients get a random high "ephemeral" port. A socket is the operating-system object your code reads from and writes to.`,
+ use:`Every TCP or UDP conversation. "Port 5432 is open" means a process is listening there.`,
+ watch:`A socket is not a WebSocket. Ports below 1024 usually need admin rights to listen on. Running out of ephemeral ports is a real failure mode for busy proxies.`, rel:[`tcp`,`udp`,`websocket`]},
+{id:`tcp`, name:`TCP`, full:`Transmission Control Protocol`, cat:`Transport`, layer:`transport`, port:`Any`, tr:`IP`, conn:`Connection-oriented, handshake`, dir:`Two-way byte stream`, enc:`No — wrap in TLS`, seq:`tcp`,
+ sum:`Turns unreliable packets into a reliable, ordered stream of bytes between two programs.`,
+ how:`A three-way handshake (SYN, SYN-ACK, ACK) agrees on starting sequence numbers. Every byte is numbered; the receiver acknowledges what arrived and the sender retransmits what did not. Flow control stops a fast sender from drowning a slow receiver, and congestion control backs off when the network is overloaded.`,
+ use:`HTTP/1.1 and HTTP/2, SSH, databases, email: most things that must not lose data.`,
+ watch:`Head-of-line blocking: one lost packet stalls everything behind it, even unrelated data. The handshake costs a full round trip before any data flows.`, rel:[`udp`,`quic`,`tls`]},
+{id:`udp`, name:`UDP`, full:`User Datagram Protocol`, cat:`Transport`, layer:`transport`, port:`Any`, tr:`IP`, conn:`Connectionless`, dir:`Individual datagrams`, enc:`No — DTLS or QUIC add it`, seq:`udp`,
+ sum:`Fire-and-forget messages: no handshake, no retransmits, no ordering.`,
+ how:`Each datagram is sent on its own with just ports, a length, and a checksum. If it is lost, nobody notices unless the application does. That minimalism is the point: the app decides what reliability it needs.`,
+ use:`DNS, video calls, games, VoIP, live streaming, and as the base for QUIC and WireGuard.`,
+ watch:`No congestion control by default, so careless apps can flood a network. NAT mappings for UDP expire quickly.`, rel:[`tcp`,`quic`,`dns`,`webrtc`]},
+{id:`quic`, name:`QUIC`, full:`QUIC (RFC 9000)`, cat:`Transport`, layer:`transport`, port:`443/UDP typically`, tr:`UDP`, conn:`Connection-oriented, multiplexed`, dir:`Many two-way streams`, enc:`Yes — TLS 1.3 built in`, seq:`quic`,
+ sum:`A modern TCP replacement built on UDP, with encryption and independent streams baked in.`,
+ how:`QUIC merges the transport and TLS handshakes into one round trip (zero on resumption). It carries many independent streams, so a lost packet only stalls the stream it belonged to. Connections have IDs instead of being tied to an IP and port, so they survive switching from Wi-Fi to cellular.`,
+ use:`HTTP/3, which a large share of traffic to big sites already uses.`,
+ watch:`Some corporate firewalls block UDP 443; browsers then fall back to HTTP/2 over TCP. It costs more CPU than kernel TCP.`, rel:[`udp`,`tcp`,`http3`,`tls`]},
+{id:`tls`, name:`TLS (formerly SSL)`, full:`Transport Layer Security`, cat:`Security`, layer:`sec`, port:`Wraps others: 443, 993, 5432…`, tr:`TCP (DTLS on UDP)`, conn:`Session on a connection`, dir:`Two-way`, enc:`This is the encryption`, seq:`tls`,
+ sum:`Encrypts a connection and proves the server is who it claims to be, using certificates.`,
+ how:`In the handshake, client and server agree on keys with Diffie-Hellman, and the server proves its identity with a certificate signed by a Certificate Authority your device trusts. After that every byte is encrypted and tamper-evident. TLS 1.3 needs one round trip; resumed sessions can send data immediately.`,
+ use:`HTTPS, secure email, database connections, gRPC, MQTT over TLS: anything labelled "S" or "secure".`,
+ watch:`"SSL" is the old name; SSL 2/3 and TLS 1.0/1.1 are broken and disabled. The hostname leaks in the handshake (SNI) unless Encrypted Client Hello is used. Expired certificates are a top cause of outages.`, rel:[`mtls`,`https`,`tcp`,`quic`]},
+{id:`mtls`, name:`mTLS`, full:`Mutual TLS`, cat:`Security`, layer:`sec`, port:`Same as TLS`, tr:`TCP`, conn:`TLS plus client certificate`, dir:`Two-way`, enc:`Yes`,
+ sum:`TLS where the client presents a certificate too, so both sides prove who they are.`,
+ how:`Ordinary TLS only authenticates the server. With mTLS the server asks for a client certificate during the handshake and checks it against a trusted CA. No passwords or API keys travel over the wire.`,
+ use:`Service-to-service traffic in zero-trust networks and service meshes (Istio, Linkerd), banking APIs, IoT fleets.`,
+ watch:`Issuing and rotating a certificate for every service is the hard part, usually automated by a mesh or internal CA.`, rel:[`tls`,`grpc`]},
+{id:`ssh`, name:`SSH`, full:`Secure Shell`, cat:`Security`, layer:`app`, port:`22`, tr:`TCP`, conn:`Persistent session`, dir:`Two-way, many channels`, enc:`Yes — its own, not TLS`, seq:`ssh`,
+ sum:`An encrypted remote login that can also carry files, tunnels, and port forwards.`,
+ how:`SSH does its own key exchange rather than using TLS. The server proves itself with a host key, which your client remembers in known_hosts and warns about if it changes. You then authenticate with a key pair or password. One connection carries many channels: a shell, an SFTP session, forwarded ports.`,
+ use:`Logging into servers, git over SSH, SFTP/SCP/rsync, tunnelling to a private database (ssh -L 5432:db:5432 bastion).`,
+ watch:`The "host key changed" warning is exactly what a man-in-the-middle looks like, so do not wave it through. Prefer keys over passwords and guard your private key.`, rel:[`sftp`,`tls`,`rsync`]},
+{id:`vpn`, name:`VPNs: WireGuard & IPsec`, full:`Virtual Private Networks`, cat:`Security`, layer:`internet`, port:`WireGuard 51820/UDP; IPsec 500, 4500/UDP`, tr:`UDP (OpenVPN can use TCP)`, conn:`Tunnel`, dir:`Two-way`, enc:`Yes`,
+ sum:`Wraps entire IP packets inside encrypted packets, so remote machines appear to share a private network.`,
+ how:`Your device builds a normal IP packet, encrypts the whole thing, and sends it inside a UDP packet to the VPN endpoint, which unwraps it and forwards it as if it started there. WireGuard is small and modern with a fixed set of algorithms; IPsec is older, standardised, and common between offices.`,
+ use:`Remote access to company networks, linking data centres, mesh VPNs like Tailscale.`,
+ watch:`A VPN encrypts as far as the VPN server, not to the final website. The extra wrapping adds bytes, so MTU problems are common.`, rel:[`ip`,`udp`,`tls`]},
+{id:`dns`, name:`DNS`, full:`Domain Name System`, cat:`Infrastructure`, layer:`app`, port:`53 (DoT 853, DoH 443)`, tr:`UDP, falls back to TCP`, conn:`Query and answer`, dir:`Request/response`, enc:`Classic no; DoH/DoT yes`, seq:`dns`,
+ sum:`The internet's phone book: turns names like example.com into IP addresses.`,
+ how:`Your device asks a recursive resolver (your ISP's, 1.1.1.1, 8.8.8.8). Without a cached answer, the resolver walks the hierarchy: root servers point to the .com servers, which point to example.com's authoritative servers, which give the answer. Every answer carries a TTL saying how long to cache it.`,
+ use:`Before almost every connection. Also stores mail routing (MX), verification (TXT), aliases (CNAME), and IPv6 addresses (AAAA).`,
+ watch:`"It's always DNS." Cached records keep pointing at old servers until the TTL expires. Plain DNS is visible to your network; DoH and DoT encrypt it.`, rel:[`udp`,`dhcp`]},
+{id:`dhcp`, name:`DHCP`, full:`Dynamic Host Configuration Protocol`, cat:`Infrastructure`, layer:`app`, port:`67 / 68`, tr:`UDP broadcast`, conn:`Four-step exchange`, dir:`Request/response`, enc:`No`, seq:`dhcp`,
+ sum:`Hands your device an IP address, gateway, and DNS server when it joins a network.`,
+ how:`A new device broadcasts Discover; a server Offers an address; the device Requests it; the server Acknowledges. The address is a lease that has to be renewed.`,
+ use:`Every time you join Wi-Fi or plug in a cable.`,
+ watch:`A 169.254.x.x address means DHCP failed. A rogue DHCP server can hijack a network by handing out a malicious gateway or DNS server.`, rel:[`dns`,`ip`]},
+{id:`ntp`, name:`NTP`, full:`Network Time Protocol`, cat:`Infrastructure`, layer:`app`, port:`123`, tr:`UDP`, conn:`Query and answer`, dir:`Request/response`, enc:`No (NTS adds it)`,
+ sum:`Keeps clocks in sync to within milliseconds.`,
+ how:`Your machine exchanges timestamps with time servers, estimates the network delay, and nudges its clock gradually.`,
+ use:`Quietly underneath TLS (certificates have validity dates), logs, distributed databases, and auth tokens.`,
+ watch:`A skewed clock causes baffling failures: TLS errors, rejected tokens, out-of-order logs.`, rel:[`tls`]},
+{id:`bgp`, name:`BGP`, full:`Border Gateway Protocol`, cat:`Infrastructure`, layer:`app`, port:`179`, tr:`TCP`, conn:`Persistent peering session`, dir:`Two-way`, enc:`No (RPKI signs route origins)`,
+ sum:`How the networks that make up the internet tell each other which addresses they can reach.`,
+ how:`Each large network (an autonomous system) announces the address blocks it owns to its neighbours, who pass the routes along. Routers choose paths by business policy as much as by distance.`,
+ use:`Between ISPs, clouds, and large companies. You never configure it, but your packets follow it.`,
+ watch:`A single bad announcement has taken huge services offline for hours.`, rel:[`ip`]},
+{id:`proxy`, name:`Proxies & load balancers`, full:`Forward proxy, reverse proxy, L4/L7 load balancer, CDN`, cat:`Infrastructure`, layer:`app`, port:`Usually 80 / 443`, tr:`TCP / QUIC`, conn:`Two connections, one each side`, dir:`—`, enc:`Often terminates TLS`,
+ sum:`Middlemen that accept your connection and open another one onward.`,
+ how:`A forward proxy acts for clients (a corporate web filter). A reverse proxy acts for servers: Nginx, Caddy, Envoy, or a cloud load balancer accepts your connection, often decrypts TLS, and forwards to a backend. Layer 4 balancers pass raw TCP/UDP through; layer 7 balancers read HTTP and route by path, header, or cookie. A CDN is a worldwide fleet of caching reverse proxies.`,
+ use:`Spreading load, TLS termination, caching, API gateways, rate limiting.`,
+ watch:`The backend sees the proxy's IP, so pass X-Forwarded-For or use PROXY protocol. Proxy idle timeouts are why long-lived WebSocket and SSE connections get cut.`, rel:[`http11`,`websocket`,`sse`,`tls`]},
+{id:`http11`, name:`HTTP/1.1`, full:`Hypertext Transfer Protocol 1.1`, cat:`Web & APIs`, layer:`app`, port:`80 (443 with TLS)`, tr:`TCP`, conn:`Request/response, keep-alive reuse`, dir:`Client asks, server answers`, enc:`No — HTTPS adds TLS`, seq:`http`,
+ sum:`Plain-text requests and responses: a method, a path, headers, and an optional body.`,
+ how:`The client sends "GET /path" plus headers; the server replies with a status code (200, 404, 500), headers, and a body. Connections can be kept alive for several requests, but only one request is in flight per connection at a time, so browsers open several in parallel.`,
+ use:`Still everywhere: APIs, webhooks, internal services, curl.`,
+ watch:`Stateless by design, so sessions are layered on with cookies or tokens. One slow response blocks everything queued behind it on that connection.`, rel:[`http2`,`http3`,`https`,`rest`]},
+{id:`http2`, name:`HTTP/2`, full:`HTTP/2 (RFC 9113)`, cat:`Web & APIs`, layer:`app`, port:`443`, tr:`TCP + TLS`, conn:`One long-lived multiplexed connection`, dir:`Many concurrent streams`, enc:`In practice always`,
+ sum:`Same meaning as HTTP/1.1, but binary-framed so many requests share one connection at once.`,
+ how:`Requests and responses become numbered streams of frames (HEADERS, DATA) interleaved on one TCP connection, with compressed headers. Methods, status codes, and headers mean exactly what they did before, so most apps never notice the switch.`,
+ use:`Most HTTPS traffic today, and the transport underneath gRPC.`,
+ watch:`It removes HTTP-level blocking but not TCP's: one lost packet still stalls every stream. That is what HTTP/3 fixes.`, rel:[`http11`,`http3`,`grpc`]},
+{id:`http3`, name:`HTTP/3`, full:`HTTP/3 (RFC 9114)`, cat:`Web & APIs`, layer:`app`, port:`443/UDP`, tr:`QUIC over UDP`, conn:`Multiplexed QUIC connection`, dir:`Many independent streams`, enc:`Yes, always`, seq:`quic`,
+ sum:`HTTP running on QUIC instead of TCP: faster setup and no cross-stream stalls.`,
+ how:`A browser usually connects with HTTP/2 first; the server advertises HTTP/3 through an Alt-Svc header or a DNS HTTPS record, and the browser switches. Each request is its own QUIC stream.`,
+ use:`Big sites and CDNs; it helps most on mobile and lossy networks.`,
+ watch:`Falls back to HTTP/2 when UDP is blocked. Traditional packet-inspection tools see much less.`, rel:[`quic`,`http2`]},
+{id:`https`, name:`HTTPS`, full:`HTTP over TLS`, cat:`Web & APIs`, layer:`app`, port:`443`, tr:`TCP + TLS, or QUIC`, conn:`Same as HTTP`, dir:`Same as HTTP`, enc:`Yes`,
+ sum:`Not a separate protocol: just HTTP sent inside a TLS-encrypted connection.`,
+ how:`The browser completes the TLS handshake first, checking that the certificate matches the hostname, then speaks ordinary HTTP inside. HSTS lets a site tell browsers to never use plain HTTP with it again.`,
+ use:`Every website and API worth trusting.`,
+ watch:`HTTPS proves you reached the domain in the address bar, not that the site is honest. Observers still see the IP and usually the hostname.`, rel:[`tls`,`http11`,`http2`]},
+{id:`rest`, name:`REST`, full:`Representational State Transfer, an API style`, cat:`Web & APIs`, layer:`app`, port:`443`, tr:`HTTP`, conn:`Request/response`, dir:`Client asks`, enc:`Via HTTPS`,
+ sum:`A convention for HTTP APIs: resources live at URLs and are acted on with standard methods.`,
+ how:`GET /orders/42 reads, POST /orders creates, PUT or PATCH updates, DELETE removes. Status codes carry the outcome and bodies are usually JSON. Each request stands alone, which makes caching and scaling straightforward.`,
+ use:`Public APIs, most web backends, anything consumed by many different clients.`,
+ watch:`It is a style, not a protocol, so "RESTful" means wildly different things. Filling one screen can take several round trips (over- and under-fetching).`, rel:[`http11`,`graphql`,`grpc`]},
+{id:`graphql`, name:`GraphQL`, full:`GraphQL query language`, cat:`Web & APIs`, layer:`app`, port:`443`, tr:`HTTP; subscriptions via WebSocket`, conn:`Request/response`, dir:`Client asks for an exact shape`, enc:`Via HTTPS`,
+ sum:`One endpoint where the client sends a query describing exactly the data it wants.`,
+ how:`Clients POST a query to /graphql naming the fields and nested relations they need; the server resolves it against a typed schema and returns matching JSON. Subscriptions push live updates, usually over WebSocket.`,
+ use:`Apps with many screens needing different slices of related data; stitching several backends together.`,
+ watch:`HTTP caching gets harder when everything is a POST to one URL. Deep, expensive queries need depth or cost limits.`, rel:[`rest`,`websocket`]},
+{id:`grpc`, name:`gRPC`, full:`gRPC Remote Procedure Calls`, cat:`Web & APIs`, layer:`app`, port:`443 or 50051`, tr:`HTTP/2`, conn:`Long-lived HTTP/2 connection`, dir:`Single calls or streams either way`, enc:`Usually TLS or mTLS`, seq:`grpc`,
+ sum:`Call functions on another service as if they were local, with typed Protocol Buffers messages over HTTP/2.`,
+ how:`You define services and messages in a .proto file and generate client and server code. Each call is an HTTP/2 stream to /package.Service/Method carrying compact binary protobuf. It supports one-shot calls plus client, server, and bidirectional streaming.`,
+ use:`Internal microservice traffic, mobile-to-backend with strict schemas, high-throughput systems.`,
+ watch:`Browsers cannot speak it natively (use gRPC-Web or a proxy). Binary payloads are hard to eyeball. Load balancers must understand HTTP/2, or every call on one connection lands on one backend.`, rel:[`http2`,`rest`,`mtls`]},
+{id:`jsonrpc`, name:`JSON-RPC & MCP`, full:`JSON-RPC 2.0; Model Context Protocol`, cat:`Web & APIs`, layer:`app`, port:`Varies`, tr:`stdio, HTTP, or WebSocket`, conn:`Depends on transport`, dir:`Requests and notifications both ways`, enc:`Via the transport`,
+ sum:`A tiny standard for "call this method with these params" in JSON, and MCP, which builds on it to connect AI apps to tools.`,
+ how:`A request looks like {"jsonrpc":"2.0","id":1,"method":"tools/call","params":{…}}; the reply echoes the id with a result or an error. Messages without an id are notifications. MCP uses JSON-RPC so an AI client can discover and call a server's tools, over stdio for local servers or Streamable HTTP (which can stream via SSE) for remote ones.`,
+ use:`Language servers in code editors (LSP), blockchain nodes, and MCP connectors like the ones in your Claude workspace.`,
+ watch:`It is transport-agnostic, so security and auth depend entirely on what it runs over.`, rel:[`sse`,`http11`,`websocket`]},
+{id:`webhooks`, name:`Webhooks`, full:`HTTP callbacks`, cat:`Web & APIs`, layer:`app`, port:`443`, tr:`HTTP`, conn:`One request per event`, dir:`Their server → yours`, enc:`Via HTTPS`,
+ sum:`Instead of you polling a service, it sends an HTTP POST to your URL when something happens.`,
+ how:`You register an endpoint such as https://you.example/hooks/payments. When an event occurs, the provider POSTs a JSON payload, usually signed with an HMAC header you verify. Failed deliveries are retried.`,
+ use:`Payments, git pushes, form submissions, CI results: system-to-system events.`,
+ watch:`Always verify the signature. Expect retries and duplicates, so make handlers idempotent. Your endpoint has to be publicly reachable.`, rel:[`http11`,`longpoll`]},
+{id:`shortpoll`, name:`Short polling`, full:`Repeated requests on a timer`, cat:`Real-time`, layer:`app`, port:`443`, tr:`HTTP`, conn:`New request each interval`, dir:`Client asks`, enc:`Via HTTPS`,
+ sum:`Ask "anything new?" every few seconds.`,
+ how:`A timer fires an ordinary HTTP request; most responses say nothing changed. Delay is up to one interval, and cost grows with clients times frequency.`,
+ use:`Dashboards that refresh every minute, quick prototypes, checking a job's status.`,
+ watch:`Wasteful at short intervals and laggy at long ones. Still the right answer more often than people admit.`, rel:[`longpoll`,`sse`]},
+{id:`longpoll`, name:`Long polling`, full:`The hanging GET`, cat:`Real-time`, layer:`app`, port:`443`, tr:`HTTP`, conn:`Request held open until data`, dir:`Server answers when ready`, enc:`Via HTTPS`, seq:`longpoll`,
+ sum:`Ask "anything new?" and the server waits to answer until there is.`,
+ how:`The server holds the request until an event arrives or a timeout (say 30 seconds) passes, then responds. The client immediately asks again. It feels near-instant and works through any proxy that understands HTTP.`,
+ use:`Fallback for restrictive networks, chat-bot update APIs, simple chat.`,
+ watch:`Events arriving between one response and the next request must be buffered server-side. Every waiting client ties up a connection.`, rel:[`shortpoll`,`sse`,`websocket`]},
+{id:`sse`, name:`Server-Sent Events`, full:`SSE / EventSource`, cat:`Real-time`, layer:`app`, port:`443`, tr:`HTTP, one long response`, conn:`One persistent response stream`, dir:`Server → client only`, enc:`Via HTTPS`, seq:`sse`,
+ sum:`One HTTP response that never ends; the server keeps writing events into it.`,
+ how:`The browser calls new EventSource("/stream"). The server answers with Content-Type: text/event-stream and writes lines like "data: {...}" followed by a blank line for each event. If the connection drops, the browser reconnects on its own and sends Last-Event-ID so the server can resume.`,
+ use:`Live feeds, notifications, progress bars, and streaming AI responses token by token.`,
+ watch:`One direction only; send to the server with normal requests. Over HTTP/1.1 browsers cap about six connections per site (not an issue on HTTP/2). Proxies that buffer responses break it, so turn buffering off.`, rel:[`websocket`,`longpoll`,`http2`]},
+{id:`websocket`, name:`WebSocket`, full:`WebSocket (RFC 6455)`, cat:`Real-time`, layer:`app`, port:`80 (ws://) / 443 (wss://)`, tr:`TCP, upgraded from HTTP`, conn:`Persistent`, dir:`Full duplex, either side any time`, enc:`wss:// uses TLS`, seq:`ws`,
+ sum:`Starts as an HTTP request, then upgrades into a raw two-way message pipe.`,
+ how:`The client sends a GET with "Upgrade: websocket". The server answers 101 Switching Protocols, and from then on the TCP connection carries small frames (text, binary, ping, pong, close) in either direction with very little overhead.`,
+ use:`Chat, multiplayer games, collaborative editing, trading screens, GraphQL subscriptions.`,
+ watch:`You get a pipe, not a protocol: reconnects, message IDs, and backpressure are your job. Load balancers need long idle timeouts. Stateful connections make scaling and deploys harder than plain HTTP.`, rel:[`sse`,`webtransport`,`tcp`]},
+{id:`webrtc`, name:`WebRTC`, full:`Web Real-Time Communication`, cat:`Real-time`, layer:`app`, port:`Dynamic UDP; STUN/TURN 3478`, tr:`UDP (DTLS, SRTP, SCTP)`, conn:`Peer-to-peer when possible`, dir:`Two-way media and data`, enc:`Yes, mandatory`, seq:`webrtc`,
+ sum:`Direct browser-to-browser audio, video, and data, punching through NAT when it can.`,
+ how:`Peers exchange connection offers through a signaling channel you provide (often a WebSocket). STUN servers tell each peer its public address; ICE tries candidate paths until one works; if none do, a TURN server relays traffic. Media flows over encrypted SRTP, and data channels can be reliable or deliberately unreliable.`,
+ use:`Video calls, screen sharing, low-latency game data, peer-to-peer file transfer.`,
+ watch:`Signaling is not included, so you build it. A slice of connections always needs a TURN relay, which costs bandwidth. Group calls usually route through a media server (an SFU) rather than true peer-to-peer.`, rel:[`udp`,`nat`,`websocket`]},
+{id:`webtransport`, name:`WebTransport`, full:`WebTransport over HTTP/3`, cat:`Real-time`, layer:`app`, port:`443/UDP`, tr:`HTTP/3 (QUIC)`, conn:`Persistent`, dir:`Two-way streams and datagrams`, enc:`Yes`,
+ sum:`A newer WebSocket alternative built on QUIC, with many streams and optional unreliable datagrams.`,
+ how:`The browser opens a session to a server over HTTP/3, then creates as many independent streams as it likes, plus unordered datagrams for data where freshness beats completeness.`,
+ use:`Cloud gaming, live media upload, real-time apps that suffer from TCP head-of-line blocking.`,
+ watch:`Browser and server-library support is newer and less uniform than WebSocket's; check before committing.`, rel:[`websocket`,`quic`,`http3`]},
+{id:`mqtt`, name:`MQTT`, full:`MQ Telemetry Transport`, cat:`Messaging`, layer:`app`, port:`1883 (8883 with TLS)`, tr:`TCP or WebSocket`, conn:`Persistent, to a broker`, dir:`Publish / subscribe`, enc:`Optional TLS`, seq:`mqtt`,
+ sum:`Featherweight publish/subscribe through a central broker, built for small devices on bad networks.`,
+ how:`Clients connect to a broker and publish to topics like home/kitchen/temp, or subscribe with wildcards (home/+/temp). There are three delivery levels: at most once, at least once, exactly once. A "last will" message announces when a device drops off unexpectedly.`,
+ use:`IoT sensors, smart homes, vehicle telemetry.`,
+ watch:`Topic design and per-topic access control matter a lot. The broker is a central dependency to scale and secure.`, rel:[`amqp`,`kafka`,`websocket`]},
+{id:`amqp`, name:`AMQP & message queues`, full:`Advanced Message Queuing Protocol (RabbitMQ and others)`, cat:`Messaging`, layer:`app`, port:`5672 (5671 TLS)`, tr:`TCP`, conn:`Persistent, to a broker`, dir:`Producers → queues → consumers`, enc:`Optional TLS`,
+ sum:`A broker holds messages in queues until a consumer takes and acknowledges each one.`,
+ how:`Producers publish to an exchange, which routes messages into queues by rules. Consumers receive messages and acknowledge them; unacknowledged messages are redelivered. Many channels share one TCP connection. Cloud services like SQS or Azure Service Bus fill the same role with their own protocols.`,
+ use:`Background jobs, decoupling services, absorbing traffic spikes, spreading work across workers.`,
+ watch:`Once a message is acknowledged it is gone, so there is no replay. Plan for duplicates and for poison messages (dead-letter queues).`, rel:[`kafka`,`mqtt`]},
+{id:`kafka`, name:`Kafka`, full:`Apache Kafka protocol`, cat:`Messaging`, layer:`app`, port:`9092`, tr:`TCP`, conn:`Persistent, to brokers`, dir:`Producers append, consumers read`, enc:`Optional TLS`,
+ sum:`A durable, replayable log: messages are appended to partitions and each consumer tracks its own position.`,
+ how:`Producers append records to a topic's partitions, spread across brokers. Consumers read in order and store an offset; many independent consumer groups can read the same data at their own pace, and rewind to reprocess history.`,
+ use:`Event streaming, analytics pipelines, change-data-capture from databases, high-volume logs.`,
+ watch:`Operationally heavy. Order is only guaranteed within a partition. It is a log, not a task queue.`, rel:[`amqp`,`mqtt`]},
+{id:`dbwire`, name:`Database wire protocols`, full:`PostgreSQL, MySQL, SQL Server (TDS), MongoDB…`, cat:`Databases`, layer:`app`, port:`5432, 3306, 1433, 27017`, tr:`TCP`, conn:`Long-lived, stateful session`, dir:`Request/response`, enc:`Optional TLS — turn it on`, seq:`pg`,
+ sum:`Each database speaks its own binary protocol over a TCP connection that carries session state.`,
+ how:`Your driver opens TCP, optionally upgrades to TLS, then authenticates (Postgres uses a SCRAM challenge-response). The session holds state: the current transaction, temp tables, prepared statements, settings. Queries go in and typed rows come back. Setup takes several round trips plus server-side memory or a whole process.`,
+ use:`Every app that talks to a database.`,
+ watch:`Connections are expensive and capped (Postgres defaults to 100). Exposing database ports to the internet is a classic breach; keep them private and reach them through a VPN or SSH tunnel.`, rel:[`pool`,`drivers`,`tls`,`ssh`]},
+{id:`pool`, name:`Connection pooling`, full:`App-side or proxy pools (HikariCP, PgBouncer, RDS Proxy)`, cat:`Databases`, layer:`app`, port:`—`, tr:`TCP`, conn:`Reuses warm connections`, dir:`—`, enc:`—`,
+ sum:`Keep a set of database connections open and lend them out, instead of reconnecting for every request.`,
+ how:`An app-side pool opens N connections at startup; each request borrows one, runs its queries, and returns it. A proxy pooler like PgBouncer sits between many app instances and the database and squeezes thousands of client connections onto a few dozen real ones.`,
+ use:`Any web app with a database, and essential with serverless functions, which can spin up hundreds of instances.`,
+ watch:`Size pools to what the database can handle, not to traffic. In transaction-pooling mode, session features (SET, some prepared statements, advisory locks) can misbehave. Connections that are borrowed and never returned exhaust the pool.`, rel:[`dbwire`,`drivers`]},
+{id:`drivers`, name:`Drivers, JDBC/ODBC & connection strings`, full:`Database client libraries`, cat:`Databases`, layer:`app`, port:`—`, tr:`—`, conn:`—`, dir:`—`, enc:`Set in the connection string`,
+ sum:`The library that knows a database's wire protocol, configured by a connection string.`,
+ how:`JDBC (Java) and ODBC (most other languages) are standard APIs that vendors implement as drivers; native drivers like psycopg or node-postgres do the same job directly. A connection string such as postgresql://app:secret@db.internal:5432/shop?sslmode=verify-full bundles host, port, database, credentials, and TLS policy.`,
+ use:`Pointing any app, ORM, or BI tool at a database.`,
+ watch:`sslmode=require encrypts but does not check who you are talking to; verify-full does. Never commit connection strings containing passwords; use a secrets manager.`, rel:[`dbwire`,`pool`]},
+{id:`redis`, name:`Redis (RESP)`, full:`Redis Serialization Protocol`, cat:`Databases`, layer:`app`, port:`6379`, tr:`TCP`, conn:`Persistent`, dir:`Request/response, plus pub/sub`, enc:`Optional TLS`,
+ sum:`A simple, readable text protocol for an in-memory data store.`,
+ how:`Commands are arrays of strings (SET user:1 Ada); replies are typed: simple strings, integers, bulk strings, arrays. Pipelining sends many commands without waiting for each reply. A connection can switch into pub/sub mode and receive pushed messages.`,
+ use:`Caches, sessions, rate limiters, leaderboards, lightweight queues.`,
+ watch:`Instances exposed without auth get compromised fast. Pub/sub messages vanish if nobody is subscribed; use Streams when you need durability.`, rel:[`dbwire`,`mqtt`]},
+{id:`ftp`, name:`FTP & FTPS`, full:`File Transfer Protocol, plus TLS`, cat:`Files & remote`, layer:`app`, port:`21, plus data ports`, tr:`TCP, two connections`, conn:`Control + separate data connection`, dir:`Both`, enc:`FTP none; FTPS TLS`,
+ sum:`The original file transfer protocol: one connection for commands, another for each file.`,
+ how:`Commands (USER, PASS, RETR, STOR) travel over port 21; each transfer opens another connection, either from the server (active mode) or to a port the server picks (passive mode). FTPS adds TLS to both.`,
+ use:`Legacy systems, some hosting providers, industrial equipment.`,
+ watch:`Plain FTP sends passwords in clear text, and the second connection fights firewalls and NAT. Prefer SFTP.`, rel:[`sftp`]},
+{id:`sftp`, name:`SFTP & SCP`, full:`SSH File Transfer Protocol; Secure Copy`, cat:`Files & remote`, layer:`app`, port:`22`, tr:`SSH over TCP`, conn:`A channel inside an SSH session`, dir:`Both`, enc:`Yes, via SSH`,
+ sum:`File transfer that runs inside an SSH connection. Despite the name, SFTP has nothing to do with FTP.`,
+ how:`After a normal SSH login, the client opens a channel running the SFTP subsystem, which supports listing, resuming, and permissions. SCP is the older, simpler copy command; modern OpenSSH runs scp over SFTP underneath.`,
+ use:`Deploying files, exchanging data with partners, anywhere you already have SSH access.`,
+ watch:`SFTP (over SSH) and FTPS (FTP plus TLS) are entirely different protocols that happen to share a purpose.`, rel:[`ssh`,`rsync`,`ftp`]},
+{id:`rsync`, name:`rsync`, full:`rsync delta transfer`, cat:`Files & remote`, layer:`app`, port:`22 via SSH (873 native)`, tr:`Usually SSH`, conn:`Session`, dir:`One direction per run`, enc:`Via SSH`,
+ sum:`Synchronises files by sending only the parts that changed.`,
+ how:`Both sides checksum blocks of each file, compare, and transfer only the differing pieces, then reassemble. It usually runs through SSH.`,
+ use:`Backups, mirroring directories, deploying large sites incrementally.`,
+ watch:`A trailing slash on the source path changes what gets copied. --delete is powerful and unforgiving, so run --dry-run first.`, rel:[`ssh`,`sftp`]},
+{id:`smb`, name:`SMB & NFS`, full:`Server Message Block; Network File System`, cat:`Files & remote`, layer:`app`, port:`SMB 445; NFS 2049`, tr:`TCP`, conn:`Persistent mount`, dir:`Both`, enc:`SMB3 optional; NFS via Kerberos`,
+ sum:`Mount a remote folder so it behaves like a local drive.`,
+ how:`Instead of copying whole files, the client sends filesystem operations (open, read these bytes, lock, write) to the server. SMB is native to Windows and macOS sharing; NFS comes from the Unix world.`,
+ use:`Office file shares, NAS boxes, shared storage for servers.`,
+ watch:`Chatty, so painful over high-latency links. Never expose SMB to the internet; it has a long history of serious exploits.`, rel:[`sftp`]},
+{id:`rdp`, name:`RDP & VNC`, full:`Remote Desktop Protocol; Virtual Network Computing`, cat:`Files & remote`, layer:`app`, port:`RDP 3389; VNC 5900`, tr:`TCP (RDP can add UDP)`, conn:`Persistent session`, dir:`Screen down, input up`, enc:`RDP TLS; VNC varies`,
+ sum:`Control a remote computer's whole graphical desktop.`,
+ how:`The server streams screen updates (drawing commands or compressed pixels) and the client sends mouse and keyboard input back. RDP is Microsoft's richer, more efficient protocol; VNC is simpler and cross-platform.`,
+ use:`IT support, remote workstations, administering Windows servers.`,
+ watch:`Internet-facing RDP is a top ransomware entry point; put it behind a VPN or gateway.`, rel:[`ssh`,`vpn`]},
+{id:`smtp`, name:`SMTP`, full:`Simple Mail Transfer Protocol`, cat:`Email`, layer:`app`, port:`25 between servers; 587 / 465 to submit`, tr:`TCP`, conn:`Session per delivery`, dir:`Pushes toward the recipient`, enc:`STARTTLS or implicit TLS`,
+ sum:`Sends email: from your app or mail client to a mail server, and from server to server.`,
+ how:`A text conversation: EHLO, MAIL FROM, RCPT TO, DATA, then the message. Servers find the recipient's mail server through DNS MX records. STARTTLS upgrades the session to encrypted partway through.`,
+ use:`Every outbound email, including transactional mail from apps.`,
+ watch:`Deliverability depends on SPF, DKIM, and DMARC records in DNS. Encryption between servers is often opportunistic rather than guaranteed.`, rel:[`imap`,`dns`]},
+{id:`imap`, name:`IMAP & POP3`, full:`Internet Message Access Protocol; Post Office Protocol`, cat:`Email`, layer:`app`, port:`IMAP 143/993; POP3 110/995`, tr:`TCP`, conn:`Persistent (IMAP), brief (POP3)`, dir:`Client reads mailbox`, enc:`Use the TLS ports`,
+ sum:`Reads email from your mailbox. IMAP syncs folders on the server; POP3 downloads and usually deletes.`,
+ how:`IMAP keeps mail on the server and syncs read, flagged, and folder state across devices; IDLE lets the server push new-mail notices. POP3 is a simple download-and-done protocol from the one-computer era.`,
+ use:`Desktop and phone mail clients. Big webmail services also offer their own APIs.`,
+ watch:`SMTP sends and IMAP/POP3 receive. They are separate systems with separate settings.`, rel:[`smtp`]},
+];
+const PID = Object.fromEntries(P.map(p=>[p.id,p]));
+
+const SEQ = {
+tcp:{title:`TCP three-way handshake`, actors:[`Client`,`Server`], steps:[
+ {f:0,t:1,l:`SYN  seq=1000`,k:`ctrl`,n:`"I'd like to talk. My byte numbering starts at 1000." The client picks a random starting sequence number.`},
+ {f:1,t:0,l:`SYN-ACK  seq=5000  ack=1001`,k:`ctrl`,n:`"Got it, expecting byte 1001 next. Mine starts at 5000." The server now holds half-open state for this client.`},
+ {f:0,t:1,l:`ACK  ack=5001`,k:`ctrl`,n:`"Got yours." Connected. A full round trip has passed and no application data has moved yet.`},
+ {f:0,t:1,l:`data: 500 bytes (seq 1001)`,k:`data`,n:`Now bytes flow. Every segment carries its position in the stream.`},
+ {f:1,t:0,l:`ACK  ack=1501`,k:`ctrl`,n:`The receiver confirms everything up to byte 1500. If this ACK never comes, the sender retransmits after a timeout.`},
+ {f:0,t:1,l:`FIN`,k:`ctrl`,n:`Closing: each side sends FIN for its own direction and the other acknowledges it.`},
+ {f:1,t:0,l:`FIN + ACK`,k:`ctrl`,n:`Both directions closed. The side that closed first lingers in TIME_WAIT briefly to catch stray packets.`}]},
+udp:{title:`UDP: no handshake, no guarantees`, actors:[`Client`,`Server`], steps:[
+ {f:0,t:1,l:`datagram #1`,k:`data`,n:`Sent immediately, no setup. This is why DNS lookups are quick: one packet out, one back.`},
+ {f:0,t:1,l:`datagram #2`,k:`data`,n:`Each datagram is independent and they can arrive in any order.`},
+ {f:0,t:1,l:`datagram #3`,k:`lost`,n:`Lost on the way. UDP never notices or retries. For live video, resending a frame from 200 ms ago would be useless anyway.`},
+ {f:0,t:1,l:`datagram #4`,k:`data`,n:`The app chooses: ignore the gap (voice, games), ask again (DNS retries after a timeout), or build its own reliability (QUIC does).`},
+ {f:1,t:0,l:`reply datagram`,k:`data`,n:`Replies are just datagrams going the other way. The "connection" is only a pattern that apps and NAT boxes infer.`}]},
+tls:{title:`TLS 1.3 handshake, right after TCP connects`, actors:[`Client`,`Server`], steps:[
+ {f:0,t:1,l:`ClientHello: versions, ciphers, key share, SNI`,k:`ctrl`,n:`The client sends its half of a Diffie-Hellman exchange up front. SNI names the site it wants, which observers can read unless Encrypted Client Hello is used.`},
+ {f:1,t:0,l:`ServerHello: chosen cipher, key share`,k:`ctrl`,n:`The server sends its half. Both sides can now compute the same secret without it ever crossing the wire.`},
+ {f:1,t:0,l:`Certificate, CertificateVerify, Finished`,k:`secure`,n:`Already encrypted. The certificate chain proves the server owns the domain, and CertificateVerify signs the handshake so it cannot be tampered with or replayed.`},
+ {f:0,t:0,l:`verify chain, hostname, dates`,k:`self`,n:`The client walks the chain up to a root certificate built into the OS or browser and checks the name matches and nothing has expired.`},
+ {f:0,t:1,l:`Finished`,k:`secure`,n:`Done in one round trip (TLS 1.2 needed two). Resumed sessions can even send data in the very first message (0-RTT).`},
+ {f:0,t:1,l:`encrypted app data (the HTTP request)`,k:`secure`,n:`From here everything is encrypted and integrity-protected. Observers see only sizes and timing.`}]},
+http:{title:`An HTTP/1.1 request and response`, actors:[`Browser`,`Server`], steps:[
+ {f:0,t:1,l:`GET /products?page=2  Host, Accept, Cookie`,k:`data`,n:`Method and path, then headers. Host lets one IP serve many sites. Cookies or an Authorization header carry identity, because HTTP itself remembers nothing.`},
+ {f:1,t:1,l:`route, auth, query DB, render`,k:`self`,n:`The server does its work. On HTTP/1.1 the connection can't be used for anything else meanwhile.`},
+ {f:1,t:0,l:`200 OK  Content-Type, Cache-Control, body`,k:`data`,n:`Status code (2xx success, 3xx redirect, 4xx client error, 5xx server error), headers, then the body.`},
+ {f:0,t:1,l:`GET /styles.css  (same connection)`,k:`data`,n:`Keep-alive reuses the TCP and TLS connection, skipping another handshake.`},
+ {f:1,t:0,l:`304 Not Modified`,k:`data`,n:`A conditional request (If-None-Match with an ETag) lets the server say "your cached copy is still good" without resending the body.`}]},
+ws:{title:`WebSocket upgrade and messaging`, actors:[`Browser`,`Server`], steps:[
+ {f:0,t:1,l:`GET /chat  Upgrade: websocket`,k:`ctrl`,n:`It starts as an ordinary HTTP request, which is why it passes through proxies on ports 80 and 443.`},
+ {f:1,t:0,l:`101 Switching Protocols`,k:`ctrl`,n:`The server agrees. From this moment the connection is no longer HTTP; it is a framed, two-way pipe.`},
+ {f:0,t:1,l:`text {"type":"join","room":"general"}`,k:`data`,n:`Either side can send whenever it likes. Each frame adds only 2–14 bytes of overhead.`},
+ {f:1,t:0,l:`text {"from":"ada","msg":"hi"}`,k:`push`,n:`The server pushes without being asked. That is the whole point.`},
+ {f:1,t:0,l:`ping`,k:`ctrl`,n:`Ping and pong prove the connection is alive and keep proxies and NAT from timing it out.`},
+ {f:0,t:1,l:`pong`,k:`ctrl`,n:`If pongs stop arriving, treat the connection as dead and reconnect with backoff.`},
+ {f:0,t:1,l:`close (1000)`,k:`ctrl`,n:`A clean shutdown includes a status code. Abrupt drops, like a laptop going to sleep, send no close frame at all.`}]},
+sse:{title:`Server-Sent Events stream`, actors:[`Browser`,`Server`], steps:[
+ {f:0,t:1,l:`GET /events  Accept: text/event-stream`,k:`ctrl`,n:`A normal HTTP GET, opened by new EventSource("/events").`},
+ {f:1,t:0,l:`200 OK  Content-Type: text/event-stream`,k:`ctrl`,n:`The headers arrive, but the body never finishes.`},
+ {f:1,t:0,l:`id: 41  data: {"progress":30}`,k:`push`,n:`Each event is a few text lines ending with a blank line, with optional id and event-name fields.`},
+ {f:1,t:0,l:`id: 42  data: {"progress":75}`,k:`push`,n:`This is how most AI chat interfaces stream text to you as it is generated.`},
+ {f:1,t:0,l:`(connection drops)`,k:`lost`,n:`A Wi-Fi blip, a proxy timeout, a deploy.`},
+ {f:0,t:1,l:`GET /events  Last-Event-ID: 42`,k:`ctrl`,n:`EventSource reconnects by itself and says where it left off, so nothing is missed if the server keeps a short buffer.`},
+ {f:1,t:0,l:`id: 43  data: {"progress":100}`,k:`push`,n:`Resumed. To send data the other way, use a normal fetch or POST; SSE is one-way.`}]},
+longpoll:{title:`Long polling`, actors:[`Browser`,`Server`], steps:[
+ {f:0,t:1,l:`GET /updates?since=17`,k:`ctrl`,n:`"Tell me when there's anything after event 17."`},
+ {f:1,t:1,l:`hold the request open (up to ~30 s)`,k:`self`,n:`Nothing new yet, so the server simply doesn't answer.`},
+ {f:1,t:0,l:`200 OK  [event 18]`,k:`push`,n:`An event arrives and the server responds at once. Near-real-time over plain HTTP.`},
+ {f:0,t:1,l:`GET /updates?since=18`,k:`ctrl`,n:`The client immediately asks again. Events that land in this gap must be buffered by the server.`},
+ {f:1,t:0,l:`204 No Content  (timeout)`,k:`ctrl`,n:`If nothing happens before the timeout, the server answers empty and the client re-asks, which stops proxies from killing an idle request.`}]},
+quic:{title:`QUIC (HTTP/3) connection setup`, actors:[`Client`,`Server`], steps:[
+ {f:0,t:1,l:`Initial [TLS ClientHello + key share]`,k:`ctrl`,n:`Transport setup and the TLS handshake ride together in the first UDP packet. TCP plus TLS would take two round trips before any data.`},
+ {f:1,t:0,l:`Initial + Handshake [ServerHello, cert, Finished]`,k:`secure`,n:`The server answers with its key share and its encrypted certificate.`},
+ {f:0,t:1,l:`Finished + HTTP/3 request on stream 0`,k:`secure`,n:`The request goes out after just one round trip.`},
+ {f:1,t:0,l:`responses on stream 0 and stream 4`,k:`secure`,n:`Streams are independent: a lost packet for stream 4 does not hold up stream 0.`},
+ {f:0,t:0,l:`Wi-Fi → cellular, new IP address`,k:`self`,n:`With TCP this would break the connection. QUIC identifies connections by ID, so it carries on.`},
+ {f:0,t:1,l:`same connection ID, keeps going`,k:`secure`,n:`On the next visit, the client can put data in its very first packet using a resumption ticket (0-RTT).`}]},
+ssh:{title:`An SSH connection`, actors:[`Client`,`Server`], steps:[
+ {f:0,t:1,l:`SSH-2.0-OpenSSH_9.x`,k:`ctrl`,n:`Right after TCP connects, each side announces its version in plain text.`},
+ {f:0,t:1,l:`KEXINIT: supported algorithms`,k:`ctrl`,n:`Both list key-exchange, cipher, and integrity algorithms; the first one they share wins.`},
+ {f:1,t:0,l:`key exchange + host key signature`,k:`ctrl`,n:`A Diffie-Hellman exchange produces session keys, and the server signs it with its long-term host key.`},
+ {f:0,t:0,l:`check host key in known_hosts`,k:`self`,n:`First connection: "Are you sure you want to continue connecting?" Later, a mismatch triggers a loud warning. This is SSH's stand-in for certificate authorities.`},
+ {f:0,t:1,l:`NEWKEYS  (encrypted from here)`,k:`secure`,n:`Everything after this point is encrypted.`},
+ {f:0,t:1,l:`userauth: publickey signature`,k:`secure`,n:`You prove you hold the private key matching a line in the server's authorized_keys. The private key never leaves your machine.`},
+ {f:0,t:1,l:`open channels: shell, sftp, port forward`,k:`secure`,n:`Many channels share one connection: an interactive shell, a file transfer, and a tunnel to a database, all at once.`}]},
+dns:{title:`Resolving example.com from scratch`, actors:[`Your app`,`Resolver`,`Root`,`.com TLD`,`Authoritative`], steps:[
+ {f:0,t:1,l:`A example.com?`,k:`ctrl`,n:`Your OS asks its configured resolver (from DHCP, or 1.1.1.1, 8.8.8.8). If the answer is cached, it ends here.`},
+ {f:1,t:2,l:`A example.com?`,k:`ctrl`,n:`Not cached, so ask a root server. There are 13 root addresses, each served by hundreds of machines worldwide.`},
+ {f:2,t:1,l:`ask the .com servers`,k:`data`,n:`The root doesn't know the answer; it refers the resolver to whoever runs .com.`},
+ {f:1,t:3,l:`A example.com?`,k:`ctrl`,n:`The resolver caches that referral for next time.`},
+ {f:3,t:1,l:`ask ns1.example-dns.com`,k:`data`,n:`The .com servers know which name servers are authoritative for example.com, as set at the registrar.`},
+ {f:1,t:4,l:`A example.com?`,k:`ctrl`,n:`Last hop: the server that actually holds the records.`},
+ {f:4,t:1,l:`93.184.215.14  TTL 300`,k:`data`,n:`The real answer, plus a TTL: cache this for five minutes.`},
+ {f:1,t:0,l:`93.184.215.14`,k:`data`,n:`Returned and cached. Usually a few to tens of milliseconds, or about zero from cache.`}]},
+dhcp:{title:`DHCP: joining a network`, actors:[`Laptop`,`DHCP server`], steps:[
+ {f:0,t:1,l:`DISCOVER  (broadcast)`,k:`ctrl`,n:`The laptop has no IP address yet, so it shouts to everyone on the local network.`},
+ {f:1,t:0,l:`OFFER  192.168.1.20`,k:`data`,n:`A server proposes an address along with the gateway, subnet mask, and DNS servers.`},
+ {f:0,t:1,l:`REQUEST  192.168.1.20`,k:`ctrl`,n:`"I'll take it." Also broadcast, so any other DHCP servers know their offers were declined.`},
+ {f:1,t:0,l:`ACK  lease 24 h`,k:`data`,n:`Done. The laptop renews about halfway through the lease.`}]},
+pg:{title:`Connecting to PostgreSQL and running a query`, actors:[`App / driver`,`PostgreSQL`], steps:[
+ {f:0,t:1,l:`TCP handshake to :5432`,k:`ctrl`,n:`One round trip.`},
+ {f:0,t:1,l:`SSLRequest`,k:`ctrl`,n:`The driver asks to upgrade to TLS.`},
+ {f:1,t:0,l:`'S' (yes), then TLS handshake`,k:`secure`,n:`Another round trip. With sslmode=verify-full the driver checks the certificate the way a browser does.`},
+ {f:0,t:1,l:`StartupMessage  user=app  database=shop`,k:`secure`,n:`Postgres starts a dedicated backend process for this connection, a big reason connections are costly.`},
+ {f:1,t:0,l:`AuthenticationSASL (SCRAM-SHA-256)`,k:`secure`,n:`Challenge-response: the password itself is never sent.`},
+ {f:0,t:1,l:`SASL responses`,k:`secure`,n:`Usually two more messages back and forth.`},
+ {f:1,t:0,l:`AuthenticationOk … ReadyForQuery`,k:`secure`,n:`Connected after four or five round trips, which is why apps pool connections instead of opening one per request.`},
+ {f:0,t:1,l:`Parse/Bind/Execute: SELECT … WHERE id=$1`,k:`data`,n:`The extended protocol sends the query and its parameters separately, which is what prevents SQL injection.`},
+ {f:1,t:0,l:`RowDescription, DataRow, CommandComplete`,k:`data`,n:`Column types, then rows, then a summary. The connection stays open for the next query.`}]},
+grpc:{title:`gRPC bidirectional streaming over HTTP/2`, actors:[`Client stub`,`Server`], steps:[
+ {f:0,t:1,l:`HEADERS  :path /chat.ChatService/Talk`,k:`ctrl`,n:`A new HTTP/2 stream on an existing connection. The path names the service and method from your .proto file.`},
+ {f:0,t:1,l:`DATA  [protobuf ChatMessage]`,k:`data`,n:`Compact, length-prefixed binary: smaller and faster to parse than JSON.`},
+ {f:1,t:0,l:`HEADERS 200 + DATA [ChatMessage]`,k:`push`,n:`In bidirectional streaming, both sides send whenever they like on the same stream.`},
+ {f:0,t:1,l:`DATA  [ChatMessage]`,k:`data`,n:`Other calls run concurrently on other streams of the same connection.`},
+ {f:1,t:0,l:`DATA  [ChatMessage]`,k:`push`,n:`Messages keep flowing until either side finishes.`},
+ {f:1,t:0,l:`TRAILERS  grpc-status: 0 (OK)`,k:`ctrl`,n:`gRPC puts its real status in HTTP trailers at the end, one reason it needs full HTTP/2 support end to end.`}]},
+webrtc:{title:`Setting up a WebRTC call`, actors:[`Peer A`,`Signaling`,`STUN`,`Peer B`], steps:[
+ {f:0,t:0,l:`create offer (codecs, keys)`,k:`self`,n:`The browser describes what it can send and receive in a format called SDP.`},
+ {f:0,t:2,l:`what's my public address?`,k:`ctrl`,n:`A STUN server simply reports back the IP and port it sees: your address from outside the NAT.`},
+ {f:2,t:0,l:`203.0.113.7:61002`,k:`data`,n:`That becomes an ICE candidate, alongside local addresses and a TURN relay address.`},
+ {f:0,t:1,l:`offer + candidates`,k:`ctrl`,n:`You build the signaling channel yourself, commonly a WebSocket to your own server.`},
+ {f:1,t:3,l:`offer + candidates`,k:`ctrl`,n:`Forwarded to the other peer.`},
+ {f:3,t:1,l:`answer + candidates`,k:`ctrl`,n:`Peer B replies with its own capabilities and addresses.`},
+ {f:1,t:0,l:`answer + candidates`,k:`ctrl`,n:`Now both peers know possible routes to each other.`},
+ {f:0,t:3,l:`ICE checks → DTLS → SRTP media`,k:`secure`,n:`The peers test candidate pairs until one works, then encrypt and stream directly. If nothing direct works, traffic flows through a TURN relay instead.`}]},
+mqtt:{title:`MQTT publish and subscribe`, actors:[`Sensor`,`Broker`,`Dashboard`], steps:[
+ {f:2,t:1,l:`CONNECT / CONNACK`,k:`ctrl`,n:`Every client keeps one persistent connection to the broker. Clients never talk to each other directly.`},
+ {f:2,t:1,l:`SUBSCRIBE home/+/temp`,k:`ctrl`,n:`+ matches one topic level; # matches everything below.`},
+ {f:0,t:1,l:`CONNECT  (with last will)`,k:`ctrl`,n:`The last-will message is published automatically if this sensor vanishes without disconnecting cleanly.`},
+ {f:0,t:1,l:`PUBLISH home/kitchen/temp 21.5`,k:`data`,n:`The publisher neither knows nor cares who is listening.`},
+ {f:1,t:0,l:`PUBACK`,k:`ctrl`,n:`At QoS 1 ("at least once"), the broker confirms receipt or the sensor resends.`},
+ {f:1,t:2,l:`PUBLISH home/kitchen/temp 21.5`,k:`push`,n:`The broker fans the message out to every matching subscriber.`}]},
+url:{title:`Opening https://example.com`, actors:[`Browser`,`DNS resolver`,`Load balancer`,`App server`,`Database`], steps:[
+ {f:0,t:0,l:`parse URL; check HSTS & caches`,k:`self`,n:`The browser checks its HTTP cache and DNS cache, and whether HSTS says this domain is HTTPS-only.`},
+ {f:0,t:1,l:`DNS: example.com?`,k:`ctrl`,n:`A UDP query to the resolver, or encrypted DNS over HTTPS. An HTTPS-type record can also advertise HTTP/3 support.`},
+ {f:1,t:0,l:`203.0.113.10`,k:`data`,n:`This is usually the address of a load balancer or CDN edge, not the app server itself.`},
+ {f:0,t:2,l:`TCP SYN, SYN-ACK, ACK`,k:`ctrl`,n:`One round trip. With HTTP/3, this step and the next merge into one QUIC handshake.`},
+ {f:0,t:2,l:`TLS ClientHello … Finished`,k:`secure`,n:`Another round trip. The certificate is verified, and ALPN negotiates "h2" for HTTP/2.`},
+ {f:0,t:2,l:`HTTP/2  GET /`,k:`secure`,n:`The first real request, typically two or three round trips after starting.`},
+ {f:2,t:3,l:`GET /  + X-Forwarded-For`,k:`data`,n:`The load balancer decrypts TLS, picks a healthy backend, and forwards over a separate connection, often pooled and sometimes mTLS.`},
+ {f:3,t:4,l:`SELECT …  (pooled conn)`,k:`data`,n:`The app borrows an already-open database connection from its pool, so no handshake here.`},
+ {f:4,t:3,l:`rows`,k:`data`,n:`Rows come back over the database's own wire protocol.`},
+ {f:3,t:2,l:`200 OK  HTML`,k:`data`,n:`The app renders HTML or returns JSON.`},
+ {f:2,t:0,l:`200 OK  HTML, compressed`,k:`secure`,n:`Back through the same encrypted connection to the browser.`},
+ {f:0,t:2,l:`GET app.js, style.css, logo.svg`,k:`secure`,n:`HTTP/2 multiplexes all the page's assets over that one connection. The page might then open a WebSocket or SSE stream for live data.`}]},
+};
+const SEQ_TABS = [[`tcp`,`TCP`],[`udp`,`UDP`],[`tls`,`TLS 1.3`],[`quic`,`QUIC / HTTP/3`],[`http`,`HTTP/1.1`],[`ws`,`WebSocket`],[`sse`,`SSE`],[`longpoll`,`Long polling`],[`grpc`,`gRPC`],[`ssh`,`SSH`],[`dns`,`DNS`],[`dhcp`,`DHCP`],[`pg`,`PostgreSQL`],[`webrtc`,`WebRTC`],[`mqtt`,`MQTT`]];
+
+const WIFI = {k:`link`, name:`Wi-Fi frame`, fields:[`laptop MAC → router MAC`], who:`Read by your Wi-Fi access point. WPA encryption covers this hop only. The router discards this envelope and builds a new one for its next link.`};
+const IPP = (dst, extra) => ({k:`internet`, name:`IP packet`, fields:[`192.168.1.20 → ${dst}`].concat(extra||[]), who:`Read by every router on the path, often 10–20 of them, and they only care about the destination. Your home router's NAT swaps the source for your public IP.`});
+const SCEN = [
+ {id:`web`, label:`Load a web page`, layers:[WIFI, IPP(`93.184.215.14`,[`TTL 64`]),
+   {k:`transport`, name:`TCP segment`, fields:[`port 52144 → 443`,`seq 1029`], who:`Read by the two operating systems, which reorder, acknowledge, and retransmit. Firewalls and NAT peek at the ports.`},
+   {k:`sec`, name:`TLS record`, fields:[`application data`,`TLS 1.3`], enc:true, who:`Only your browser and the server hold the keys. To anyone else, everything inside this envelope is noise.`},
+   {k:`app`, name:`HTTP/2 frame`, fields:[`HEADERS`,`stream 1`], who:`Read by the web server, or by the load balancer that decrypted TLS on its behalf.`}],
+   payload:`GET /\nhost: example.com\ncookie: session=8f2c…`},
+ {id:`h3`, label:`Same page over HTTP/3`, layers:[WIFI, IPP(`93.184.215.14`),
+   {k:`transport`, name:`UDP datagram`, fields:[`port 61002 → 443`], who:`Just ports and a checksum. Middleboxes see UDP to port 443 and very little else.`},
+   {k:`transport`, name:`QUIC packet`, fields:[`connection ID 7a3f…`], enc:true, who:`QUIC encrypts almost everything, even its own acknowledgements, using TLS 1.3 keys negotiated inside it.`},
+   {k:`app`, name:`HTTP/3 frame`, fields:[`HEADERS`,`stream 0`], who:`Read by the web server.`}],
+   payload:`GET /\nhost: example.com\ncookie: session=8f2c…`},
+ {id:`ssh`, label:`Type a command over SSH`, layers:[WIFI, IPP(`198.51.100.25`),
+   {k:`transport`, name:`TCP segment`, fields:[`port 50822 → 22`], who:`The two operating systems. Anyone watching can tell you are using SSH from the port alone.`},
+   {k:`sec`, name:`SSH transport packet`, fields:[`encrypted + MAC`], enc:true, who:`SSH's own encryption, no TLS involved. Only your client and the server can read inside.`},
+   {k:`app`, name:`SSH channel data`, fields:[`channel 0: session`], who:`The SSH daemon, which hands your keystrokes to a shell.`}],
+   payload:`ls -la\\n`},
+ {id:`db`, label:`Query a database`, layers:[
+   {k:`link`, name:`Ethernet frame`, fields:[`app server → switch`], who:`The data-centre switch. Rebuilt at every hop, like Wi-Fi.`},
+   {k:`internet`, name:`IP packet`, fields:[`10.0.2.15 → 10.0.3.40`], who:`Private addresses, so this traffic should never cross the public internet.`},
+   {k:`transport`, name:`TCP segment`, fields:[`port 40112 → 5432`], who:`Likely one of a handful of long-lived pooled connections.`},
+   {k:`sec`, name:`TLS record`, fields:[`sslmode=verify-full`], enc:true, who:`Without this layer, anyone on the internal network could read queries and results, including personal data.`},
+   {k:`app`, name:`Postgres message`, fields:[`type 'Q'`], who:`The PostgreSQL backend process dedicated to this connection.`}],
+   payload:`SELECT name, email FROM users WHERE id = 42;`},
+ {id:`dns`, label:`Look up a name`, layers:[WIFI, IPP(`1.1.1.1`),
+   {k:`transport`, name:`UDP datagram`, fields:[`port 53211 → 53`], who:`No handshake: one packet out, one back.`},
+   {k:`app`, name:`DNS query`, fields:[`id 0x4f2a`,`type A`], who:`The resolver, and anyone on the path, because classic DNS isn't encrypted. DNS over HTTPS wraps it in TLS instead.`}],
+   payload:`example.com.  IN  A  ?`},
+ {id:`call`, label:`Join a video call`, layers:[WIFI, IPP(`203.0.113.50`),
+   {k:`transport`, name:`UDP datagram`, fields:[`port 50000 → 3478`], who:`UDP, because a late audio packet is worthless; retransmitting it would only add delay.`},
+   {k:`sec`, name:`SRTP (keys via DTLS)`, fields:[`SSRC 0x1a2b`], enc:true, who:`Encrypted media. Only participants, and the media server in most group calls, can decode it.`},
+   {k:`app`, name:`RTP packet`, fields:[`seq 8812`,`timestamp 160320`], who:`The receiver's jitter buffer reorders by sequence number and skips whatever shows up too late.`}],
+   payload:`20 ms of Opus-encoded audio`},
+ {id:`ws`, label:`Send a chat message`, layers:[WIFI, IPP(`93.184.215.14`),
+   {k:`transport`, name:`TCP segment`, fields:[`port 52200 → 443`], who:`One long-lived connection that has been open since the page loaded.`},
+   {k:`sec`, name:`TLS record`, fields:[`application data`], enc:true, who:`wss:// means this pipe is TLS-encrypted end to end.`},
+   {k:`app`, name:`WebSocket frame`, fields:[`opcode 1: text`,`masked`], who:`The WebSocket server. The HTTP part of this conversation ended back at the 101 upgrade.`}],
+   payload:`{"room":"general","msg":"lunch?"}`},
+];
+
+const NEEDS = [
+ {q:`Push live updates from server to browser`, pick:`Server-Sent Events`, ids:[`sse`], why:`One-directional, plain HTTP, reconnects on its own, and works through most proxies. Send anything back with ordinary requests.`, alt:`Need two-way at high frequency? WebSocket. Updates only every minute or so? Short polling is fine.`},
+ {q:`Two-way real-time chat, games, or collaboration`, pick:`WebSocket`, ids:[`websocket`,`webtransport`], why:`Either side can send at any time over one connection with tiny per-message overhead.`, alt:`Building on QUIC and suffering from lag spikes on bad networks? Look at WebTransport. Need rooms, presence, and reconnection handled for you? Use a library or hosted service on top.`},
+ {q:`Audio or video between users`, pick:`WebRTC`, ids:[`webrtc`], why:`Built for low-latency, encrypted media and handles NAT traversal. Bring a signaling channel and a TURN server.`, alt:`For one-to-many broadcast to thousands of viewers, HTTP-based streaming (HLS/DASH) scales far better.`},
+ {q:`A public API many different clients will use`, pick:`REST over HTTPS`, ids:[`rest`,`graphql`], why:`Universally understood, cacheable, and easy to debug with curl and a browser.`, alt:`If clients keep needing different shapes of related data, GraphQL. If the consumer is another of your own services, gRPC.`},
+ {q:`Fast, typed calls between internal services`, pick:`gRPC`, ids:[`grpc`,`mtls`], why:`Generated clients, strict schemas, binary messages, and streaming over HTTP/2.`, alt:`Pair it with mTLS for identity. If teams or tooling prefer JSON, REST is still perfectly reasonable.`},
+ {q:`Tell another system when something happens`, pick:`Webhooks`, ids:[`webhooks`], why:`The provider POSTs to your URL the moment an event occurs, so nobody polls.`, alt:`If you can't expose a public URL, long polling or a message queue works instead.`},
+ {q:`Work on a remote server`, pick:`SSH`, ids:[`ssh`], why:`Encrypted shell, file transfer, and port tunnelling in one tool.`, alt:`Need a full graphical desktop? RDP or VNC behind a VPN.`},
+ {q:`Move files securely`, pick:`SFTP or rsync over SSH`, ids:[`sftp`,`rsync`], why:`Both ride on SSH, so you get encryption and key-based auth for free. rsync only sends what changed.`, alt:`Large files to and from a browser? Plain HTTPS uploads, or pre-signed object-storage URLs.`},
+ {q:`Small IoT devices on unreliable networks`, pick:`MQTT`, ids:[`mqtt`], why:`Tiny packets, persistent sessions, delivery guarantees you choose, and a last-will message when devices vanish.`, alt:`For devices that wake rarely and send one reading, a simple HTTPS POST can be enough.`},
+ {q:`Decouple services and absorb traffic spikes`, pick:`A message queue (AMQP / RabbitMQ, SQS)`, ids:[`amqp`,`kafka`], why:`Producers drop work into a queue and consumers process it at their own pace, with retries.`, alt:`Need many consumers to read the same events, or replay history? A log like Kafka.`},
+ {q:`App to database, at scale`, pick:`Pooled connections over TLS`, ids:[`pool`,`dbwire`,`drivers`], why:`Opening a database connection costs several round trips and server memory, so reuse them and keep them encrypted.`, alt:`Serverless or many app instances? Put a pooler like PgBouncer or a managed proxy in front.`},
+ {q:`Reach a private network from anywhere`, pick:`WireGuard VPN`, ids:[`vpn`], why:`Fast, modern, small configuration, and it wraps all traffic, not just one app's.`, alt:`Only need one port, once? An SSH tunnel is quicker to set up.`},
+ {q:`Lowest latency where stale data is useless`, pick:`UDP (or WebRTC unreliable data channels)`, ids:[`udp`,`webrtc`,`quic`], why:`No retransmits holding up fresh data. Games send the latest position; a lost one is replaced by the next.`, alt:`Want some reliability and encryption without building it yourself? QUIC datagrams or WebTransport.`},
+];
+
+const CONF = [
+ {t:`SSL vs TLS (and "TCL")`, d:[`They're the same thing at different ages. SSL was renamed TLS in 1999; every SSL version is now broken and disabled, but people still say "SSL certificate" out of habit. Use TLS 1.2 at minimum, ideally 1.3.`,`"TCL" is almost certainly TLS misremembered. Tcl is an unrelated scripting language.`]},
+ {t:`HTTP vs HTTPS`, d:[`HTTPS isn't a different protocol. It's ordinary HTTP carried inside a TLS-encrypted connection, usually on port 443 instead of 80.`]},
+ {t:`TCP vs UDP`, d:[`TCP is a phone call: you connect first, everything arrives in order, and anything missed is repeated. UDP is a stack of postcards: no setup, each stands alone, and some may never arrive.`,`TCP for things that must be complete; UDP for things that must be fresh.`]},
+ {t:`Socket vs WebSocket`, d:[`A socket is the operating system's handle for any TCP or UDP endpoint; every network program uses them. A WebSocket is one specific protocol built on a TCP socket, starting with an HTTP upgrade. All WebSockets use sockets; most sockets aren't WebSockets.`]},
+ {t:`Port vs socket vs connection`, d:[`A port is just a number (443). A socket is one endpoint. A connection is identified by four values: both IPs and both ports. That's how one server listening on port 443 holds thousands of simultaneous connections; each client brings a different IP and port.`]},
+ {t:`SSE vs WebSocket`, d:[`SSE: server-to-browser only, plain HTTP, text, automatic reconnection with resume. WebSocket: both directions, binary or text, but you own reconnects, and your infrastructure has to support upgraded connections.`,`If data only flows down to the browser, SSE is usually the simpler win.`]},
+ {t:`SFTP vs FTPS vs SCP`, d:[`SFTP is a file protocol inside SSH (port 22). FTPS is old FTP wrapped in TLS. SCP is a simple copy command over SSH. SFTP and FTPS share nothing but a goal.`]},
+ {t:`HTTP/1.1 vs HTTP/2 vs HTTP/3`, d:[`Identical meaning: same methods, headers, and status codes. What changes is the delivery. 1.1 is text, one request at a time per connection. 2 is binary with many streams on one TCP connection. 3 moves to QUIC over UDP so a lost packet only stalls one stream.`]},
+ {t:`REST vs GraphQL vs gRPC`, d:[`REST: many URLs, standard HTTP methods, JSON, cache-friendly. GraphQL: one URL, the client describes exactly what data it wants. gRPC: generated function calls with binary messages over HTTP/2, ideal between your own services.`]},
+ {t:`Proxy vs reverse proxy vs load balancer vs CDN`, d:[`A forward proxy acts for clients going out. A reverse proxy acts for servers, taking incoming traffic. A load balancer is a reverse proxy whose main job is spreading requests across backends. A CDN is a global network of caching reverse proxies near users.`]},
+ {t:`Encryption vs authentication`, d:[`Encryption hides the contents. Authentication proves who's on the other end. Encryption without authentication is a private conversation with a possible impostor.`,`TLS certificates and SSH host keys exist for the authentication half, which is why their warnings matter.`]},
+ {t:`Message queue vs pub/sub vs log`, d:[`Queue: each message goes to one worker and disappears once handled (RabbitMQ, SQS). Pub/sub: each message goes to every current subscriber (MQTT, Redis pub/sub). Log: messages are kept, and each reader tracks its own position and can replay (Kafka).`]},
+ {t:`Latency vs bandwidth`, d:[`Bandwidth is how wide the pipe is; latency is how long the pipe is. A new HTTPS connection over TCP needs roughly three round trips before the first byte of the response, so at 100 ms each, that's 300 ms no matter how fast your connection is. That's why handshake counts, keep-alive, pooling, and QUIC matter.`]},
+ {t:`Head-of-line blocking`, d:[`When one stuck item holds up everything behind it. HTTP/1.1 has it per connection; HTTP/2 fixed it at the HTTP level but TCP still has it underneath; QUIC removes it by making streams independent.`]},
+ {t:`Stateless vs stateful connections`, d:[`HTTP requests are stateless: any server behind a load balancer can answer any request. WebSockets, database sessions, and SSH are stateful: the conversation lives on one specific server, which makes scaling, failover, and deploys harder.`]},
+];
+
+/* ---------- helpers ---------- */
+const $ = (s, r=document) => r.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const NS = "http://www.w3.org/2000/svg";
+function S(tag, attrs, text){ const e=document.createElementNS(NS,tag); if(attrs) for(const k in attrs) e.setAttribute(k, attrs[k]); if(text!=null) e.textContent=text; return e; }
+function head(g,x1,y1,x2,y2){ const a=Math.atan2(y2-y1,x2-x1), s=7; const pts=[[x2,y2],[x2-s*Math.cos(a-0.45),y2-s*Math.sin(a-0.45)],[x2-s*Math.cos(a+0.45),y2-s*Math.sin(a+0.45)]]; g.appendChild(S("polygon",{points:pts.map(p=>p.map(v=>v.toFixed(1)).join(",")).join(" "), class:"head"})); }
+const store = {
+  get(k){ try{ return localStorage.getItem(k) || ""; }catch(e){ return ""; } },
+  set(k,v){ try{ if(v) localStorage.setItem(k,v); else localStorage.removeItem(k); }catch(e){} }
+};
+
+
+/* ---------- envelopes ---------- */
+let scenId = "web", selLayer = 0;
+function renderScenButtons(){
+  const host=$("#scen");
+  host.innerHTML = SCEN.map(s=>`<button type="button" data-id="${s.id}" aria-pressed="${s.id===scenId}">${esc(s.label)}</button>`).join("");
+  host.onclick = e => { const b=e.target.closest("button"); if(!b) return; scenId=b.dataset.id; selLayer=0; renderScenButtons(); renderEnv(); };
+}
+function fakeHex(n){ let s=""; const h="0123456789abcdef"; let x=2463534242; for(let i=0;i<n;i++){ x^=x<<13; x^=x>>>17; x^=x<<5; s+=h[(x>>>0)%16]; if(i%4===3) s+=" "; } return s; }
+function renderEnv(){
+  const sc = SCEN.find(s=>s.id===scenId), snoop=$("#snoop").checked;
+  const encIdx = sc.layers.findIndex(l=>l.enc);
+  function box(i){
+    if(snoop && encIdx>=0 && i>encIdx) return `<div class="cipher"><b>Encrypted. An eavesdropper sees only this:</b>${fakeHex(96)}</div>`;
+    if(i===sc.layers.length) return `<div class="payload">${esc(sc.payload)}</div>`;
+    const L=sc.layers[i];
+    return `<div class="env env-${L.k}${i===selLayer?" sel":""}" data-i="${i}" tabindex="0" role="button" aria-pressed="${i===selLayer}">
+      <div class="env-h"><span class="env-name">${esc(L.name)}</span>${L.fields.map(f=>`<span class="tag">${esc(f)}</span>`).join("")}${L.enc?`<span class="lock">contents encrypted</span>`:""}</div>${box(i+1)}</div>`;
+  }
+  let who;
+  if(snoop){
+    const vis = (encIdx<0 ? sc.layers : sc.layers.slice(0,encIdx+1)).map(l=>l.name);
+    const hid = encIdx<0 ? [] : sc.layers.slice(encIdx+1).map(l=>l.name).concat(["your actual data"]);
+    who = `<div class="who"><strong>What someone on the same network can see</strong>
+      <div class="see"><div><b>Visible</b>${esc(vis.join(", "))}${encIdx<0?", and the payload itself":""}. Also timing and sizes.</div>
+      <div><b>Hidden</b>${hid.length?esc(hid.join(", ")):"Nothing. This one travels in the clear."}</div></div></div>`;
+  } else {
+    const L=sc.layers[selLayer];
+    who = `<div class="who"><strong>${esc(L.name)}: who reads this envelope?</strong>${esc(L.who)}</div>`;
+  }
+  const wrap=$("#envWrap");
+  wrap.innerHTML = box(0) + who;
+}
+$("#envWrap").addEventListener("click", e=>{ if($("#snoop").checked) return; const el=e.target.closest(".env"); if(!el) return; e.stopPropagation(); selLayer=+el.dataset.i; renderEnv(); const n=$(`.env[data-i="${selLayer}"]`); if(n) n.focus({preventScroll:true}); });
+$("#envWrap").addEventListener("keydown", e=>{ if(e.key!=="Enter" && e.key!==" ") return; const el=e.target.closest(".env"); if(!el) return; e.preventDefault(); el.click(); });
+$("#snoop").addEventListener("change", renderEnv);
+
+/* ---------- stack ---------- */
+function renderBands(){
+  $("#bands").innerHTML = ORDER.map(k=>{
+    const L=LAYERS[k], items=P.filter(p=>p.layer===k);
+    return `<div class="band band-${k}"><div><h3>${L.name}</h3><div class="osi">${L.osi}</div><p>${L.desc}</p></div>
+      <div class="chips">${items.map(p=>`<button type="button" class="chip" data-open="${p.id}">${esc(p.name)}</button>`).join("")}</div></div>`;
+  }).join("");
+}
+
+/* ---------- field guide ---------- */
+const CATS = [...new Set(P.map(p=>p.cat))];
+let cat = "All";
+function renderCats(){
+  $("#cats").innerHTML = ["All",...CATS].map(c=>`<button type="button" class="chip" data-cat="${esc(c)}" aria-pressed="${c===cat}">${esc(c)}</button>`).join("");
+}
+$("#cats").addEventListener("click", e=>{ const b=e.target.closest("[data-cat]"); if(!b) return; cat=b.dataset.cat; renderCats(); renderGrid(); });
+$("#q").addEventListener("input", renderGrid);
+function renderGrid(){
+  const q=$("#q").value.trim().toLowerCase();
+  const list=P.filter(p=>(cat==="All"||p.cat===cat) && (!q || [p.name,p.full,p.sum,p.port,p.cat,p.how].join(" ").toLowerCase().includes(q)));
+  $("#grid").innerHTML = list.length ? list.map(p=>`<button type="button" class="card L-${p.layer}" data-open="${p.id}">
+     <span class="nm">${esc(p.name)}${store.get("htc:note:"+p.id)?`<span class="has-notes">your notes</span>`:""}</span>
+     <span class="fl">${esc(p.full)}</span><span class="sm">${esc(p.sum)}</span><span class="pt">${esc(p.port)}</span></button>`).join("")
+   : `<p class="empty">Nothing matches "${esc(q)}". Try a port number, like 443, or a word like "stream".</p>`;
+}
+
+/* ---------- sequence player ---------- */
+function buildSeqSVG(seq){
+  const n=seq.actors.length, gap = n===2 ? 440 : 170, pad=80, W=pad*2+gap*(n-1), rowH=44, top=62, H=top+seq.steps.length*rowH+14;
+  const X=i=>pad+i*gap;
+  const svg=S("svg",{viewBox:`0 0 ${W} ${H}`, width:W, height:H, class:"seq", role:"img", "aria-label":seq.title+" sequence diagram"});
+  seq.actors.forEach((a,i)=>{
+    svg.appendChild(S("line",{x1:X(i),y1:40,x2:X(i),y2:H-4,class:"life"}));
+    svg.appendChild(S("rect",{x:X(i)-64,y:6,width:128,height:32,rx:6,class:"actor-box"}));
+    svg.appendChild(S("text",{x:X(i),y:27,"text-anchor":"middle",class:"actor-txt"},a));
+  });
+  const groups=seq.steps.map((st,i)=>{
+    const y=top+i*rowH+20, g=S("g",{class:"step k-"+st.k});
+    g.appendChild(S("text",{x:14,y:y+4,class:"num"},String(i+1)));
+    if(st.f===st.t){
+      g.classList.add("k-self");
+      const x=X(st.f);
+      g.appendChild(S("rect",{x:x-7,y:y-15,width:14,height:28,rx:3}));
+      const last = st.f===n-1;
+      g.appendChild(S("text",{x:last?x-14:x+14,y:y+4,"text-anchor":last?"end":"start",class:"lbl"},st.l));
+    } else {
+      const x1=X(st.f), x2=X(st.t), d=Math.sign(x2-x1);
+      if(st.k==="lost"){
+        const xm=(x1+x2)/2;
+        g.appendChild(S("line",{x1:x1+d*2,y1:y,x2:xm,y2:y,class:"draw",pathLength:1}));
+        g.appendChild(S("line",{x1:xm-6,y1:y-6,x2:xm+6,y2:y+6,class:"x"}));
+        g.appendChild(S("line",{x1:xm-6,y1:y+6,x2:xm+6,y2:y-6,class:"x"}));
+      } else {
+        g.appendChild(S("line",{x1:x1+d*2,y1:y,x2:x2-d*3,y2:y,class:"draw",pathLength:1}));
+        head(g,x1,y,x2-d*2,y);
+      }
+      g.appendChild(S("text",{x:Math.min(x1,x2)+10,y:y-7,class:"lbl"},st.l));
+    }
+    svg.appendChild(g); return g;
+  });
+  return {svg, groups};
+}
+function seqPlayer(host, seq){
+  host.innerHTML = `<div class="seq-head"><h3>${esc(seq.title)}</h3><div class="seq-ctrls">
+    <button type="button" class="btn" data-a="prev">Back</button><button type="button" class="btn primary" data-a="next">Next step</button>
+    <button type="button" class="btn" data-a="play">Play</button><button type="button" class="btn" data-a="all">Show all</button><span class="count"></span></div></div>
+    <div class="seq-scroll"></div><p class="seq-note" aria-live="polite"></p>`;
+  const {svg,groups}=buildSeqSVG(seq); host.querySelector(".seq-scroll").appendChild(svg);
+  const note=host.querySelector(".seq-note"), count=host.querySelector(".count");
+  const bPrev=host.querySelector('[data-a="prev"]'), bNext=host.querySelector('[data-a="next"]'), bPlay=host.querySelector('[data-a="play"]');
+  let cur=0, timer=null;
+  function show(){
+    groups.forEach((g,i)=>{ g.classList.toggle("future",i>cur); g.classList.remove("current"); });
+    void svg.getBoundingClientRect();
+    groups[cur].classList.add("current");
+    count.textContent=`${cur+1} / ${groups.length}`;
+    note.textContent = seq.steps[cur].n || seq.steps[cur].l;
+    bPrev.disabled = cur===0; bNext.disabled = cur===groups.length-1;
+  }
+  function stop(){ clearInterval(timer); timer=null; bPlay.textContent="Play"; }
+  host.querySelector(".seq-ctrls").addEventListener("click", e=>{
+    const a=e.target.closest("[data-a]"); if(!a) return;
+    const act=a.dataset.a;
+    if(act==="prev"){ stop(); cur=Math.max(0,cur-1); }
+    if(act==="next"){ stop(); cur=Math.min(groups.length-1,cur+1); }
+    if(act==="all"){ stop(); cur=groups.length-1; }
+    if(act==="play"){
+      if(timer){ stop(); return; }
+      if(cur===groups.length-1) cur=-1;
+      bPlay.textContent="Pause";
+      const tick=()=>{ cur++; show(); if(cur>=groups.length-1) stop(); };
+      tick(); timer=setInterval(tick,1700); return;
+    }
+    show();
+  });
+  show();
+  return {stop};
+}
+
+/* handshake tabs */
+let seqId="tcp", activePlayer=null;
+function renderSeqTabs(){
+  $("#seqTabs").innerHTML = SEQ_TABS.map(([id,l])=>`<button type="button" class="chip" role="tab" data-seq="${id}" aria-selected="${id===seqId}" aria-pressed="${id===seqId}">${esc(l)}</button>`).join("");
+}
+$("#seqTabs").addEventListener("click", e=>{ const b=e.target.closest("[data-seq]"); if(!b) return; seqId=b.dataset.seq; renderSeqTabs(); if(activePlayer) activePlayer.stop(); activePlayer=seqPlayer($("#seqPanel"), SEQ[seqId]); });
+
+/* ---------- realtime timeline ---------- */
+function renderRealtime(){
+  const W=880, L=270, T=13, x=t=>L+t*((W-L-20)/T), laneH=92, top=46, events=[1.5,4.2,4.6,9.1];
+  const H=top+4*laneH+6;
+  const svg=S("svg",{viewBox:`0 0 ${W} ${H}`,width:W,height:H,class:"rt",role:"img","aria-label":"Comparison of short polling, long polling, Server-Sent Events and WebSocket delivering the same four events"});
+  svg.appendChild(S("text",{x:0,y:20,class:"lname"},"Server events"));
+  svg.appendChild(S("text",{x:0,y:36,class:"lnote"},"same four in every row"));
+  events.forEach((t,i)=>{
+    svg.appendChild(S("line",{x1:x(t),y1:26,x2:x(t),y2:H-4,class:"guide"}));
+    svg.appendChild(S("rect",{x:x(t)-6,y:14,width:12,height:12,rx:2,transform:`rotate(45 ${x(t)} 20)`,class:"ev"}));
+  });
+  for(let s=0;s<=12;s+=3) svg.appendChild(S("text",{x:x(s),y:H-2,"text-anchor":"middle",class:"rl"},s+"s"));
+  const lanes=[
+    {n:"Short polling",note:"polls every 3 s, avg wait 2.2 s"},
+    {n:"Long polling",note:"5 requests, near-instant"},
+    {n:"Server-Sent Events",note:"1 request, instant, one-way"},
+    {n:"WebSocket",note:"1 connection, instant, two-way"},
+  ];
+  lanes.forEach((ln,i)=>{
+    const y0=top+i*laneH, yc=y0+22, ys=y0+66, g=S("g");
+    g.appendChild(S("text",{x:0,y:yc+16,class:"lname"},ln.n));
+    g.appendChild(S("text",{x:0,y:yc+34,class:"lnote"},ln.note));
+    g.appendChild(S("line",{x1:L-6,y1:yc,x2:W-10,y2:yc,class:"rail"}));
+    g.appendChild(S("line",{x1:L-6,y1:ys,x2:W-10,y2:ys,class:"rail"}));
+    g.appendChild(S("text",{x:L-10,y:yc+4,"text-anchor":"end",class:"rl"},"browser"));
+    g.appendChild(S("text",{x:L-10,y:ys+4,"text-anchor":"end",class:"rl"},"server"));
+    const arrow=(t1,ya,t2,yb,cls)=>{ const a=S("g",{class:cls}); a.appendChild(S("line",{x1:x(t1),y1:ya,x2:x(t2),y2:yb})); head(a,x(t1),ya,x(t2),yb); g.appendChild(a); };
+    const dot=t=>g.appendChild(S("circle",{cx:x(t),cy:yc,r:3.5,class:"dot"}));
+    if(i===0){
+      [[0,false],[3,true],[6,true],[9,false],[12,true]].forEach(([t,has])=>{
+        arrow(t,yc,t+0.2,ys,"k-ctrl"); arrow(t+0.35,ys,t+0.55,yc,has?"k-push":"empty-r"); if(has) dot(t+0.55);
+      });
+    } else if(i===1){
+      [[0,1.5],[1.8,4.2],[4.5,4.6],[4.9,9.1],[9.4,13]].forEach(([a,b],j,arr)=>{
+        arrow(a,yc,a+0.2,ys,"k-ctrl");
+        g.appendChild(S("rect",{x:x(a+0.2),y:ys-4,width:Math.max(2,x(b)-x(a+0.2)),height:8,rx:2,class:"hold"}));
+        if(j<arr.length-1){ arrow(b,ys,b+0.2,yc,"k-push"); dot(b+0.2); }
+      });
+    } else {
+      arrow(0,yc,0.2,ys,"k-ctrl");
+      g.appendChild(S("rect",{x:x(0.2),y:yc+3,width:x(13)-x(0.2),height:ys-yc-6,class:"stream"}));
+      events.forEach(t=>{ arrow(t,ys,t+0.08,yc,"k-push"); dot(t+0.08); });
+      if(i===3) [2.6,7.3].forEach(t=>arrow(t,yc,t+0.08,ys,"k-data"));
+    }
+    svg.appendChild(g);
+  });
+  $("#rt").appendChild(svg);
+}
+
+/* ---------- table ---------- */
+function renderTable(){
+  const color=k=>`var(--${k})`;
+  $("#tbl").innerHTML = `<thead><tr><th>Protocol</th><th>Layer</th><th>Runs on</th><th>Connection</th><th>Direction</th><th>Encryption</th><th>Typical port</th></tr></thead><tbody>`+
+    P.map(p=>`<tr><td><span class="dotl" style="background:${color(p.layer)}"></span><button type="button" data-open="${p.id}">${esc(p.name)}</button></td><td>${LAYERS[p.layer].name}</td><td>${esc(p.tr)}</td><td>${esc(p.conn)}</td><td>${esc(p.dir)}</td><td>${esc(p.enc)}</td><td class="mono">${esc(p.port)}</td></tr>`).join("")+`</tbody>`;
+}
+
+/* ---------- chooser ---------- */
+let need=0;
+function renderNeeds(){
+  $("#needs").innerHTML = NEEDS.map((n,i)=>`<button type="button" data-n="${i}" aria-pressed="${i===need}">${esc(n.q)}</button>`).join("");
+  const n=NEEDS[need];
+  $("#answer").innerHTML = `<p class="pick">${esc(n.pick)}</p><p>${esc(n.why)}</p><p class="alt">${esc(n.alt)}</p>
+    <div class="chips">${n.ids.map(id=>`<button type="button" class="chip" data-open="${id}">Read about ${esc(PID[id].name)}</button>`).join("")}</div>`;
+}
+$("#needs").addEventListener("click", e=>{ const b=e.target.closest("[data-n]"); if(!b) return; need=+b.dataset.n; renderNeeds(); });
+
+/* ---------- confusables ---------- */
+function renderConf(){
+  $("#conf").innerHTML = CONF.map(c=>`<details><summary>${esc(c.t)}</summary><div>${c.d.map(p=>`<p>${esc(p)}</p>`).join("")}</div></details>`).join("");
+}
+
+/* ---------- dialog ---------- */
+const dlg=$("#dlg"); let dlgPlayer=null, noteTimer=null;
+function openDialog(id){
+  const p=PID[id]; if(!p) return;
+  if(dlgPlayer){ dlgPlayer.stop(); dlgPlayer=null; }
+  const L=LAYERS[p.layer];
+  $("#dlgIn").innerHTML = `<div class="dlg-top"><div><span class="badge" style="background:var(--${p.layer}-bg);color:var(--${p.layer})">${L.name} layer</span><span class="badge" style="background:var(--surface2);color:var(--muted)">${esc(p.cat)}</span>
+      <h2 id="dlgTitle" style="margin-top:8px">${esc(p.name)}</h2><p class="dlg-full">${esc(p.full)}</p></div>
+      <button type="button" class="close" id="dlgClose">Close</button></div>
+    <p style="font-size:18px;margin:0;max-width:70ch">${esc(p.sum)}</p>
+    <div class="facts"><div><b>Port</b>${esc(p.port)}</div><div><b>Runs on</b>${esc(p.tr)}</div><div><b>Connection</b>${esc(p.conn)}</div><div><b>Direction</b>${esc(p.dir)}</div><div><b>Encryption</b>${esc(p.enc)}</div></div>
+    <div class="dlg-sec"><h3>How it works</h3><p>${esc(p.how)}</p></div>
+    <div class="dlg-sec"><h3>Reach for it when</h3><p>${esc(p.use)}</p></div>
+    <div class="dlg-sec watch"><h3>Watch out for</h3><p>${esc(p.watch)}</p></div>
+    ${p.seq?`<div class="panel" id="dlgSeq" style="margin:18px 0"></div>`:""}
+    ${p.rel&&p.rel.length?`<div class="dlg-sec"><h3>Related</h3><div class="chips">${p.rel.filter(r=>PID[r]).map(r=>`<button type="button" class="chip" data-open="${r}">${esc(PID[r].name)}</button>`).join("")}</div></div>`:""}
+    <div class="dlg-sec notes"><h3><label for="noteBox">My notes</label></h3><textarea id="noteBox" placeholder="Questions, examples from your own work, commands you always forget…"></textarea><small>Saved automatically in this browser.</small></div>`;
+  if(p.seq) dlgPlayer=seqPlayer($("#dlgSeq"), SEQ[p.seq]);
+  const box=$("#noteBox"); box.value=store.get("htc:note:"+id);
+  box.addEventListener("input", ()=>{ clearTimeout(noteTimer); noteTimer=setTimeout(()=>store.set("htc:note:"+id, box.value.trim()?box.value:""),300); });
+  $("#dlgClose").addEventListener("click", ()=>dlg.close());
+  if(!dlg.open) dlg.showModal();
+  $("#dlgIn").scrollTop=0;
+}
+dlg.addEventListener("close", ()=>{ const box=$("#noteBox"); if(box && dlg.dataset.id){ clearTimeout(noteTimer); store.set("htc:note:"+dlg.dataset.id, box.value.trim()?box.value:""); } if(dlgPlayer){ dlgPlayer.stop(); dlgPlayer=null; } renderGrid(); });
+dlg.addEventListener("click", e=>{ if(e.target===dlg) dlg.close(); });
+document.addEventListener("click", e=>{ const b=e.target.closest("[data-open]"); if(!b) return; const box=$("#noteBox"); if(box && dlg.open){ clearTimeout(noteTimer); } flushNote(); openDialog(b.dataset.open); dlg.dataset.id=b.dataset.open; });
+function flushNote(){ const box=$("#noteBox"); if(box && dlg.open && dlg.dataset.id){ store.set("htc:note:"+dlg.dataset.id, box.value.trim()?box.value:""); } }
+dlg.addEventListener("cancel", flushNote);
+document.addEventListener("click", e=>{ if(e.target && e.target.id==="dlgClose") flushNote(); }, true);
+
+/* ---------- init ---------- */
+renderScenButtons(); renderEnv(); renderBands(); renderCats(); renderGrid(); renderSeqTabs();
+activePlayer=seqPlayer($("#seqPanel"), SEQ[seqId]);
+renderRealtime(); seqPlayer($("#journeyPanel"), SEQ.url); renderTable(); renderNeeds(); renderConf();
+</script>
+<script type="module" src="../explainer.js"></script>
+</body>
+</html>

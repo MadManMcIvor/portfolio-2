@@ -1,0 +1,834 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- Theme: light by default, applied before first paint. Same key as the rest of the
+     site, so the choice made on the home page carries here and back. -->
+<script>
+  (function () {
+    var KEY = 'theme';
+    var DEFAULT = 'light';
+    function apply(choice) {
+      document.documentElement.setAttribute('data-theme', choice);
+    }
+    function stored() {
+      try {
+        var v = localStorage.getItem(KEY);
+        return v === 'light' || v === 'dark' ? v : null;
+      } catch (e) {
+        return null;
+      }
+    }
+    apply(stored() || DEFAULT);
+    window.setTheme = function (choice) {
+      apply(choice);
+      try {
+        localStorage.setItem(KEY, choice);
+      } catch (e) {}
+    };
+  })();
+</script>
+<link rel="stylesheet" href="../../css/tokens.css">
+<title>System design field guide — Alex McIvor</title>
+<meta name="description" content="Earn your complexity: start with one box, and add each piece of infrastructure only when a real signal asks for it.">
+<style>
+/* Palette: mapped onto Cream & Ink (../../css/tokens.css, ../explainer.css). "Earned" is
+   this guide's one highlight — a soft ochre that marks each piece as it's added. It stays
+   mid-light in both themes, so the dark text set on it holds. */
+:root{
+  --surface:var(--paper-raised); --ink-soft:var(--ink-muted); --muted:var(--ink-muted);
+  --rule:var(--paper-line); --rule-strong:var(--ink-faint); --grid:rgb(28 25 23 / 4.5%);
+  --earned:#e2c47c; --earned-soft:color-mix(in srgb, var(--earned) 34%, transparent);
+  --accent:var(--clay); --warn:var(--cat-plum);
+  --sans:var(--font-sans);
+  --mono:var(--font-mono);
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+:root[data-theme="dark"]{
+  --grid:rgb(242 237 227 / 3.5%);
+  --earned:#b8934a; --earned-soft:color-mix(in srgb, var(--earned) 26%, transparent);
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:var(--font-sans); font-size:1.0625rem; line-height:1.6;
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:24px 24px;
+}
+.wrap{max-width:1120px;margin:0 auto;padding:0 clamp(16px,4vw,40px)}
+header{padding:clamp(32px,6vw,72px) 0 20px}
+h1{
+  font-family:var(--font-serif); font-weight:400;
+  font-size:clamp(2.4rem,5.5vw,4rem); line-height:1.05; letter-spacing:-.01em; margin:0 0 16px;
+  text-wrap:balance;
+}
+.subhead{
+  font-family:var(--sans);font-weight:600;letter-spacing:-.005em;
+  font-size:clamp(1.15rem,2vw,1.45rem);line-height:1.3;margin:0 0 26px;color:var(--ink);
+}
+.subhead span{
+  background:linear-gradient(transparent 55%, color-mix(in srgb, var(--earned) 60%, transparent) 55%, color-mix(in srgb, var(--earned) 60%, transparent) 92%, transparent 92%);
+  padding:0 .2em;margin-left:-.2em;-webkit-box-decoration-break:clone;box-decoration-break:clone;
+}
+.lede{font-size:clamp(1.05rem,1.6vw,1.25rem);max-width:60ch;color:var(--ink-soft);margin:0}
+.lede strong{color:var(--ink);font-weight:600}
+
+nav.tabs{
+  position:sticky; top:env(safe-area-inset-top,0px); z-index:20;
+  background:var(--paper); border-bottom:1px solid var(--rule-strong);
+  margin-top:28px;
+}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:21;background:var(--paper)}
+.tablist{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}
+.tablist::-webkit-scrollbar{display:none}
+.tab{
+  font-family:var(--sans); font-weight:600; font-size:.98rem;
+  background:none; border:0; color:var(--muted); cursor:pointer;
+  padding:14px 16px 12px; border-bottom:4px solid transparent; white-space:nowrap;
+}
+.tab:hover{color:var(--ink)}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--earned)}
+.tab:focus-visible,button:focus-visible,summary:focus-visible,a:focus-visible{outline:2.5px solid var(--accent);outline-offset:2px;border-radius:3px}
+
+main{padding:34px 0 80px}
+section[role="tabpanel"][hidden]{display:none}
+h2{font-family:var(--sans);font-weight:650;font-size:clamp(1.6rem,3.2vw,2.2rem);line-height:1.1;margin:0 0 10px;letter-spacing:-.01em}
+h3{font-family:var(--sans);font-weight:700;font-size:1.2rem;margin:0 0 6px}
+h4{font-family:var(--sans);font-weight:650;font-size:.95rem;margin:0 0 6px;color:var(--ink-soft)}
+p{margin:0 0 1em}
+.intro{max-width:66ch;color:var(--ink-soft);margin-bottom:26px}
+code{font-family:var(--mono);font-size:.86em;background:var(--earned-soft);padding:.05em .3em;border-radius:3px}
+a{color:var(--accent)}
+
+/* ---------- growth path ---------- */
+.stepper{display:flex;gap:0;margin:0 0 14px;overflow-x:auto;scrollbar-width:thin;padding-bottom:4px}
+.step{
+  flex:1 0 auto; min-width:118px; text-align:left; cursor:pointer;
+  font-family:var(--sans); background:transparent; color:var(--muted);
+  border:0; border-top:4px solid var(--rule); padding:10px 12px 8px 0; margin-right:6px;
+}
+.step .n{display:block;font-family:var(--font-serif);font-weight:400;font-size:1.35rem;line-height:1}
+.step .t{display:block;font-weight:600;font-size:.86rem;line-height:1.25;margin-top:4px}
+.step.past{border-top-color:var(--ink-soft);color:var(--ink-soft)}
+.step[aria-current="step"]{border-top-color:var(--earned);color:var(--ink)}
+.step:hover{color:var(--ink)}
+
+.diagram-frame{
+  background:var(--surface); border:1px solid var(--rule-strong); border-radius:var(--radius-sm);
+  overflow-x:auto; position:relative;
+}
+.diagram-frame svg{display:block;width:100%;min-width:720px;height:auto}
+.scroll-hint{display:none;font-family:var(--sans);font-size:.8rem;color:var(--muted);margin:6px 2px 0}
+@media (max-width:760px){.scroll-hint{display:block}}
+.legend{display:flex;flex-wrap:wrap;gap:18px;font-family:var(--sans);font-size:.84rem;color:var(--muted);margin:10px 2px 0}
+.legend span{display:inline-flex;align-items:center;gap:7px}
+.sw{width:20px;height:12px;border:1px solid var(--rule-strong);border-radius:2px;display:inline-block}
+.sw.new{background:var(--earned)}
+.sw.box{border-style:dashed;border-color:var(--muted)}
+
+.node{transition:transform .55s cubic-bezier(.3,.7,.2,1),opacity .35s}
+.node rect{fill:var(--surface);stroke:var(--rule-strong);stroke-width:1.2}
+.node.isnew rect{fill:var(--earned)}
+.node.isnew .lbl,.node.isnew .sub{fill:#1c1917}
+.node .lbl{font-family:var(--sans);font-weight:700;font-size:13px;fill:var(--ink);text-anchor:middle}
+.node .sub{font-family:var(--sans);font-size:10.5px;fill:var(--muted);text-anchor:middle}
+.node.gone{opacity:0;pointer-events:none}
+.edge{stroke:var(--ink-soft);stroke-width:1.4;fill:none;animation:fadein .5s ease both}
+.edge.dash{stroke-dasharray:4 4}
+.arrowhead{fill:var(--ink-soft)}
+.boundary rect{fill:none;stroke:var(--muted);stroke-width:1.3;stroke-dasharray:6 5}
+.boundary text{font-family:var(--sans);font-size:11px;font-weight:600;fill:var(--muted)}
+.boundary{animation:fadein .5s ease both}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+
+.stage-nav{display:flex;justify-content:space-between;gap:10px;margin:14px 0 0}
+.btn{
+  font-family:var(--sans);font-weight:600;font-size:.92rem;cursor:pointer;
+  background:var(--surface);color:var(--ink);border:1px solid var(--rule-strong);border-radius:var(--radius-sm);padding:8px 14px;
+}
+.btn:hover{background:var(--earned-soft)}
+.btn:disabled{opacity:.35;cursor:default;background:var(--surface)}
+
+.stage-detail{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:clamp(20px,4vw,48px);margin-top:30px}
+.stage-detail h2 .num{font-family:var(--font-serif);font-weight:400;color:var(--muted);margin-right:.35em}
+.stage-detail .summary{max-width:62ch}
+.lists{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:8px}
+.lists ul{margin:0;padding-left:1.1em}
+.lists li{margin-bottom:.4em}
+.bill{
+  align-self:start; border:1px solid var(--rule-strong); border-radius:var(--radius-sm); background:var(--surface);
+  font-family:var(--sans);
+}
+.bill h3{padding:12px 16px;border-bottom:1px solid var(--rule-strong);margin:0;font-size:1rem}
+.bill dl{margin:0;padding:6px 16px 14px}
+.bill dt{font-size:.82rem;color:var(--muted);margin-top:12px}
+.bill dd{margin:2px 0 0;font-weight:600}
+.bill dd.big{font-family:var(--font-serif);font-size:1.7rem;font-weight:400;line-height:1.1}
+.bill dd.prose{font-family:var(--font-sans);font-weight:400;font-size:.98rem;line-height:1.5}
+.bill .fine{font-size:.78rem;color:var(--muted);padding:0 16px 14px;margin:0}
+.meter{display:flex;gap:3px;margin-top:6px}
+.meter i{flex:1;height:8px;border-radius:1px;background:var(--rule)}
+.meter i.on{background:var(--ink)}
+
+.rules{margin-top:48px;border-top:1px solid var(--rule-strong);padding-top:22px}
+.rules ol{padding-left:1.3em;max-width:70ch}
+.rules li{margin-bottom:.55em}
+
+/* ---------- pieces ---------- */
+.layer{margin-bottom:34px}
+.layer > h3{font-size:1.35rem;border-bottom:1px solid var(--rule-strong);padding-bottom:6px;margin-bottom:0}
+.layer > p{color:var(--muted);font-size:.95rem;margin:6px 0 4px;max-width:66ch}
+details.piece{border-bottom:1px solid var(--rule)}
+details.piece summary{
+  list-style:none;cursor:pointer;display:grid;grid-template-columns:minmax(150px,220px) 1fr auto;gap:16px;align-items:baseline;
+  padding:13px 4px;
+}
+details.piece summary::-webkit-details-marker{display:none}
+details.piece summary .pname{font-family:var(--sans);font-weight:700}
+details.piece summary .pone{color:var(--ink-soft)}
+details.piece summary .when{font-family:var(--sans);font-size:.8rem;color:var(--muted);white-space:nowrap}
+details.piece summary .when b{display:inline-block;min-width:1.5em;text-align:center;border:1px solid var(--rule-strong);border-radius:3px;color:var(--ink);font-weight:700;margin-left:4px;padding:0 3px}
+details.piece[open] summary{background:var(--earned-soft)}
+.pbody{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:22px;padding:14px 4px 22px}
+.pbody p{font-size:.98rem;margin:0}
+.pbody .jump{grid-column:1/-1;font-family:var(--sans);font-size:.88rem}
+.linkbtn{background:none;border:0;padding:0;font:inherit;color:var(--accent);text-decoration:underline;cursor:pointer}
+
+/* ---------- hosting ---------- */
+.filters{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px}
+.chip{
+  font-family:var(--sans);font-size:.88rem;font-weight:600;cursor:pointer;
+  border:1px solid var(--rule-strong);background:var(--surface);color:var(--ink);border-radius:999px;padding:5px 13px;
+}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+.table-scroll{overflow-x:auto;border:1px solid var(--rule-strong);border-radius:var(--radius-sm);background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-family:var(--sans);font-size:.88rem;line-height:1.4}
+th,td{text-align:left;vertical-align:top;padding:10px 12px;border-bottom:1px solid var(--rule)}
+thead th{position:sticky;top:0;background:var(--surface);border-bottom:1px solid var(--rule-strong);font-weight:700;white-space:nowrap}
+tbody th{font-weight:700;position:sticky;left:0;background:var(--surface);min-width:150px;border-right:1px solid var(--rule)}
+td{min-width:150px;color:var(--ink-soft)}
+td.none{color:var(--muted);font-style:italic}
+.hide{display:none}
+tbody tr:hover th,tbody tr:hover td{background:var(--earned-soft)}
+
+.providers{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:0 36px;margin-top:40px}
+.provider{border-top:1px solid var(--rule-strong);padding:14px 0 18px}
+.provider p{font-size:.98rem;margin:0 0 .5em}
+.provider .watch{color:var(--warn)}
+.provider .watch b{font-family:var(--sans);font-size:.85rem}
+
+.recipe{margin-top:40px}
+.recipe-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:18px}
+.recipe-grid div{border-left:4px solid var(--earned);padding:2px 0 2px 14px}
+.recipe-grid h4{color:var(--ink);font-size:1rem}
+.recipe-grid p{font-size:.96rem;margin:0}
+
+/* ---------- shipping ---------- */
+.pipeline{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));counter-reset:p;gap:0;border:1px solid var(--rule-strong);border-radius:var(--radius-sm);background:var(--surface);margin-bottom:44px}
+.pipeline li{list-style:none;padding:14px 16px 16px;border-right:1px solid var(--rule);border-bottom:1px solid var(--rule);position:relative}
+.pipeline li:nth-child(4n){border-right:0}
+.pipeline li:nth-child(n+5){border-bottom:0}
+.pipeline li::before{counter-increment:p;content:counter(p);font-family:var(--font-serif);font-weight:400;font-size:1.6rem;line-height:1;display:block;margin-bottom:6px}
+.pipeline li.rollback::before{color:var(--warn)}
+.pipeline h4{color:var(--ink);font-size:1rem}
+.pipeline p{font-size:.95rem;margin:0;color:var(--ink-soft)}
+.pipeline{padding:0;margin-top:0}
+
+.ladder{margin:0 0 44px;padding:0;list-style:none;counter-reset:l}
+.ladder li{display:grid;grid-template-columns:52px minmax(0,1.3fr) minmax(0,1fr);gap:18px;padding:16px 0;border-top:1px solid var(--rule)}
+.ladder li::before{counter-increment:l;content:counter(l);font-family:var(--font-serif);font-weight:400;font-size:2rem;line-height:1;color:var(--muted)}
+.ladder p{margin:0;font-size:.98rem}
+.ladder .earn{font-size:.95rem;color:var(--ink-soft);border-left:3px solid var(--earned);padding-left:12px}
+.ladder .earn b{font-family:var(--sans);font-size:.82rem;display:block;color:var(--ink)}
+
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(20px,4vw,44px);margin-bottom:44px}
+.migr{margin:10px 0 0;padding-left:1.3em}
+.migr li{margin-bottom:.4em}
+pre{
+  font-family:var(--mono);font-size:.82rem;line-height:1.55;background:var(--surface);color:var(--ink);
+  border:1px solid var(--rule-strong);border-radius:var(--radius-sm);padding:16px 18px;overflow-x:auto;margin:0;
+}
+pre .c{color:var(--muted)}
+footer{border-top:1px solid var(--rule-strong);padding:18px 0 40px;font-family:var(--sans);font-size:.82rem;color:var(--muted)}
+
+@media (max-width:860px){
+  .stage-detail{grid-template-columns:1fr}
+  .pipeline{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .pipeline li:nth-child(4n){border-right:1px solid var(--rule)}
+  .pipeline li:nth-child(2n){border-right:0}
+  .pipeline li:nth-child(n+5){border-bottom:1px solid var(--rule)}
+  .pipeline li:nth-child(n+7){border-bottom:0}
+  .two{grid-template-columns:1fr}
+  .pbody{grid-template-columns:1fr;gap:12px}
+}
+@media (max-width:600px){
+  .lists{grid-template-columns:1fr}
+  details.piece summary{grid-template-columns:1fr;gap:2px}
+  .ladder li{grid-template-columns:36px minmax(0,1fr)}
+  .ladder .earn{grid-column:2}
+  .step{min-width:96px}
+}
+@media (prefers-reduced-motion:reduce){
+  .node{transition:none}
+  .edge,.boundary{animation:none}
+}
+</style>
+<link rel="stylesheet" href="../explainer.css">
+</head>
+<body>
+<div class="site-strip">
+  <nav class="site-strip__crumbs" aria-label="Site">
+    <a class="site-strip__home" href="../../">Alex McIvor</a>
+    <span class="site-strip__sep" aria-hidden="true">/</span>
+    <a href="../">Explainers</a>
+  </nav>
+  <button id="theme-toggle" type="button" class="site-strip__toggle" aria-label="Toggle dark mode" title="Toggle dark mode">
+    <span class="theme-icon theme-icon-sun" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path></svg></span>
+    <span class="theme-icon theme-icon-moon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg></span>
+  </button>
+</div>
+<div class="wrap">
+<header>
+  <h1>System design field guide</h1>
+  <p class="subhead"><span>Earn your complexity</span></p>
+  <p class="lede">Every box you add is something that can break at 3am, so <strong>start with one box and add each piece only when a real signal tells you to.</strong> Here’s what the pieces are, when each one pays for itself, and what it looks like on each kind of host.</p>
+</header>
+
+<nav class="tabs" aria-label="Sections">
+  <div class="tablist" role="tablist">
+    <button class="tab" role="tab" id="tab-growth" aria-controls="growth" aria-selected="true">Growth path</button>
+    <button class="tab" role="tab" id="tab-pieces" aria-controls="pieces" aria-selected="false" tabindex="-1">The pieces</button>
+    <button class="tab" role="tab" id="tab-hosting" aria-controls="hosting" aria-selected="false" tabindex="-1">Where to run it</button>
+    <button class="tab" role="tab" id="tab-shipping" aria-controls="shipping" aria-selected="false" tabindex="-1">Shipping it</button>
+  </div>
+</nav>
+
+<main>
+<!-- ================= GROWTH ================= -->
+<section id="growth" role="tabpanel" aria-labelledby="tab-growth">
+  <div class="stepper" id="stepper" aria-label="Growth stages"></div>
+  <div class="diagram-frame">
+    <svg id="diagram" viewBox="0 0 960 480" role="img" aria-labelledby="diagram-title">
+      <title id="diagram-title">Architecture diagram for the selected stage</title>
+      <defs>
+        <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path class="arrowhead" d="M0,0 L10,5 L0,10 z"/>
+        </marker>
+      </defs>
+      <g id="boundaries"></g>
+      <g id="edges"></g>
+      <g id="nodes"></g>
+    </svg>
+  </div>
+  <p class="scroll-hint">Scroll the diagram sideways to see all of it.</p>
+  <div class="legend">
+    <span><i class="sw new"></i>Added at this stage</span>
+    <span><i class="sw"></i>Already there</span>
+    <span><i class="sw box"></i>Machine or cluster boundary</span>
+  </div>
+  <div class="stage-nav">
+    <button class="btn" id="prev">Previous stage</button>
+    <button class="btn" id="next">Next stage</button>
+  </div>
+
+  <div class="stage-detail">
+    <div>
+      <h2 id="s-title"></h2>
+      <p class="summary" id="s-summary"></p>
+      <div class="lists">
+        <div><h4>You’ve earned this when</h4><ul id="s-earn"></ul></div>
+        <div><h4 id="s-try-h">Try the cheaper move first</h4><ul id="s-try"></ul></div>
+      </div>
+    </div>
+    <aside class="bill" aria-label="Complexity bill">
+      <h3>The complexity bill</h3>
+      <dl>
+        <dt>Moving parts</dt><dd class="big" id="b-parts"></dd><dd><div class="meter" id="b-meter"></div></dd>
+        <dt>Rough monthly cost</dt><dd class="big" id="b-cost"></dd>
+        <dt>What you’re signing up for</dt><dd class="prose" id="b-ops"></dd>
+      </dl>
+      <p class="fine">Costs are rough orders of magnitude for a modest workload, not quotes.</p>
+    </aside>
+  </div>
+
+  <div class="rules">
+    <h3>Before you add any box, ask</h3>
+    <ol>
+      <li><b>What exactly is slow or fragile?</b> Measure it. “It might not scale” is not a signal; a p95 latency graph is.</li>
+      <li><b>Would a bigger machine fix it?</b> Vertical scaling is one setting change. A modern server with 32 cores and 128 GB of RAM is not exotic.</li>
+      <li><b>Can the database you already have do it?</b> Postgres can be your queue, your cache for many cases, your full-text search and your JSON store until you have proof otherwise.</li>
+      <li><b>Who gets paged when it breaks?</b> If the answer is “me, and I don’t know how it works,” wait.</li>
+      <li><b>Can you take it back out?</b> Prefer pieces that are easy to remove. A CDN is; a microservice split usually isn’t.</li>
+    </ol>
+  </div>
+</section>
+
+<!-- ================= PIECES ================= -->
+<section id="pieces" role="tabpanel" aria-labelledby="tab-pieces" hidden>
+  <h2>The pieces</h2>
+  <p class="intro">Each building block, what it’s for, the simplest version of it, and the signal that tells you it’s time. The number on the right is the growth stage where it usually shows up; select a row to see more.</p>
+  <div id="piece-list"></div>
+</section>
+
+<!-- ================= HOSTING ================= -->
+<section id="hosting" role="tabpanel" aria-labelledby="tab-hosting" hidden>
+  <h2>Where to run it</h2>
+  <p class="intro">Same pieces, different names. Hosting is a translation layer: once you know what a load balancer or object storage does, each provider is mostly a catalog of their version of it. Hide columns to compare just the options you’re weighing.</p>
+  <div class="filters" id="filters" aria-label="Show or hide providers"></div>
+  <div class="table-scroll">
+    <table id="host-table"><thead></thead><tbody></tbody></table>
+  </div>
+
+  <div class="providers" id="providers"></div>
+
+  <div class="recipe">
+    <h3>Stage 0 to 1, five ways</h3>
+    <p class="intro">The same small app (web app, Postgres, file uploads) set up on each kind of host.</p>
+    <div class="recipe-grid">
+      <div><h4>PaaS</h4><p>Connect the repo to Render or Railway, add their Postgres, store uploads in R2 or S3. Point DNS at it. Done in an hour; you never SSH anywhere.</p></div>
+      <div><h4>VPS</h4><p>One Hetzner or DigitalOcean box, Docker Compose or Kamal for the app, Caddy for HTTPS, Postgres in a container with nightly backups to a B2 or R2 bucket.</p></div>
+      <div><h4>Cloudflare</h4><p>Worker for the app, D1 or an outside Postgres through Hyperdrive, R2 for uploads. Strong fit if your app works as short request handlers.</p></div>
+      <div><h4>Google Cloud</h4><p>Cloud Run for the container, Cloud SQL for Postgres, Cloud Storage for uploads. Probably the gentlest of the three big clouds.</p></div>
+      <div><h4>AWS</h4><p>ECS on Fargate behind an Application Load Balancer, RDS Postgres, S3. More setup (VPC, IAM, security groups), but it’s the most common stack on job listings. Lightsail is the simpler on-ramp.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= SHIPPING ================= -->
+<section id="shipping" role="tabpanel" aria-labelledby="tab-shipping" hidden>
+  <h2>Shipping it</h2>
+  <p class="intro">CI/CD is how code gets from your laptop to production safely and repeatably. It follows the same rule as the architecture: start with a script, and add machinery when a missed step or a bad deploy tells you to.</p>
+
+  <h3>One trip through a pipeline</h3>
+  <ol class="pipeline">
+    <li><h4>Commit and push</h4><p>Small changes, often. A pull request is where review happens.</p></li>
+    <li><h4>Check</h4><p>Lint, type-check, run tests. Keep it under ten minutes or people stop waiting for it.</p></li>
+    <li><h4>Build</h4><p>Build one artifact, usually a container image, tagged with the commit SHA.</p></li>
+    <li><h4>Store</h4><p>Push it to a registry. The exact same image goes to staging and to production.</p></li>
+    <li><h4>Migrate</h4><p>Run database migrations that the old code can still live with.</p></li>
+    <li><h4>Deploy</h4><p>Swap old for new: recreate, rolling, blue-green or canary.</p></li>
+    <li><h4>Verify</h4><p>Health checks, a smoke test, and a glance at the error rate.</p></li>
+    <li class="rollback"><h4>Roll back</h4><p>Redeploy the previous image tag. Practice it before you need it.</p></li>
+  </ol>
+
+  <h3>Earn your pipeline</h3>
+  <ol class="ladder">
+    <li><p><b>A deploy script.</b> <code>./deploy.sh</code> that connects over SSH, pulls, migrates and restarts. Perfectly fine for one person.</p><p class="earn"><b>Move on when</b>you forget a step, or someone else needs to deploy.</p></li>
+    <li><p><b>CI on every push.</b> GitHub Actions or GitLab CI runs the tests on each pull request. It’s free for most small projects, so do this almost immediately.</p><p class="earn"><b>Move on when</b>you trust the tests enough to let a green build ship.</p></li>
+    <li><p><b>Continuous deployment.</b> Merging to main builds an image and ships it. Rollback means redeploying the previous tag.</p><p class="earn"><b>Move on when</b>reviewers need to click through changes, or config mistakes keep reaching production.</p></li>
+    <li><p><b>Staging or preview environments.</b> One shared staging copy, or a temporary environment per pull request (PaaS hosts make this nearly free).</p><p class="earn"><b>Move on when</b>you couldn’t rebuild production from scratch in an afternoon.</p></li>
+    <li><p><b>Infrastructure as code.</b> Servers, DNS, buckets and permissions defined in OpenTofu, Terraform or Pulumi, reviewed like any other code.</p><p class="earn"><b>Move on when</b>bad deploys are expensive and you have enough traffic that 1% of it tells you something.</p></li>
+    <li><p><b>Progressive delivery.</b> Canary releases, feature flags, automatic rollback on error spikes. Ship code switched off, then turn it on for a slice of users.</p><p class="earn"><b>This is the top rung</b>for most companies. Beyond it is platform engineering.</p></li>
+  </ol>
+
+  <div class="two">
+    <div>
+      <h3>Deploy strategies</h3>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Strategy</th><th>How it works</th><th>Earn it when</th></tr></thead>
+          <tbody>
+            <tr><th>Recreate</th><td>Stop the old version, start the new one. A few seconds of downtime.</td><td>One box, low stakes.</td></tr>
+            <tr><th>Rolling</th><td>Replace instances one at a time; the load balancer skips any that aren’t healthy yet.</td><td>Two or more instances behind a load balancer.</td></tr>
+            <tr><th>Blue-green</th><td>Bring up a full new copy, then switch all traffic at once. Rollback is switching back.</td><td>Rollback speed matters and you can briefly pay for double capacity.</td></tr>
+            <tr><th>Canary</th><td>Send a small share of traffic to the new version, watch the metrics, ramp up.</td><td>High traffic and good dashboards.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div>
+      <h3>Migrations without downtime</h3>
+      <p>During a deploy, old and new code run at the same time, so every migration must work with both. Use the expand-and-contract pattern:</p>
+      <ol class="migr">
+        <li>Add the new column or table (expand).</li>
+        <li>Deploy code that writes to both old and new.</li>
+        <li>Backfill existing rows.</li>
+        <li>Deploy code that reads from the new one.</li>
+        <li>In a later deploy, drop the old one (contract).</li>
+      </ol>
+      <p>Never rename or drop something in the same deploy as the code that stops using it.</p>
+    </div>
+  </div>
+
+  <h3>A realistic small-team pipeline</h3>
+  <p class="intro">GitHub Actions tests every push to main, builds an image, pushes it to GitHub’s registry, and tells a VPS running Docker Compose to pull and restart. That’s rungs one through three.</p>
+<pre><code><span class="c"># .github/workflows/ship.yml</span>
+name: ship
+on:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm ci &amp;&amp; npm test
+
+  build-and-deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          push: true
+          <span class="c"># image names must be lowercase on ghcr.io</span>
+          tags: ghcr.io/your-org/your-app:${{ github.sha }}
+      - uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: deploy
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            cd /srv/app
+            export IMAGE_TAG=${{ github.sha }}
+            docker compose pull
+            docker compose run --rm app npm run migrate
+            docker compose up -d
+            docker image prune -f</code></pre>
+</section>
+</main>
+
+<footer>
+  Service names and prices change often, so check each provider’s current docs before you commit. Written October 2026.
+</footer>
+</div>
+
+<script>
+/* =============== GROWTH PATH DATA =============== */
+const BASE = {
+  users:{label:"Users",sub:"browsers, phones"},
+  edge:{label:"DNS",sub:"domain to server"},
+  lb:{label:"Reverse proxy",sub:"Caddy: TLS, routing"},
+  app1:{label:"App",sub:"your monolith"},
+  app2:{label:"App",sub:"stateless copy"},
+  db:{label:"Postgres",sub:"on the same disk"},
+  storage:{label:"Backups bucket",sub:"nightly pg_dump"},
+  queue:{label:"Job queue",sub:"start in Postgres"},
+  worker:{label:"Workers",sub:"email, images, hooks"},
+  cache:{label:"Cache",sub:"Valkey / Redis"},
+  pooler:{label:"Pooler",sub:"PgBouncer"},
+  replica:{label:"Read replica",sub:"reports, heavy reads"}
+};
+const C = [70,210,370,530,700,865];
+
+const STAGES = [
+ {
+  short:"One box",
+  title:"One box",
+  nodes:{users:[C[0],250],edge:[C[1],250],lb:[C[2],250],app1:[C[3],250],db:[C[4],250],storage:[C[4],400]},
+  edges:[["users","edge"],["edge","lb"],["lb","app1"],["app1","db"],["db","storage",1]],
+  boxes:[{x:296,y:192,w:478,h:116,label:"One VPS"}],
+  isNew:[],
+  tryLabel:"Do these on day one",
+  summary:"A single server runs a reverse proxy, your app and Postgres. For a typical web app, one modern 4–8 core machine handles far more traffic than most products ever see. The one thing you must not skip: backups that leave the machine, and a restore you’ve actually tested.",
+  earn:["You have an idea and want real users on it","You’re fine with a few minutes of downtime during deploys"],
+  tryFirst:["Automated off-box backups, tested once a month","A free uptime check and error tracking (e.g. Sentry)","SQLite is a fine choice here too"],
+  parts:3, cost:"$5–$50/mo",
+  ops:"You patch the OS. If the machine dies you’re down until you restore from backup, which is why that restore needs practice."
+ },
+ {
+  short:"Data off the box",
+  title:"Get the data off the box",
+  nodes:{users:[C[0],250],edge:[C[1],250],lb:[C[2],250],app1:[C[3],250],db:[C[4],185,"Managed Postgres","point-in-time restore"],storage:[C[4],325,"Object storage","uploads, backups"]},
+  edges:[["users","edge"],["edge","lb"],["lb","app1"],["app1","db"],["app1","storage"]],
+  boxes:[{x:296,y:192,w:316,h:116,label:"App VPS"}],
+  isNew:["db","storage"],
+  summary:"Move Postgres to a managed service (or its own machine) and put user uploads in object storage. Now the app server is disposable: you could delete it and rebuild it from your repo. Almost everything later depends on that property.",
+  earn:["Losing the database would hurt real people","Uploads or backups are filling the disk","You want to rebuild the app server without fear"],
+  tryFirst:["A bigger disk and a tested restore, if you’re still pre-launch"],
+  parts:4, cost:"$30–$150/mo",
+  ops:"One more network hop. A managed database costs more than one on your box but buys backups, upgrades and a failover option you don’t have to build."
+ },
+ {
+  short:"Edge in front",
+  title:"Put an edge in front",
+  nodes:{users:[C[0],250],edge:[C[1],250,"CDN + DNS","cache and shield"],lb:[C[2],250],app1:[C[3],250],db:[C[4],185,"Managed Postgres","point-in-time restore"],storage:[C[4],325,"Object storage","uploads, backups"]},
+  edges:[["users","edge"],["edge","lb"],["lb","app1"],["app1","db"],["app1","storage"]],
+  boxes:[{x:296,y:192,w:316,h:116,label:"App VPS"}],
+  isNew:["edge"],
+  summary:"Route your domain through a CDN. Images, scripts and other static files get served from a location near each user, HTTPS is handled at the edge, and bots and junk traffic get filtered before they reach your server. On Cloudflare’s free plan this costs almost nothing, so it often happens right after launch.",
+  earn:["Users are far from your server","Static files are a big share of your traffic","Scrapers, bots or attack traffic are showing up in your logs"],
+  tryFirst:["Correct Cache-Control headers","Compress and resize images before serving them"],
+  parts:5, cost:"+$0–$25/mo",
+  ops:"Caching bugs: users seeing a stale page, or worse, someone else’s page if you cache personalized responses. Learn how Cache-Control works before caching HTML."
+ },
+ {
+  short:"More than one copy",
+  title:"Run more than one copy",
+  nodes:{users:[C[0],250],edge:[C[1],250,"CDN + DNS","cache and shield"],lb:[C[2],250,"Load balancer","health checks"],app1:[C[3],185,"App container","stateless copy"],app2:[C[3],315,"App container","stateless copy"],db:[C[4],185,"Managed Postgres","point-in-time restore"],storage:[C[4],315,"Object storage","uploads, backups"]},
+  edges:[["users","edge"],["edge","lb"],["lb","app1"],["lb","app2"],["app1","db"],["app2","db"],["app2","storage"]],
+  boxes:[],
+  isNew:["lb","app1","app2"],
+  summary:"A load balancer spreads requests across two or more identical app containers and stops sending traffic to any that fail a health check. You get deploys with no downtime and you survive a machine dying. The prerequisite: the app must be stateless, with sessions in cookies or the database and files in object storage, never on local disk.",
+  earn:["One server’s CPU is maxed out after you’ve profiled","Deploy downtime is something users notice","A single machine failing would be a costly outage"],
+  tryFirst:["A bigger server (vertical scaling is underrated)","Fix N+1 queries and add indexes","Run several app processes on one machine"],
+  parts:6, cost:"$100–$400/mo",
+  ops:"Container images, a registry, health check endpoints, and a new class of bug: anything kept in memory or on local disk now behaves differently per request."
+ },
+ {
+  short:"Slow work off the request",
+  title:"Move slow work off the request",
+  nodes:{users:[C[0],250],edge:[C[1],250,"CDN + DNS","cache and shield"],lb:[C[2],250,"Load balancer","health checks"],app1:[C[3],135,"App container","stateless copy"],app2:[C[3],255,"App container","stateless copy"],queue:[C[3],390],cache:[C[4],110],db:[C[4],255,"Managed Postgres","point-in-time restore"],worker:[C[4],390],storage:[C[5],390,"Object storage","uploads, backups"]},
+  edges:[["users","edge"],["edge","lb"],["lb","app1"],["lb","app2"],["app1","cache"],["app1","db"],["app2","db"],["app2","queue"],["queue","worker"],["worker","db"],["worker","storage"]],
+  boxes:[],
+  isNew:["queue","worker","cache"],
+  summary:"Anything slow or flaky (sending email, resizing images, calling other companies’ APIs) goes into a job queue and runs in a separate worker process. The request returns quickly and the job retries if it fails. A cache server earns its place only for specific hot reads you’ve measured, or for things like rate limiting across instances.",
+  earn:["Requests take seconds because they wait on email or other APIs","Another company’s outage takes your site down with it","The same expensive query runs thousands of times a minute, even with good indexes"],
+  tryFirst:["A Postgres-backed job library (pg-boss, Solid Queue, Oban, River, Graphile Worker) before Redis or SQS","A materialized view or a precomputed column before a cache server","HTTP caching at the CDN"],
+  parts:9, cost:"$200–$800/mo",
+  ops:"Jobs run twice, run out of order, or quietly pile up. You’ll need idempotent jobs, a dead-letter queue and an alert on queue depth. Caches bring invalidation bugs."
+ },
+ {
+  short:"Scale the data",
+  title:"Scale the data tier",
+  nodes:{users:[C[0],250],edge:[C[1],250,"CDN + DNS","cache and shield"],lb:[C[2],250,"Load balancer","health checks"],app1:[C[3],135,"App container","stateless copy"],app2:[C[3],255,"App container","stateless copy"],queue:[C[3],390],cache:[C[4],110],pooler:[C[4],250],worker:[C[4],390],db:[C[5],190,"Postgres primary","takes the writes"],replica:[C[5],310],storage:[C[5],430,"Object storage","uploads, backups"]},
+  edges:[["users","edge"],["edge","lb"],["lb","app1"],["lb","app2"],["app1","cache"],["app1","pooler"],["app2","pooler"],["pooler","db"],["pooler","replica"],["db","replica",1],["app2","queue"],["queue","worker"],["worker","pooler"],["worker","storage"]],
+  boxes:[],
+  isNew:["pooler","replica"],
+  summary:"The database is usually the last thing that truly needs to scale. A connection pooler lets many app processes share a small number of real database connections. Read replicas take reports and read-heavy pages off the primary. Writes still go to one place, and that’s fine for a very long time.",
+  earn:["“Too many connections” errors as you add instances or serverless functions","Database CPU stays high after query tuning","Analytics queries slow down the product"],
+  tryFirst:["EXPLAIN ANALYZE and the right indexes","A bigger database instance","Move analytics to a separate copy or a warehouse"],
+  parts:11, cost:"$800–$5,000/mo",
+  ops:"Replication lag: someone saves a change and doesn’t see it on the next page load. You now have to decide, per query, which reads are allowed to be a little stale."
+ },
+ {
+  short:"Split into services",
+  title:"Split into services",
+  nodes:{users:[C[0],250],edge:[C[1],250,"CDN + DNS","cache and shield"],lb:[C[2],250,"API gateway","routes to services"],app1:[C[3],135,"Orders service","deploys alone"],app2:[C[3],255,"Accounts service","deploys alone"],queue:[C[3],390,"Event bus","async messages"],cache:[C[4],110],pooler:[C[4],250],worker:[C[4],390,"Billing service","consumes events"],db:[C[5],190,"Postgres primary","takes the writes"],replica:[C[5],310],storage:[C[5],430,"Object storage","uploads, backups"]},
+  edges:[["users","edge"],["edge","lb"],["lb","app1"],["lb","app2"],["app1","cache"],["app1","pooler"],["app2","pooler"],["pooler","db"],["pooler","replica"],["db","replica",1],["app2","queue"],["queue","worker"],["worker","pooler"],["worker","storage"]],
+  boxes:[{x:452,y:66,w:334,h:378,label:"Kubernetes cluster"}],
+  isNew:["app1","app2","queue","worker","lb"],
+  summary:"Separate services, each deployed on its own and talking through APIs and an event bus, often on Kubernetes. This mostly solves people problems: many teams blocking each other in one codebase. For a small team it multiplies everything: deploys, networking, tracing, local development and on-call.",
+  earn:["Several teams keep blocking each other’s deploys","One part of the system has very different scaling or uptime needs","Compliance requires isolating some data"],
+  tryFirst:["A modular monolith with enforced boundaries between modules","Pull out only the one piece that’s truly different, like video processing"],
+  parts:"15+", cost:"$5,000+/mo",
+  ops:"Distributed failures, versioned APIs, tracing across services, eventual consistency, and usually a platform team whose job is the platform itself. Plus people."
+ }
+];
+
+/* =============== GROWTH PATH RENDER =============== */
+const NS="http://www.w3.org/2000/svg";
+const W=124,H=52;
+const svgNodes=document.getElementById("nodes"),svgEdges=document.getElementById("edges"),svgBounds=document.getElementById("boundaries");
+const nodeEls={}, lastPos={};
+function el(tag,attrs){const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);return e}
+Object.keys(BASE).forEach(id=>{
+  const g=el("g",{class:"node gone","data-id":id});
+  g.appendChild(el("rect",{x:-W/2,y:-H/2,width:W,height:H,rx:5}));
+  const t=el("text",{class:"lbl",y:-2});const s=el("text",{class:"sub",y:14});
+  g.appendChild(t);g.appendChild(s);svgNodes.appendChild(g);nodeEls[id]={g,t,s};
+});
+function clip(a,b){
+  const dx=b[0]-a[0],dy=b[1]-a[1];
+  const sx=dx===0?Infinity:(W/2+3)/Math.abs(dx), sy=dy===0?Infinity:(H/2+3)/Math.abs(dy);
+  const k=Math.min(sx,sy);return [a[0]+dx*k,a[1]+dy*k];
+}
+const stepper=document.getElementById("stepper");
+STAGES.forEach((s,i)=>{
+  const b=document.createElement("button");b.className="step";b.type="button";
+  b.innerHTML=`<span class="n">${i}</span><span class="t">${s.short}</span>`;
+  b.addEventListener("click",()=>setStage(i));stepper.appendChild(b);
+});
+let current=0;
+function setStage(i){
+  current=Math.max(0,Math.min(STAGES.length-1,i));
+  const s=STAGES[current];
+  [...stepper.children].forEach((b,j)=>{
+    b.classList.toggle("past",j<current);
+    if(j===current)b.setAttribute("aria-current","step");else b.removeAttribute("aria-current");
+  });
+  Object.keys(nodeEls).forEach(id=>{
+    const n=nodeEls[id],p=s.nodes[id];
+    if(p){
+      n.g.style.transform=`translate(${p[0]}px,${p[1]}px)`;lastPos[id]=p;
+      n.t.textContent=p[2]||BASE[id].label;n.s.textContent=p[3]||BASE[id].sub;
+      n.g.classList.remove("gone");n.g.classList.toggle("isnew",s.isNew.includes(id));
+    }else{
+      n.g.classList.add("gone");n.g.classList.remove("isnew");
+      if(!lastPos[id]){const firstStage=STAGES.find(st=>st.nodes[id]);if(firstStage){const q=firstStage.nodes[id];n.g.style.transform=`translate(${q[0]}px,${q[1]}px)`;}}
+    }
+  });
+  svgEdges.innerHTML="";
+  s.edges.forEach(([a,b,dash])=>{
+    const A=s.nodes[a],B=s.nodes[b];const p1=clip(A,B),p2=clip(B,A);
+    svgEdges.appendChild(el("line",{class:"edge"+(dash?" dash":""),x1:p1[0],y1:p1[1],x2:p2[0],y2:p2[1],"marker-end":"url(#arrow)"}));
+  });
+  svgBounds.innerHTML="";
+  s.boxes.forEach(bx=>{
+    const g=el("g",{class:"boundary"});
+    g.appendChild(el("rect",{x:bx.x,y:bx.y,width:bx.w,height:bx.h,rx:8}));
+    const t=el("text",{x:bx.x+10,y:bx.y-8});t.textContent=bx.label;g.appendChild(t);svgBounds.appendChild(g);
+  });
+  document.getElementById("diagram-title").textContent=`Stage ${current}: ${s.title}`;
+  document.getElementById("s-title").innerHTML=`<span class="num">${current}</span>${s.title}`;
+  document.getElementById("s-summary").textContent=s.summary;
+  document.getElementById("s-earn").innerHTML=s.earn.map(x=>`<li>${x}</li>`).join("");
+  document.getElementById("s-try-h").textContent=s.tryLabel||"Try the cheaper move first";
+  document.getElementById("s-try").innerHTML=s.tryFirst.map(x=>`<li>${x}</li>`).join("");
+  document.getElementById("b-parts").textContent=s.parts;
+  const pn=typeof s.parts==="number"?s.parts:15;
+  document.getElementById("b-meter").innerHTML=Array.from({length:15},(_,k)=>`<i class="${k<pn?"on":""}"></i>`).join("");
+  document.getElementById("b-cost").textContent=s.cost;
+  document.getElementById("b-ops").textContent=s.ops;
+  document.getElementById("prev").disabled=current===0;
+  document.getElementById("next").disabled=current===STAGES.length-1;
+}
+document.getElementById("prev").onclick=()=>setStage(current-1);
+document.getElementById("next").onclick=()=>setStage(current+1);
+stepper.addEventListener("keydown",e=>{
+  if(e.key==="ArrowRight"){setStage(current+1);stepper.children[current].focus();e.preventDefault()}
+  if(e.key==="ArrowLeft"){setStage(current-1);stepper.children[current].focus();e.preventDefault()}
+});
+setStage(0);
+
+/* =============== PIECES =============== */
+const LAYERS=[
+ {name:"The edge",note:"Everything between a user’s browser and your servers.",items:[
+  {n:"DNS",one:"Turns your domain name into an address.",what:"A phone book for the internet. Your domain points at a server, a load balancer or a CDN.",simple:"Your registrar’s DNS, or Cloudflare’s free DNS.",earn:"Day one.",cost:"Almost nothing. Lower the TTL a day before you move servers so the change spreads quickly.",stage:0},
+  {n:"CDN",one:"Copies of your files near your users.",what:"A network of servers around the world that cache static files (and optionally pages) and filter bad traffic.",simple:"Turn on Cloudflare’s proxy with default settings; cache only static assets.",earn:"Soon after launch, since it’s cheap and easy to remove.",cost:"Caching mistakes. Never cache responses that differ per user unless you know exactly what you’re doing.",stage:2},
+  {n:"Reverse proxy",one:"The front door on your server.",what:"A small server in front of your app that handles HTTPS certificates, compression and routing to the right process.",simple:"Caddy, which gets and renews certificates automatically.",earn:"Day one.",cost:"Very little. Usually one short config file.",stage:0},
+  {n:"Load balancer",one:"Spreads traffic over several copies.",what:"Sends each request to one of several app instances and stops using any that fail health checks.",simple:"Your host’s managed load balancer, or your reverse proxy with two upstreams.",earn:"When you run two or more copies of the app.",cost:"The app must be stateless, and you need a health check endpoint that tells the truth.",stage:3}
+ ]},
+ {name:"Compute",note:"Where your code actually runs.",items:[
+  {n:"Monolith",one:"One codebase, one thing to deploy.",what:"Your whole app as a single deployable unit. Clear module boundaries inside it keep it healthy.",simple:"One process under systemd or one container.",earn:"Day one. It’s the default answer, and it scales further than its reputation suggests.",cost:"The fewest moving parts of any option.",stage:0},
+  {n:"Containers",one:"Your app, packaged to run the same anywhere.",what:"An image holding your app and its dependencies. Runs identically on your laptop, in CI and in production.",simple:"A Dockerfile and a Docker Compose file.",earn:"Early. This is cheap complexity that makes deploys reproducible.",cost:"Image builds, a registry, and some Docker learning.",stage:3},
+  {n:"Container platform",one:"Something that runs and restarts containers for you.",what:"Decides where containers run, restarts crashed ones, scales them. Ranges from simple (Cloud Run, Fargate, Kamal) to Kubernetes.",simple:"Cloud Run, ECS on Fargate, a PaaS, or Kamal on a VPS.",earn:"Kubernetes specifically: many services and someone whose job includes running it.",cost:"Managed platforms cost little effort. Kubernetes is close to a full-time job.",stage:6},
+  {n:"Serverless functions",one:"Code that runs per request, scales to zero.",what:"You upload a function; the platform runs it when a request or event arrives and bills per use.",simple:"Lambda, Cloudflare Workers, Vercel Functions.",earn:"Spiky or very low traffic, webhooks, glue code between services.",cost:"Cold starts, time limits, vendor-specific APIs, and database connection storms that need a pooler.",stage:3},
+  {n:"Background workers",one:"Processes that run jobs from a queue.",what:"The same codebase started in “worker mode,” pulling jobs off a queue instead of serving web requests.",simple:"A second process on the same box, reading from a Postgres-backed queue.",earn:"As soon as a request has to wait on email, image processing or another company’s API.",cost:"Jobs must be safe to run twice. You need visibility into failures.",stage:4}
+ ]},
+ {name:"Data",note:"Where state lives. This is where mistakes are permanent, so it deserves the most care.",items:[
+  {n:"Relational database",one:"The source of truth.",what:"Tables, transactions, constraints, joins. Postgres covers an enormous range of needs on its own.",simple:"Postgres, or SQLite while you’re on a single box.",earn:"Day one.",cost:"Backups and tested restores are your responsibility, even on managed services.",stage:0},
+  {n:"Object storage",one:"Files by name, over HTTP.",what:"Buckets of files (uploads, exports, backups) that are cheap, durable and nearly unlimited.",simple:"Any S3-compatible bucket: S3, R2, Backblaze B2.",earn:"Day one for backups; as soon as users upload anything.",cost:"Watch egress pricing; R2 charges nothing for egress.",stage:1},
+  {n:"Cache",one:"Fast memory for data you read constantly.",what:"An in-memory key-value store for hot data, rate limits, counters and sometimes sessions.",simple:"HTTP caching and in-process memoization first; then Valkey or Redis.",earn:"A specific hot read you’ve measured, or rate limiting across multiple instances.",cost:"Cache invalidation, stale data, and one more server to run and monitor.",stage:4},
+  {n:"Connection pooler",one:"Shares a few database connections among many clients.",what:"Postgres handles a limited number of connections well. A pooler like PgBouncer sits in between and multiplexes.",simple:"The pooler built into your managed database (Supabase, Neon, RDS Proxy).",earn:"Many app instances, or serverless functions talking to Postgres.",cost:"Some features like session-level settings behave differently in transaction pooling mode.",stage:5},
+  {n:"Read replica",one:"A copy of the database for reads.",what:"A continuously updated copy that can serve read-only queries.",simple:"A checkbox on most managed databases.",earn:"Read load is the bottleneck after query tuning and a bigger instance.",cost:"Replication lag; your code must choose which reads can be slightly stale.",stage:5},
+  {n:"Search engine",one:"Ranked, typo-tolerant full-text search.",what:"A separate index built for search: relevance ranking, facets, typo tolerance.",simple:"Postgres full-text search or the pg_trgm extension.",earn:"Search quality is a product feature and Postgres can’t deliver it.",cost:"Keeping the index in sync with the database, forever.",stage:5}
+ ]},
+ {name:"Async and events",note:"Work that doesn’t need to happen while the user waits.",items:[
+  {n:"Job queue",one:"A to-do list for background work.",what:"Jobs are written to a queue and picked up by workers, with retries and scheduling.",simple:"A Postgres-backed library: pg-boss, Solid Queue, Oban, River, Graphile Worker.",earn:"Postgres-backed: early. A separate broker (SQS, RabbitMQ): when job volume strains the database.",cost:"Idempotency, retries, dead-letter handling and queue-depth alerts.",stage:4},
+  {n:"Event bus or stream",one:"Many consumers reacting to the same events.",what:"Services publish events (“order placed”) and others subscribe. Streams like Kafka keep a replayable log.",simple:"Database rows plus a job queue, until you have multiple services.",earn:"Several services or data pipelines that need the same events.",cost:"Event schemas, ordering, consumer lag, and usually a cluster to operate.",stage:6}
+ ]},
+ {name:"Operations",note:"How you know it’s working, and how you keep it safe.",items:[
+  {n:"Observability",one:"Logs, metrics, traces and errors.",what:"Logs say what happened; metrics show trends; traces follow one request across services; error tracking groups exceptions.",simple:"Error tracking plus an uptime check plus readable logs.",earn:"Errors and uptime on day one; dashboards at two or more instances; tracing when you have services.",cost:"Log volume gets expensive. Sample and set retention limits.",stage:0},
+  {n:"Secrets management",one:"Keeping keys and passwords out of your code.",what:"A safe place for API keys, database passwords and tokens, injected into the app at runtime.",simple:"Environment variables set by your host. Never commit them to git.",earn:"A secrets manager when you have many services, rotation requirements or audits.",cost:"Low, but rotation must actually be practiced.",stage:0},
+  {n:"Backups and restore",one:"The only part people regret skipping.",what:"Regular copies of your data, stored somewhere else, with a restore you’ve rehearsed.",simple:"A nightly pg_dump to object storage, plus point-in-time recovery once on a managed database.",earn:"Day one. Non-negotiable.",cost:"A few dollars a month and an hour of practice per quarter.",stage:0},
+  {n:"Infrastructure as code",one:"Your servers, written down as code.",what:"Files that describe your servers, DNS, buckets and permissions, applied by a tool so environments are reproducible.",simple:"A PaaS config file, or a short OpenTofu or Terraform setup.",earn:"When you couldn’t rebuild production from scratch in an afternoon.",cost:"Learning the tool, and discipline about not changing things by hand.",stage:3}
+ ]}
+];
+const pl=document.getElementById("piece-list");
+LAYERS.forEach(L=>{
+  const sec=document.createElement("div");sec.className="layer";
+  sec.innerHTML=`<h3>${L.name}</h3><p>${L.note}</p>`;
+  L.items.forEach(it=>{
+    const d=document.createElement("details");d.className="piece";
+    d.innerHTML=`<summary><span class="pname">${it.n}</span><span class="pone">${it.one}</span><span class="when">Stage<b>${it.stage}</b></span></summary>
+    <div class="pbody">
+      <div><h4>What it is</h4><p>${it.what}</p></div>
+      <div><h4>Simplest version</h4><p>${it.simple}</p></div>
+      <div><h4>Earn it when</h4><p>${it.earn}</p><h4 style="margin-top:12px">What it costs you</h4><p>${it.cost}</p></div>
+      <div class="jump"><button class="linkbtn" type="button" data-stage="${it.stage}">See stage ${it.stage} in the growth path</button></div>
+    </div>`;
+    sec.appendChild(d);
+  });
+  pl.appendChild(sec);
+});
+pl.addEventListener("click",e=>{
+  const b=e.target.closest("[data-stage]");if(!b)return;
+  selectTab("growth");setStage(+b.dataset.stage);window.scrollTo({top:0,behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"});
+});
+
+/* =============== HOSTING =============== */
+const PROVIDERS=[
+ {id:"aws",name:"AWS"},{id:"gcp",name:"Google Cloud"},{id:"azure",name:"Azure"},{id:"cf",name:"Cloudflare"},
+ {id:"paas",name:"PaaS"},{id:"vps",name:"VPS"},{id:"self",name:"Self-hosted"}
+];
+const NONE="none";
+const ROWS=[
+ ["DNS","Route 53","Cloud DNS","Azure DNS","Cloudflare DNS","Bring your own, often Cloudflare","Registrar DNS or Cloudflare","PowerDNS, CoreDNS (rarely worth it)"],
+ ["CDN / edge","CloudFront","Cloud CDN","Azure Front Door","Built in when DNS is proxied","Built in on Vercel and Netlify; others pair with Cloudflare","Put Cloudflare or Bunny in front","Varnish or nginx caching, Cloudflare Tunnel to expose it"],
+ ["Load balancer / proxy","Application Load Balancer","Cloud Load Balancing","Application Gateway, Load Balancer","Cloudflare Load Balancing","Built in","Hetzner or DigitalOcean load balancers, or Caddy","Caddy, HAProxy, nginx, Traefik"],
+ ["Virtual machines","EC2, Lightsail","Compute Engine","Virtual Machines",NONE+": an edge runtime instead","Fly Machines","The VPS itself","Your hardware, Proxmox"],
+ ["Managed containers","ECS on Fargate","Cloud Run","Container Apps","Cloudflare Containers","Render, Railway or Fly.io from a Dockerfile","Docker Compose with Kamal, Coolify or Dokku","Docker or Podman with Compose"],
+ ["Kubernetes","EKS","GKE","AKS",NONE,NONE,"k3s","k3s, Talos, kubeadm"],
+ ["Serverless functions","Lambda","Cloud Run functions","Azure Functions","Workers","Vercel Functions, Netlify Functions",NONE+": use cron and a worker","Knative, OpenFaaS"],
+ ["Relational database","RDS, Aurora","Cloud SQL, AlloyDB","Azure Database for PostgreSQL","D1 (SQLite), or Hyperdrive to an outside Postgres","Render, Railway or Fly Postgres; Neon; Supabase","Postgres on the box, or DigitalOcean Managed Databases","Postgres with pgBackRest"],
+ ["Cache","ElastiCache (Valkey, Redis)","Memorystore","Azure Managed Redis","Workers KV for read-heavy edge data","Render Key Value, Railway Redis, Upstash","Valkey or Redis in a container","Valkey or Redis"],
+ ["Job queue","SQS","Cloud Tasks, Pub/Sub","Service Bus, Queue Storage","Queues","Upstash QStash, or a Postgres-backed queue","Postgres-backed queue, or Redis","Postgres-backed queue, RabbitMQ, NATS"],
+ ["Event bus / streaming","EventBridge, SNS, MSK (Kafka)","Pub/Sub","Event Grid, Event Hubs","Queues (limited fan-out)","Usually a hosted Kafka such as Confluent Cloud","NATS or Redpanda on a box","Kafka, Redpanda, NATS JetStream"],
+ ["Object storage","S3","Cloud Storage","Blob Storage","R2 (no egress fees)","Vercel Blob, Tigris on Fly.io, or bring S3 or R2","Hetzner Object Storage, DigitalOcean Spaces, Backblaze B2","Garage, SeaweedFS, MinIO"],
+ ["Secrets","Secrets Manager, Parameter Store","Secret Manager","Key Vault","Worker secrets","Environment variables in the dashboard","Env files encrypted with sops, or 1Password","OpenBao, Vault"],
+ ["Observability","CloudWatch, X-Ray","Cloud Logging, Monitoring, Trace","Azure Monitor, Application Insights","Workers Logs, Analytics","Built-in logs, plus Sentry or Grafana Cloud","Sentry, Grafana Cloud, Better Stack","Prometheus, Grafana, Loki"],
+ ["Container registry","ECR","Artifact Registry","Azure Container Registry","Managed by Wrangler","Handled for you","GitHub Container Registry, Docker Hub","Harbor, Forgejo or Gitea registry"],
+ ["CI/CD","CodePipeline, CodeBuild","Cloud Build, Cloud Deploy","Azure Pipelines","Workers Builds","Deploy on git push","GitHub Actions or GitLab CI","Forgejo Actions, Woodpecker, Jenkins"],
+ ["Infrastructure as code","CloudFormation, CDK","Terraform, Infrastructure Manager","Bicep, ARM templates","Wrangler config, Terraform provider","render.yaml, fly.toml, railway.json","OpenTofu or Terraform, Ansible","Ansible, OpenTofu, NixOS"]
+];
+const hidden=new Set();
+const table=document.getElementById("host-table");
+function renderTable(){
+  table.tHead.innerHTML="<tr><th>Piece</th>"+PROVIDERS.map(p=>`<th data-col="${p.id}" class="${hidden.has(p.id)?"hide":""}">${p.name}</th>`).join("")+"</tr>";
+  table.tBodies[0].innerHTML=ROWS.map(r=>"<tr><th scope=\"row\">"+r[0]+"</th>"+PROVIDERS.map((p,i)=>{
+    const v=r[i+1];const isNone=v.startsWith(NONE);
+    const txt=isNone?(v===NONE?"No direct equivalent":"No direct equivalent"+v.slice(NONE.length)):v;
+    return `<td data-col="${p.id}" class="${isNone?"none ":""}${hidden.has(p.id)?"hide":""}">${txt}</td>`;
+  }).join("")+"</tr>").join("");
+}
+const filters=document.getElementById("filters");
+PROVIDERS.forEach(p=>{
+  const b=document.createElement("button");b.className="chip";b.type="button";b.textContent=p.name;b.setAttribute("aria-pressed","true");
+  b.onclick=()=>{
+    if(hidden.has(p.id))hidden.delete(p.id);else{if(hidden.size>=PROVIDERS.length-1)return;hidden.add(p.id)}
+    b.setAttribute("aria-pressed",hidden.has(p.id)?"false":"true");renderTable();
+  };
+  filters.appendChild(b);
+});
+renderTable();
+
+const BLURBS=[
+ ["AWS","The biggest catalog: almost everything exists, often in three versions. The real learning cost is IAM permissions and VPC networking. The most common stack on job listings.","NAT Gateway charges, data egress fees, and resources you forgot to delete."],
+ ["Google Cloud","Cloud Run is one of the nicest “container in, URL out” services anywhere, and it scales to zero. Strong data tooling such as BigQuery. Smaller catalog, fewer knobs.","Egress pricing and quotas you only discover when you hit them."],
+ ["Azure","The natural choice when your organization already lives in Microsoft: Entra ID, .NET, existing enterprise agreements.","Products get renamed and retired often, so check current docs before building on one."],
+ ["Cloudflare","Edge-first. Workers run your code in hundreds of cities, with D1, R2, KV, Queues and Durable Objects around them. Generous free tier for DNS and CDN.","A different model: short-lived request handlers rather than long-running servers. Some libraries won’t run."],
+ ["PaaS","Render, Railway, Fly.io, Heroku, Vercel, Netlify. Push to git, get a URL, add a database with a click. The best place to start if you don’t want to do operations.","You pay more per unit of compute and you’re limited to what the platform offers. Fine for a long time."],
+ ["VPS","Hetzner, DigitalOcean, Linode (Akamai), Vultr. A fixed monthly price for a real Linux machine. The cheapest compute by a wide margin; Kamal or Coolify make it feel close to a PaaS.","You own patching, backups, monitoring and uptime. Nobody pages anyone but you."],
+ ["Self-hosted","Your own hardware at home or in a colocation rack. Cheapest at the margin once bought, and a great way to learn how everything actually works.","Power, cooling, your ISP, and a static IP (or Cloudflare Tunnel). Risky as a business’s only copy of anything."]
+];
+document.getElementById("providers").innerHTML=BLURBS.map(b=>`<div class="provider"><h3>${b[0]}</h3><p>${b[1]}</p><p class="watch"><b>Watch out for:</b> ${b[2]}</p></div>`).join("");
+
+/* =============== TABS =============== */
+const tabs=[...document.querySelectorAll('[role="tab"]')];
+function selectTab(id,focus){
+  tabs.forEach(t=>{
+    const on=t.getAttribute("aria-controls")===id;
+    t.setAttribute("aria-selected",on);t.tabIndex=on?0:-1;
+    document.getElementById(t.getAttribute("aria-controls")).hidden=!on;
+    if(on&&focus)t.focus();
+  });
+  if(location.hash!=="#"+id)history.replaceState(null,"","#"+id);
+}
+tabs.forEach((t,i)=>{
+  t.addEventListener("click",()=>selectTab(t.getAttribute("aria-controls")));
+  t.addEventListener("keydown",e=>{
+    let j=null;if(e.key==="ArrowRight")j=(i+1)%tabs.length;if(e.key==="ArrowLeft")j=(i-1+tabs.length)%tabs.length;
+    if(j!==null){e.preventDefault();selectTab(tabs[j].getAttribute("aria-controls"),true)}
+  });
+});
+const initial=location.hash.slice(1);
+if(["growth","pieces","hosting","shipping"].includes(initial))selectTab(initial);
+</script>
+<script type="module" src="../explainer.js"></script>
+</body>
+</html>

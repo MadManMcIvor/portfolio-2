@@ -1,7 +1,9 @@
-// Ordered most recent first.
+// Ordered most recent first. `color` is a categorical colour from css/palette.css; the
+// card's drawing comes from js/components/marks.js, keyed by `id`.
 export const projects = [
   {
     id: 'Workout',
+    color: 'clay',
     title: 'Workout',
     desc: 'A workout planner built for my own use: a library of kettlebell and bodyweight movements, circuits built from them, and a calendar to schedule sessions and mark off what actually got done. Installs to the home screen and runs offline, with no account and no backend.',
     tech: ['JavaScript','PWA','Service worker'],
@@ -10,6 +12,7 @@ export const projects = [
   },
   {
     id: 'Steadwell',
+    color: 'sage',
     title: 'Steadwell',
     desc: 'A free iOS app that keeps a record of a house — how old the roof is, when the water heater went in, what paint is in the guest room. Local-first with no account and no ads; optional sync runs on your own iCloud.',
     tech: ['Vue','Ionic','Capacitor','SQLite'],
@@ -18,18 +21,21 @@ export const projects = [
   },
   {
     id: 'Abigail',
+    color: 'slate',
     title: 'Abigail',
     desc: 'A unifying web app connecting Pearson assessment authoring, delivery, and management tools empowered with AI',
     tech: ['Vue','Go','Postgres','AI'],
   },
   {
     id: 'WriteUp!',
+    color: 'plum',
     title: 'WriteUp!',
     desc: 'AI-powered writing assessment prep platform helping students improve their writing skills through practice and feedback.',
     tech: ['Vue','NodeJs','DynamoDB','AI'],
   },
   {
     id: 'PASS',
+    color: 'ochre',
     title: 'PASS',
     desc: 'Pearson Assessment Scoring System - An API based scalable, secure platform for managing and scoring large-scale assessments.',
     tech: ['Java','Postgres','Microservices'],

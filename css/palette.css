@@ -1,0 +1,53 @@
+/*
+ * palette.css — colours beyond Cream & Ink's two accents, shared by the whole site.
+ *
+ * tokens.css stays a vendored copy of the design system, so these live here. Load this
+ * after tokens.css.
+ */
+
+/* ─── Categorical colours ───────────────────────────────────────────────────
+ * The site's voice is still clay and sage. These are for telling several things apart
+ * at a glance (the explainers, the projects, the layers in a diagram), in the same
+ * earthen, muted register: clay and sage first, then ochre, slate, plum and stone. Each
+ * has a tint for fills; every colour reads at AA on paper in both themes.             */
+:root {
+  --cat-clay: var(--clay);
+  --cat-clay-tint: var(--clay-tint);
+  --cat-sage: var(--sage);
+  --cat-sage-tint: var(--sage-tint);
+  --cat-ochre: #86651a;
+  --cat-ochre-tint: #f1e7cf;
+  --cat-slate: #4d6880;
+  --cat-slate-tint: #e1e7ec;
+  --cat-plum: #7a4c6b;
+  --cat-plum-tint: #efe2ea;
+  --cat-stone: #6b645a;
+  --cat-stone-tint: #ebe5db;
+
+  /* Text on a solid categorical fill. */
+  --on-cat: var(--paper-raised);
+
+  /* Syntax highlighting — quiet on purpose; code should read as text first. */
+  --syn-keyword: var(--cat-plum);
+  --syn-string: var(--cat-sage);
+  --syn-number: var(--cat-ochre);
+  --syn-comment: var(--ink-muted);
+  --syn-type: var(--cat-slate);
+  --syn-func: var(--clay-strong);
+}
+
+:root[data-theme='dark'] {
+  --cat-ochre: #d2ae5f;
+  --cat-ochre-tint: #2e2717;
+  --cat-slate: #93aec6;
+  --cat-slate-tint: #1d242a;
+  --cat-plum: #c799b8;
+  --cat-plum-tint: #2c1f27;
+  --cat-stone: #aaa194;
+  --cat-stone-tint: #27231e;
+
+  /* The accents lift on a dark ground, so text on them goes dark. */
+  --on-cat: var(--paper);
+
+  --syn-func: var(--clay);
+}

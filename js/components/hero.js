@@ -15,7 +15,8 @@ export function initHero() {
   }
 
   textDiv.innerHTML = `
-    <h1 id="hero-heading">${hero.name} — ${hero.tagline}</h1>
+    <p class="eyebrow">${hero.tagline}</p>
+    <h1 id="hero-heading">${hero.name}</h1>
     <p class="lead">${hero.description}</p>
     <div class="hero-actions">
       ${hero.cta.map(btn => `

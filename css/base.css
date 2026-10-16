@@ -1,7 +1,7 @@
 /* base.css — layout and components, built on tokens.css (Cream & Ink) */
 
 :root {
-  --container-max: 50rem;
+  --container-max: 64rem;
   --header-height: 4.25rem;
 }
 
@@ -258,154 +258,22 @@ p a {
   border-bottom: 1px solid var(--paper-line);
 }
 
+/* Section titles take the serif voice: a heading you read, not a label you scan past.
+ * The small uppercase eyebrow is kept for the one place a page needs a kicker. */
 .section-title {
   margin: 0 0 var(--space-5);
-  padding-bottom: var(--space-3);
-  border-bottom: 1px solid var(--paper-line);
-  font-size: var(--text-small);
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--ink-faint);
-}
-
-@media (max-width: 720px) {
-  .section {
-    padding: var(--space-6) 0;
-  }
-}
-
-/* ─── Hero ────────────────────────────────────────────────────────────── */
-
-.hero {
-  padding: var(--space-7) 0 var(--space-6);
-}
-
-.hero-text h1 {
-  margin: 0;
-}
-
-.hero .lead {
-  max-width: 34rem;
-  margin-top: var(--space-4);
-  font-size: var(--text-body);
-  color: var(--ink-muted);
-}
-
-.hero-actions {
-  display: flex;
-  gap: var(--space-3);
-  margin-top: var(--space-5);
-}
-
-/* ─── Project cards ───────────────────────────────────────────────────── */
-
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
-  gap: var(--space-4);
-}
-
-.card {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  padding: var(--space-5);
-  background: var(--paper-raised);
-  border: 1px solid var(--paper-line);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-card);
-}
-
-.card h3 {
-  margin: 0 0 var(--space-2);
-  font-size: var(--text-heading);
-  font-weight: 600;
-}
-
-.card p {
-  margin: 0;
-  font-size: var(--text-sub);
-  color: var(--ink-muted);
-}
-
-.badges {
-  display: flex;
-  gap: var(--space-2);
-  flex-wrap: wrap;
-}
-
-/* Only some projects have somewhere public to point at, so this sits below the badges
- * and is simply absent on the cards without a URL. */
-.card-link {
-  display: inline-block;
-  margin-top: var(--space-3);
-  color: var(--clay);
-  font-size: var(--text-sub);
-  font-weight: 500;
-}
-
-.card-link:hover {
-  color: var(--clay-strong);
-  text-decoration: underline;
-}
-
-.badge {
-  padding: 0.15rem var(--space-2);
-  border-radius: var(--radius-pill);
-  background: var(--paper-sunken);
-  border: 1px solid var(--paper-line);
-  font-size: var(--text-small);
-  color: var(--ink-muted);
-}
-
-/* ─── Explainers ──────────────────────────────────────────────────────── */
-
-/* The whole card is the link, so it reads as a card at rest and lifts its title on hover
- * rather than underlining a paragraph. The wrapper carries the list role. */
-.card-item {
-  display: flex;
-}
-
-.card--link {
-  flex: 1;
+  font-family: var(--font-serif);
+  font-size: 1.875rem;
+  font-weight: 400;
+  line-height: var(--leading-tight);
+  letter-spacing: -0.01em;
   color: var(--ink);
-  transition: border-color 0.12s ease;
 }
 
-.card--link:hover {
-  color: var(--ink);
-  border-color: var(--clay);
-}
-
-.card--link h3 {
-  transition: color 0.12s ease;
-}
-
-.card--link:hover h3 {
-  color: var(--clay);
-}
-
-.card--link .badges {
-  margin-top: auto;
-}
-
-.card-go {
-  color: var(--clay);
-  font-size: var(--text-sub);
-  font-weight: 500;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .card--link,
-  .card--link h3 {
-    transition: none;
-  }
-}
-
-.section-lead {
-  max-width: 34rem;
-  margin: calc(var(--space-2) * -1) 0 var(--space-5);
+.section-lead,
+.section-title + .lead {
+  max-width: 38rem;
+  margin: calc(var(--space-4) * -1) 0 var(--space-5);
   color: var(--ink-muted);
 }
 
@@ -425,35 +293,279 @@ p a {
   text-decoration: underline;
 }
 
-/* The /explainers/ page: a short intro, then one block per group. */
-.page-intro {
-  padding-top: var(--space-7);
-  padding-bottom: var(--space-5);
+.eyebrow {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-small);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--clay);
 }
 
+@media (max-width: 720px) {
+  .section {
+    padding: var(--space-6) 0;
+  }
+  .section-title {
+    font-size: 1.625rem;
+  }
+}
+
+/* ─── Hero ────────────────────────────────────────────────────────────── */
+
+.hero {
+  padding: var(--space-7) 0;
+}
+
+/* The display line: the serif at a size that carries the page. Shared by the home hero
+ * and the intro of pages like /explainers/. */
+.hero h1,
 .page-intro h1 {
   margin: 0;
+  font-size: clamp(2.75rem, 7vw, 4.5rem);
+  line-height: 1.02;
+  letter-spacing: -0.015em;
 }
 
+.hero .lead,
 .page-intro .lead {
-  max-width: 36rem;
+  max-width: 38rem;
   margin: var(--space-4) 0 0;
+  font-size: 1.1875rem;
   color: var(--ink-muted);
+}
+
+.hero-actions {
+  display: flex;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+}
+
+.page-intro {
+  padding-top: var(--space-7);
+  padding-bottom: var(--space-6);
+}
+
+/* ─── Plates ──────────────────────────────────────────────────────────── */
+
+/* Cards for projects and explainers: a tinted figure with the item's drawing, then the
+ * text. Each plate sets --c (its colour) and --t (that colour's tint) inline; the drawing
+ * and hover state follow them. See js/components/plate.js and marks.js. */
+.plates {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.plates--four {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.plate-item {
+  display: flex;
+  min-width: 0;
+}
+
+.plate {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  background: var(--paper-raised);
+  border: 1px solid var(--paper-line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+  color: var(--ink);
+}
+
+a.plate {
+  transition: border-color 0.15s ease, transform 0.2s ease;
+}
+
+a.plate:hover {
+  color: var(--ink);
+  border-color: var(--c);
+  transform: translateY(-2px);
+}
+
+.plate-fig {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 8.5rem;
+  padding: var(--space-5) var(--space-6);
+  background: var(--t);
+  border-bottom: 1px solid color-mix(in srgb, var(--c) 18%, transparent);
+}
+
+.plate-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-5) var(--space-5);
+}
+
+.plate-title {
+  font-family: var(--font-serif);
+  font-size: 1.375rem;
+  line-height: 1.2;
+  transition: color 0.15s ease;
+}
+
+a.plate:hover .plate-title {
+  color: var(--c);
+}
+
+.plate-desc {
+  font-size: var(--text-sub);
+  color: var(--ink-muted);
+}
+
+.plate-meta {
+  margin-top: auto;
+  padding-top: var(--space-2);
+  font-size: var(--text-small);
+  color: var(--ink-muted);
+}
+
+.plate-link {
+  color: var(--clay);
+  font-size: var(--text-sub);
+  font-weight: 500;
+}
+
+/* The drawings. Lines take the plate's colour; .m-tint and .m-solid are the two fills. */
+.mark {
+  display: block;
+  width: 100%;
+  max-width: 9rem;
+  height: 5.5rem;
+  color: var(--c);
+}
+
+.mark .m-tint {
+  fill: var(--t);
+}
+
+.mark .m-solid {
+  fill: var(--c);
+}
+
+.mark--token {
+  width: auto;
+  max-width: none;
+  height: auto;
+  font-family: var(--font-mono);
+  font-size: 3rem;
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+/* A lead plate spans two columns, its figure beside the text. */
+.plate-item:has(.plate--wide) {
+  grid-column: span 2;
+}
+
+.plate--wide {
+  flex-direction: row;
+}
+
+.plate--wide .plate-fig {
+  flex: 0 0 42%;
+  border-bottom: 0;
+  border-right: 1px solid color-mix(in srgb, var(--c) 18%, transparent);
+}
+
+.plate--wide .mark {
+  max-width: 13rem;
+  height: 8rem;
+}
+
+.plate--wide .plate-body {
+  justify-content: center;
+  padding: var(--space-6);
+}
+
+.plate--wide .plate-title {
+  font-size: 1.75rem;
+}
+
+.plate--wide .plate-meta {
+  margin-top: var(--space-2);
+}
+
+/* Language references: the token is the figure, and the plates run four across. */
+.plate--token .plate-fig {
+  min-height: 7rem;
+}
+
+.plate--token .plate-title {
+  font-size: 1.1875rem;
+}
+
+.plate-group + .plate-group {
+  margin-top: var(--space-7);
 }
 
 .explainer-groups {
   padding-bottom: var(--space-7);
 }
 
-.explainer-group + .explainer-group {
-  margin-top: var(--space-7);
+@media (max-width: 860px) {
+  .plates,
+  .plates--four {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
-.explainer-group .lead {
-  max-width: 34rem;
-  margin: calc(var(--space-2) * -1) 0 var(--space-5);
+@media (max-width: 560px) {
+  .plates,
+  .plates--four {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .plate-item:has(.plate--wide) {
+    grid-column: auto;
+  }
+  .plate--wide {
+    flex-direction: column;
+  }
+  .plate--wide .plate-fig {
+    flex: none;
+    border-right: 0;
+    border-bottom: 1px solid color-mix(in srgb, var(--c) 18%, transparent);
+  }
+  .plate-fig {
+    min-height: 7rem;
+  }
+  .plate--wide .mark {
+    height: 5.5rem;
+  }
+  .plate--wide .plate-body {
+    padding: var(--space-4) var(--space-5) var(--space-5);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  a.plate,
+  .plate-title {
+    transition: none;
+  }
+  a.plate:hover {
+    transform: none;
+  }
+}
+
+/* Small pills, used in the curio cabinet's type column. */
+.badge {
+  padding: 0.15rem var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--paper-sunken);
+  border: 1px solid var(--paper-line);
+  font-size: var(--text-small);
   color: var(--ink-muted);
-  font-size: var(--text-sub);
 }
 
 .nav-link[aria-current='page'] {
@@ -504,12 +616,6 @@ p a {
 }
 
 /* ─── Curio cabinet ───────────────────────────────────────────────────── */
-
-.curio .lead {
-  max-width: 34rem;
-  color: var(--ink-muted);
-  margin-top: 0;
-}
 
 /* The cells are padded on all sides so the hover band has room to breathe around the
  * text, and the table is pulled out by that same amount — so the first column still lines

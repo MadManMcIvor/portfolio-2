@@ -1,58 +1,12 @@
 /*
- * explainer.css — what every explainer page shares, on top of tokens.css (Cream & Ink).
+ * explainer.css — what every explainer page shares, on top of tokens.css (Cream & Ink)
+ * and palette.css (the categorical and syntax colours).
  *
  * Each explainer keeps its own layout and its own variable names; its <style> block maps
- * those names onto the tokens below, so a palette change here reaches all of them. This
+ * those names onto the tokens, so a palette change there reaches all of them. This
  * file is linked after the page's own <style>, which lets the site strip win any tie with
  * a page's bare element rules (header, nav, button…).
  */
-
-/* ─── Categorical colours ───────────────────────────────────────────────────
- * Cream & Ink has two accents, and that's the right number for the site. Diagrams that
- * colour-code four or five things (network layers, container tools, SQL dialects) need
- * more, so these extend it with the same earthen, muted register: clay and sage first,
- * then ochre, slate, plum and stone. Every one reads at AA on paper in both themes.     */
-:root {
-  --cat-clay: var(--clay);
-  --cat-clay-tint: var(--clay-tint);
-  --cat-sage: var(--sage);
-  --cat-sage-tint: var(--sage-tint);
-  --cat-ochre: #86651a;
-  --cat-ochre-tint: #f1e7cf;
-  --cat-slate: #4d6880;
-  --cat-slate-tint: #e1e7ec;
-  --cat-plum: #7a4c6b;
-  --cat-plum-tint: #efe2ea;
-  --cat-stone: #6b645a;
-  --cat-stone-tint: #ebe5db;
-
-  /* Text on a solid categorical fill. */
-  --on-cat: var(--paper-raised);
-
-  /* Syntax highlighting — quiet on purpose; code should read as text first. */
-  --syn-keyword: var(--cat-plum);
-  --syn-string: var(--cat-sage);
-  --syn-number: var(--cat-ochre);
-  --syn-comment: var(--ink-muted);
-  --syn-type: var(--cat-slate);
-  --syn-func: var(--clay-strong);
-}
-
-:root[data-theme='dark'] {
-  --cat-ochre: #d2ae5f;
-  --cat-ochre-tint: #2e2717;
-  --cat-slate: #93aec6;
-  --cat-slate-tint: #1d242a;
-  --cat-plum: #c799b8;
-  --cat-plum-tint: #2c1f27;
-  --cat-stone: #aaa194;
-  --cat-stone-tint: #27231e;
-
-  /* The accents lift on a dark ground, so text on them goes dark. */
-  --on-cat: var(--paper);
-
-  --syn-func: var(--clay);
-}
 
 /* ─── Site strip ────────────────────────────────────────────────────────────
  * A thin band above each explainer: where you are on the site, and the one theme
